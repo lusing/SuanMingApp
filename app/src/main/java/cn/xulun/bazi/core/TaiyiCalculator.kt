@@ -62,7 +62,7 @@ object TaiyiCalculator {
         val zhuDa = daJiang(zhuSuan); val zhuCan = canJiang(zhuDa)
         val keDa = daJiang(keSuan); val keCan = canJiang(keDa)
         val dingDa = daJiang(dingSuan); val dingCan = canJiang(dingDa)
-        val zhiShiMen = computeZhiShiMen(ju.suanBase, type)
+        val zhiShiMen = computeZhiShiMen(ju.suanBase, ju.dun, type)
         val menOnTaiyi = computeMenOnTaiyi(zhiShiMen, ju.taiyiPalaceNo)
         val patterns = computePatterns(ju.taiyiPalaceNo, wenChang, shiJi, zhuDa, zhuCan, keDa, keCan, zhiShiMen)
         val suanClass = classifySuan(zhuSuan, keSuan, ju.taiyiPalaceNo)
@@ -87,11 +87,20 @@ object TaiyiCalculator {
         )
     }
 
-    /** 直使门：年计 order[积年 mod 240 / 30]；时计近似同法（TODO 张良法：甲日开/丙日生/己日惊/辛日休起，30时一移）。 */
-    private fun computeZhiShiMen(suanBase: Long, type: TaiyiCountType): TaiyiMen {
-        val base = if (type == TaiyiCountType.YEAR) suanBase + 1 else suanBase
-        val idx = floorMod(base, 240).toInt() / 30
-        return TaiyiMen.order[idx]
+    /**
+     * 直使门。
+     * 年计：order[积年 mod 240 / 30]（卷一「推八門占嵗計法」命起开门以次休生门；开元十二年甲子开门锚）。
+     * 时计：王希明法——门数 = 积时 mod 120 ÷ 30，阳遁池[开,生,惊,休]、阴遁池[杜,死,伤,景]，30时一移
+     * （卷一「推八門用法」王希明「门则随数起，时尽则移，不拘其甲丙己辛日」+「推冬至/夏至加時所直門法」；
+     *  夏至法阙文「命起杜门以次而行」依王希明阴遁四门序补；两遁连续积时同轨仅换池，不加 +2192 平气偏移——用户裁定 2026-07-26）。
+     */
+    private fun computeZhiShiMen(suanBase: Long, dun: TaiyiDun, type: TaiyiCountType): TaiyiMen {
+        if (type == TaiyiCountType.YEAR) {
+            val idx = floorMod(suanBase + 1, 240).toInt() / 30
+            return TaiyiMen.order[idx]
+        }
+        val menShu = floorMod(suanBase, 120).toInt() / 30
+        return (if (dun == TaiyiDun.YANG) TaiyiMen.poolYang else TaiyiMen.poolYin)[menShu]
     }
 
     /** 八门飞加太乙：直使落太乙宫，按 TaiyiPalace.ring 顺时针顺布开→休→生→伤→杜→景→死→惊（不入中五）。 */

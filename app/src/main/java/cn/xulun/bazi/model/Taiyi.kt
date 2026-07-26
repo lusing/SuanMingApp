@@ -104,6 +104,10 @@ enum class TaiyiMen(val chinese: String, val trigram: String, val element: Eleme
     companion object {
         /** 顺时针顺布序（飞加太乙宫后按此序排）：开→休→生→伤→杜→景→死→惊 */
         val order: List<TaiyiMen> = listOf(KAI, XIU, SHENG, SHANG, DU, JING, SI_MEN, JING2)
+        /** 时计阳遁四门池（卷一王希明法，张良时序）：开→生→惊→休，30时一移、120时一周。 */
+        val poolYang: List<TaiyiMen> = listOf(KAI, SHENG, JING2, XIU)
+        /** 时计阴遁四门池（卷一王希明法，张良时序）：杜→死→伤→景，30时一移、120时一周。 */
+        val poolYin: List<TaiyiMen> = listOf(DU, SI_MEN, SHANG, JING)
     }
 }
 

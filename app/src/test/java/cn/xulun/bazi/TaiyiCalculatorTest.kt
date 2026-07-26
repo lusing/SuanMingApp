@@ -137,6 +137,37 @@ class TaiyiCalculatorTest {
         assertEquals(TaiyiMen.SHANG, p.menOnTaiyi[p.ju.taiyiPalaceNo]) // 直使落太乙宫
     }
 
+    // ── 时计八门：卷一王希明法（积时 mod 120 ÷ 30，阳遁池开生惊休/阴遁池杜死伤景）──
+    @Test
+    fun `时计阳遁 2023冬至午时 直使开门`() {
+        // 2023-12-22 12:30 已过冬至时刻(约11:27)→阳遁；积时 mod 120 = 6 → 门数0
+        val p = TaiyiCalculator.build(LocalDateTime.of(2023, 12, 22, 12, 30), TaiyiCountType.HOUR)
+        assertEquals(TaiyiDun.YANG, p.ju.dun)
+        assertEquals(TaiyiMen.KAI, p.zhiShiMen)
+        assertEquals(TaiyiMen.KAI, p.menOnTaiyi[p.ju.taiyiPalaceNo]) // 直使落太乙宫
+    }
+
+    @Test
+    fun `时计阳遁 四门轮转 30时一移`() {
+        // 积时 mod 120 = 36/66/96 → 门数1/2/3 → 生/惊/休；126→6 → 门数0 → 开
+        assertEquals(TaiyiMen.SHENG,
+            TaiyiCalculator.build(LocalDateTime.of(2023, 12, 25, 0, 30), TaiyiCountType.HOUR).zhiShiMen)
+        assertEquals(TaiyiMen.JING2,
+            TaiyiCalculator.build(LocalDateTime.of(2023, 12, 27, 12, 30), TaiyiCountType.HOUR).zhiShiMen)
+        assertEquals(TaiyiMen.XIU,
+            TaiyiCalculator.build(LocalDateTime.of(2023, 12, 30, 0, 30), TaiyiCountType.HOUR).zhiShiMen)
+        assertEquals(TaiyiMen.KAI,
+            TaiyiCalculator.build(LocalDateTime.of(2024, 1, 1, 12, 30), TaiyiCountType.HOUR).zhiShiMen)
+    }
+
+    @Test
+    fun `时计阴遁 2024-10-09子时 直使杜门`() {
+        // 积时 mod 120 = 24 → 门数0 → 阴遁池[杜,死,伤,景][0]
+        val p = TaiyiCalculator.build(LocalDateTime.of(2024, 10, 9, 0, 30), TaiyiCountType.HOUR)
+        assertEquals(TaiyiDun.YIN, p.ju.dun)
+        assertEquals(TaiyiMen.DU, p.zhiShiMen)
+    }
+
     @Test
     fun `2024 格局 外宫迫 格 杜塞`() {
         val p = TaiyiCalculator.build(LocalDateTime.of(2024, 7, 1, 12, 0), TaiyiCountType.YEAR)
