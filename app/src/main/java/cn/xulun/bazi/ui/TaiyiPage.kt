@@ -123,7 +123,7 @@ fun TaiyiPage(onBack: () -> Unit) {
 
             InputCard("计法", Icons.Filled.CalendarMonth) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(TaiyiCountType.HOUR, TaiyiCountType.YEAR).forEach { t ->
+                    listOf(TaiyiCountType.HOUR, TaiyiCountType.DAY, TaiyiCountType.YEAR).forEach { t ->
                         FilterChip(
                             selected = t == countType,
                             onClick = { countType = t },
@@ -131,7 +131,7 @@ fun TaiyiPage(onBack: () -> Unit) {
                         )
                     }
                 }
-                Text("时计主日用百事；年计主岁中大事。月/日计待实现", fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 6.dp))
+                Text("时计主日用百事；日计主日内选择/出行；年计主岁中大事。月计待实现", fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 6.dp))
             }
 
             Button(
