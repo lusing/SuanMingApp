@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.xulun.bazi.core.TaiyiCalculator
 import cn.xulun.bazi.model.TaiyiCountType
+import cn.xulun.bazi.model.TaiyiFenYe
+import cn.xulun.bazi.model.TaiyiJiXing
+import cn.xulun.bazi.model.TaiyiPalace
 import cn.xulun.bazi.model.TaiyiPlate
 import cn.xulun.bazi.ui.components.TaiyiGrid
 import cn.xulun.bazi.ui.theme.CreamBg
@@ -143,6 +146,7 @@ fun TaiyiPage(onBack: () -> Unit) {
                 TaiyiGrid(plate = p)
                 SuanSection(p)
                 JiXingSection(p)
+                FenYeChart(p)
                 PatternSection(p)
             }
         }
@@ -242,7 +246,7 @@ private fun PatternSection(p: TaiyiPlate) {
 @Composable
 private fun JiXingSection(p: TaiyiPlate) {
     if (p.jiXing.isEmpty()) return
-    InputCard("卷四星宿", Icons.Filled.CalendarMonth) {
+    InputCard("卷四基星 · 卷五符神", Icons.Filled.CalendarMonth) {
         p.jiXing.forEach { star ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.Top) {
                 Text(
@@ -262,7 +266,7 @@ private fun JiXingSection(p: TaiyiPlate) {
             )
         }
         Text(
-            "卷四核定：基星起戌邦·五福独立积年·大游起七宫；四神/天乙/直符依九宫(含中五)+绛宫明堂玉堂三堂十二位（卷四原文，非淘金歌十二支序）",
+            "卷四基星起戌邦·五福独立积年·大游起七宫；四神/天乙/地乙/直符依卷五立成十二位环；三堂分野依卷八，见下十二分野图",
             fontSize = 11.sp, color = Color(0xFF9E9E9E), modifier = Modifier.padding(top = 4.dp),
         )
     }
@@ -278,6 +282,56 @@ private fun InputCard(title: String, icon: androidx.compose.ui.graphics.vector.I
             }
             Spacer(Modifier.height(12.dp))
             content()
+        }
+    }
+}
+
+@Composable
+private fun FenYeChart(p: TaiyiPlate) {
+    val marks = TaiyiFenYe.markers(p)
+    InputCard("十二分野图", Icons.Filled.CalendarMonth) {
+        TaiyiPalace.gridOrder.forEach { row ->
+            Row(modifier = Modifier.fillMaxWidth()) {
+                row.forEach { no ->
+                    FenYeCell("${no}宫·${TaiyiFenYe.palaceZhou[no]}", marks[no.toString()].orEmpty(), Modifier.weight(1f))
+                }
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            TaiyiFenYe.tangOrder.forEach { tang ->
+                FenYeCell("$tang·${TaiyiFenYe.tangZhou[tang]}", marks[tang].orEmpty(), Modifier.weight(1f))
+            }
+        }
+        Text(
+            "卷八 九宫分野(并序)：九宫(含中五)配九州；绛宫交州·明堂益州·玉堂幽州",
+            fontSize = 11.sp, color = Color(0xFF9E9E9E), modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+}
+
+@Composable
+private fun FenYeCell(title: String, gods: List<TaiyiJiXing>, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.padding(2.dp),
+        shape = RoundedCornerShape(6.dp),
+        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+        color = if (gods.isEmpty()) Color.White else Color(0xFFFFF8F0),
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(title, fontSize = 12.sp, color = Color(0xFF616161))
+            if (gods.isEmpty()) {
+                Text("　", fontSize = 13.sp)
+            } else {
+                gods.forEach { g ->
+                    Text(
+                        g.name, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                        color = if (g.auspicious) Color(0xFF2E7D32) else Color(0xFFC62828),
+                    )
+                }
+            }
         }
     }
 }
