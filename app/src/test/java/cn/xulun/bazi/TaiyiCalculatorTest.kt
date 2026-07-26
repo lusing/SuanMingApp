@@ -417,4 +417,42 @@ class TaiyiCalculatorTest {
         assertNull(jx["阳九"])
         assertNull(jx["百六"])
     }
+
+    // ── 日计六日回归（邻日推进 + 大游/五福跨宫钉死）──
+    @Test
+    fun `日计 2026-07-27 51局 民基子 逐日推进`() {
+        val p = TaiyiCalculator.build(LocalDateTime.of(2026, 7, 27, 12, 0), TaiyiCountType.DAY)
+        assertEquals(51, p.ju.juNo)
+        assertEquals(1, p.ju.taiyiPalaceNo)
+        assertEquals("子", p.jiXing.associateBy { it.name }["民基"]?.location)
+    }
+
+    @Test
+    fun `日计 2026-08-18 1局 大游大武7宫 五福乾`() {
+        val p = TaiyiCalculator.build(LocalDateTime.of(2026, 8, 18, 12, 0), TaiyiCountType.DAY)
+        assertEquals(1, p.ju.juNo)
+        assertEquals(1, p.ju.taiyiPalaceNo)
+        val jx = p.jiXing.associateBy { it.name }
+        assertEquals("坤7宫", jx["大游"]?.location)
+        assertEquals("乾", jx["五福"]?.location)
+    }
+
+    @Test
+    fun `日计 2026-10-29 1局 大游大炅9宫 五福艮`() {
+        val p = TaiyiCalculator.build(LocalDateTime.of(2026, 10, 29, 12, 0), TaiyiCountType.DAY)
+        assertEquals(1, p.ju.juNo)
+        val jx = p.jiXing.associateBy { it.name }
+        assertEquals("巽9宫", jx["大游"]?.location)
+        assertEquals("艮", jx["五福"]?.location)
+    }
+
+    @Test
+    fun `日计 2026-12-30 与31 五福跨宫边界 C5=190`() {
+        val p30 = TaiyiCalculator.build(LocalDateTime.of(2026, 12, 30, 12, 0), TaiyiCountType.DAY)
+        val p31 = TaiyiCalculator.build(LocalDateTime.of(2026, 12, 31, 12, 0), TaiyiCountType.DAY)
+        assertEquals(63, p30.ju.juNo)
+        assertEquals(64, p31.ju.juNo)
+        assertEquals("巽", p30.jiXing.associateBy { it.name }["五福"]?.location)
+        assertEquals("坤", p31.jiXing.associateBy { it.name }["五福"]?.location)
+    }
 }
