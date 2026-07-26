@@ -265,11 +265,11 @@ class TaiyiCalculatorTest {
     }
 
     @Test
-    fun `卷五十神齐备 飞符不列`() {
+    fun `卷五卷七诸神齐备 飞符不列`() {
         val p = TaiyiCalculator.build(LocalDateTime.of(2024, 7, 1, 12, 0), TaiyiCountType.YEAR)
         val names = p.jiXing.map { it.name }
-        // P2 六星（君基/臣基/民基/五福/大游/小游）+ 卷五四神（四神/天乙/地乙/直符）＝十神；飞符为淘金歌概念，不列
-        listOf("君基", "臣基", "民基", "五福", "大游", "小游", "四神", "天乙", "地乙", "直符").forEach {
+        // P2 六星 + 卷五四神 + 卷七阳九百六；飞符为淘金歌概念，不列
+        listOf("君基", "臣基", "民基", "五福", "大游", "小游", "四神", "天乙", "地乙", "直符", "阳九", "百六").forEach {
             assertTrue("$it 缺失: $names", names.contains(it))
         }
         assertFalse("飞符为淘金歌概念不应出现", names.contains("飞符"))
@@ -308,5 +308,60 @@ class TaiyiCalculatorTest {
         assertEquals("离2宫", m["天乙"]!!.location)
         assertEquals("中5宫", m["地乙"]!!.location)
         assertTrue(m["直符"]!!.note.contains("中元·丙子纪"))
+    }
+
+    private fun jiXingMap(year: Int) =
+        TaiyiCalculator.build(LocalDateTime.of(year, 7, 1, 12, 0), TaiyiCountType.YEAR).jiXing.associateBy { it.name }
+
+    // ── 卷七 阳九百六（灾厄周期；演纪积年 u=year+12606）──
+    @Test
+    fun `618 武德元年 第三元第十阳九第1年 值会`() {
+        val y = jiXingMap(618)["阳九"]!!
+        assertTrue(y.note, y.note.contains("第三元第十阳九"))
+        assertEquals(1, y.inYear)
+        assertTrue(y.note, y.note.contains("值会"))
+    }
+
+    @Test
+    fun `162 延熹五年 第三元第九阳九第1年`() {
+        val y = jiXingMap(162)["阳九"]!!
+        assertTrue(y.note, y.note.contains("第三元第九阳九"))
+        assertEquals(1, y.inYear)
+    }
+
+    @Test
+    fun `1074 第四元第一阳九第1年 开元后350年方会`() {
+        val y = jiXingMap(1074)["阳九"]!!
+        assertTrue(y.note, y.note.contains("第四元第一阳九"))
+        assertEquals(1, y.inYear)
+    }
+
+    @Test
+    fun `354 永和十年 第二元一百六第1年寅邦 642 第二百六`() {
+        jiXingMap(354)["百六"]!!.let {
+            assertTrue(it.note, it.note.contains("第二元第一百六"))
+            assertEquals(1, it.inYear)
+            assertEquals("寅邦", it.location)
+        }
+        jiXingMap(642)["百六"]!!.let {
+            assertTrue(it.note, it.note.contains("第二元第二百六"))
+            assertEquals(1, it.inYear)
+            assertEquals("寅邦", it.location)
+        }
+    }
+
+    @Test
+    fun `2024 第四元第三阳九第39年亥邦 第二元第六百六第231年亥邦`() {
+        val m = jiXingMap(2024)
+        m["阳九"]!!.let {
+            assertTrue(it.note, it.note.contains("第四元第三阳九"))
+            assertEquals(39, it.inYear)
+            assertEquals("亥邦", it.location)
+        }
+        m["百六"]!!.let {
+            assertTrue(it.note, it.note.contains("第二元第六百六"))
+            assertEquals(231, it.inYear)
+            assertEquals("亥邦", it.location)
+        }
     }
 }

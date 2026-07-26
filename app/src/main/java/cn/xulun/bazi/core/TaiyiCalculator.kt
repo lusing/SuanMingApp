@@ -66,7 +66,7 @@ object TaiyiCalculator {
         val menOnTaiyi = computeMenOnTaiyi(zhiShiMen, ju.taiyiPalaceNo)
         val patterns = computePatterns(ju.taiyiPalaceNo, wenChang, shiJi, zhuDa, zhuCan, keDa, keCan, zhiShiMen)
         val suanClass = classifySuan(zhuSuan, keSuan, ju.taiyiPalaceNo)
-        val jiXing = computeJiXing(dt.year, ju.taiyiPalaceNo, ju.inGongOffset)
+        val jiXing = computeJiXing(dt.year, ju.taiyiPalaceNo, ju.inGongOffset, taiSui)
         return TaiyiPlate(
             ju = ju,
             taiSui = taiSui,
@@ -193,7 +193,7 @@ object TaiyiCalculator {
      * - 四神/天乙/地乙/直符（卷五 四神三元五纪立成）：统一 12 位环[1..9,绛,明,玉]，命起 1/6/9/5，step=(积年−1) mod 36 ÷3。
      *   （立成表逐格核定；直符中元列刻本疑讹按推法公式；飞符为淘金歌概念，不列。）
      */
-    private fun computeJiXing(year: Int, taiyiPalaceNo: Int, inGongOffset: Int): List<TaiyiJiXing> {
+    private fun computeJiXing(year: Int, taiyiPalaceNo: Int, inGongOffset: Int, taiSui: EarthlyBranch): List<TaiyiJiXing> {
         val out = mutableListOf<TaiyiJiXing>()
         val ruZhou = floorMod(year - 113, 360)          // 三基入周（0..359）；戌邦 idx=10
         // 君基：大周360，30年/邦
@@ -249,6 +249,36 @@ object TaiyiCalculator {
         out += fsGod("天乙", 5, false, "金神主兵革")
         out += fsGod("地乙", 8, false, "孤立无援(推地乙正文四库本佚,占义从通行)")
         out += fsGod("直符", 4, false, "火神值日巡察")
+
+        // ── 卷七 阳九百六（灾厄周期；演纪上元甲寅积年，与五福同锚 13331@724）──
+        // 阳九：4560元/456一会，元=u/4560+1、元内=(u/456)%10+1、入年=u%456+1；邦=寅+(u%156)/13
+        //   （13年/邦；156 与跨度 456 不整除，原文如此，存疑——用户裁定按原文+标注）。
+        // 百六：4320元(15周×288)，元=u/4320−1（卷七元1起 J8641）、元内=(u/288)%15+1、入年=u%288+1；
+        //   邦=寅+(u%288)/24（24年/邦）。锚：618 第十阳九/162 第九/354 元2一百六/642 元2二百六 ✓。
+        val u = year + 12606L                                  // 积年−1
+        fun chongTaiSui(bangIdx: Int): Boolean = floorMod(bangIdx - taiSui.ordinal, 12) == 6
+        fun cn(n: Long): String = when {                       // 中文数字（元/序号展示）
+            n < 10 -> listOf("零", "一", "二", "三", "四", "五", "六", "七", "八", "九")[n.toInt()]
+            n == 10L -> "十"
+            n < 20 -> "十" + listOf("", "一", "二", "三", "四", "五", "六", "七", "八", "九")[(n % 10).toInt()]
+            else -> n.toString()
+        }
+        val y9yuan = u / 4560 + 1
+        val y9ci = (u / 456) % 10 + 1
+        val y9in = (u % 456).toInt() + 1
+        val y9bangIdx = (2 + ((u % 156) / 13).toInt()) % 12
+        out += TaiyiJiXing("阳九", "${EarthlyBranch.fromIndex(y9bangIdx).chinese}邦", null,
+            "4560元/456年一会", y9in, false,
+            "第${cn(y9yuan)}元第${cn(y9ci)}阳九·亡国弑君之厄·起寅邦13年一移(卷七;邦周期156与跨度456不整除,原文存疑)" +
+                (if (y9in == 1) "·值会" else "") + (if (chongTaiSui(y9bangIdx)) "·冲太岁" else ""))
+        val b6yuan = u / 4320 - 1
+        val b6ci = (u / 288) % 15 + 1
+        val b6in = (u % 288).toInt() + 1
+        val b6bangIdx = (2 + ((u % 288) / 24).toInt()) % 12
+        out += TaiyiJiXing("百六", "${EarthlyBranch.fromIndex(b6bangIdx).chinese}邦", null,
+            "4320元/288年一会", b6in, false,
+            "第${cn(b6yuan)}元第${cn(b6ci)}百六·篡弑之祸·起寅邦24年一移(卷七)" +
+                (if (b6in == 1) "·值会" else "") + (if (chongTaiSui(b6bangIdx)) "·冲太岁" else ""))
         return out
     }
 
