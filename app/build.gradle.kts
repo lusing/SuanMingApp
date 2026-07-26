@@ -23,6 +23,8 @@ android {
 
     buildTypes {
         release {
+            // 以本机调试钥匙签名（用户裁定 2026-07-26；不适合上架，仅自用分发）
+            signingConfig = signingConfigs.getByName("debug")
             optimization {
                 enable = false
             }
