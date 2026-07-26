@@ -170,7 +170,7 @@ data class TaiyiPlate(
     val dingMu: SixteenGod,
     val dingDaJiang: Int,
     val dingCanJiang: Int,
-    val zhiShiMen: TaiyiMen,              // 直使门
+    val zhiShiMen: TaiyiMen?,             // 直使门；日计原文阙→null
     val menOnTaiyi: Map<Int, TaiyiMen>,   // 太乙盘八门落宫（宫号→门）
     val patterns: List<TaiyiPattern>,
     val suanClass: List<String>,          // 数分类标签

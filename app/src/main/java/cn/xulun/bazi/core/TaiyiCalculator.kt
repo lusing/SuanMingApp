@@ -94,7 +94,8 @@ object TaiyiCalculator {
      * （卷一「推八門用法」王希明「门则随数起，时尽则移，不拘其甲丙己辛日」+「推冬至/夏至加時所直門法」；
      *  夏至法阙文「命起杜门以次而行」依王希明阴遁四门序补；两遁连续积时同轨仅换池，不加 +2192 平气偏移——用户裁定 2026-07-26）。
      */
-    private fun computeZhiShiMen(suanBase: Long, dun: TaiyiDun, type: TaiyiCountType): TaiyiMen {
+    private fun computeZhiShiMen(suanBase: Long, dun: TaiyiDun, type: TaiyiCountType): TaiyiMen? {
+        if (type == TaiyiCountType.DAY) return null        // 卷一未载日计八门
         if (type == TaiyiCountType.YEAR) {
             val idx = floorMod(suanBase + 1, 240).toInt() / 30
             return TaiyiMen.order[idx]
@@ -104,7 +105,8 @@ object TaiyiCalculator {
     }
 
     /** 八门飞加太乙：直使落太乙宫，按 TaiyiPalace.ring 顺时针顺布开→休→生→伤→杜→景→死→惊（不入中五）。 */
-    private fun computeMenOnTaiyi(zhiShi: TaiyiMen, taiyiNo: Int): Map<Int, TaiyiMen> {
+    private fun computeMenOnTaiyi(zhiShi: TaiyiMen?, taiyiNo: Int): Map<Int, TaiyiMen> {
+        if (zhiShi == null) return emptyMap()
         val startDoor = TaiyiMen.order.indexOf(zhiShi)
         val startGong = TaiyiPalace.ring.indexOf(taiyiNo)
         val map = HashMap<Int, TaiyiMen>()
@@ -133,7 +135,7 @@ object TaiyiCalculator {
     private fun computePatterns(
         taiyiNo: Int, wenChang: SixteenGod, shiJi: SixteenGod,
         zhuDa: Int, zhuCan: Int, keDa: Int, keCan: Int,
-        zhiShiMen: TaiyiMen,
+        zhiShiMen: TaiyiMen?,
     ): List<TaiyiPattern> {
         val out = mutableListOf<TaiyiPattern>()
         val tyIdx = PALACE_TO_ZHENG_IDX.getValue(taiyiNo)
@@ -392,8 +394,10 @@ object TaiyiCalculator {
                 val relShiShi = days * 12 + bazi.hourPillar.branch.ordinal
                 dun to (dongZhiJiShi + relShiShi)
             }
-            TaiyiCountType.MONTH, TaiyiCountType.DAY ->
-                TODO("月计/日计入局待实现（P2）")
+            TaiyiCountType.DAY ->
+                TaiyiDun.YANG to (dt.toLocalDate().toEpochDay() + 53L)   // 锚 2026-07-26=50局；等价原文积日（每日+1）
+            TaiyiCountType.MONTH ->
+                TODO("月计入局待实现")
         }
         val jingShu = floorMod(suanSteps, 24)              // 太乙净数（24时/年周期）
         val gongXu = jingShu / 3                           // 0..7

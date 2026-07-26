@@ -191,8 +191,9 @@ private fun JuHeader(p: TaiyiPlate) {
                 "${ju.countType.chinese} · 太乙${palace.trigram}${ju.taiyiPalaceNo}宫(${palace.direction}) · ${ju.liTianDiRen}",
                 fontSize = 13.sp, color = Color(0xFF616161), modifier = Modifier.padding(top = 4.dp),
             )
+            val zhiShiText = p.zhiShiMen?.let { "直使${it.chinese}门" } ?: "日计八门阙载（卷一未载）"
             Text(
-                "太岁${p.taiSui.chinese}　合神${p.heShen.chinese}　计神${p.jiShen.chinese}　直使${p.zhiShiMen.chinese}门",
+                "太岁${p.taiSui.chinese}　合神${p.heShen.chinese}　计神${p.jiShen.chinese}　$zhiShiText",
                 fontSize = 12.sp, color = SeedRed.copy(alpha = 0.85f), modifier = Modifier.padding(top = 2.dp),
             )
             Text(

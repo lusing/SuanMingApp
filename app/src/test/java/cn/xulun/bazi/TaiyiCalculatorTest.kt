@@ -364,4 +364,33 @@ class TaiyiCalculatorTest {
             assertEquals("亥邦", it.location)
         }
     }
+
+    // ── 日计入局（P-日计；suanBase=epochDay+53 锚 2026-07-26=阳遁50局）──
+    @Test
+    fun `日计 2026-07-26 阳遁50局 太乙1宫乾 理地 直使空`() {
+        val p = TaiyiCalculator.build(LocalDateTime.of(2026, 7, 26, 12, 0), TaiyiCountType.DAY)
+        assertEquals(TaiyiDun.YANG, p.ju.dun)
+        assertEquals(50, p.ju.juNo)
+        assertEquals(1, p.ju.taiyiPalaceNo)
+        assertEquals("理地", p.ju.liTianDiRen)
+        assertEquals("丑", p.taiSui.chinese)   // 辛丑日
+        assertEquals("子", p.heShen.chinese)
+        assertEquals("丑", p.jiShen.chinese)
+        assertEquals("巳", p.wenChang.position)   // 大神
+        assertEquals("午", p.shiJi.position)       // 大威
+        assertEquals(16, p.zhuSuan)
+        assertEquals(15, p.keSuan)
+        assertEquals(6, p.zhuDaJiang); assertEquals(8, p.zhuCanJiang)
+        assertEquals(5, p.keDaJiang); assertEquals(5, p.keCanJiang)  // 客大将中宫=杜塞
+        assertNull(p.zhiShiMen)   // 日计八门原文阙
+        assertTrue(p.menOnTaiyi.isEmpty())
+    }
+
+    @Test
+    fun `日计 2026-07-28 太乙行宫至2宫离 52局`() {
+        val p = TaiyiCalculator.build(LocalDateTime.of(2026, 7, 28, 12, 0), TaiyiCountType.DAY)
+        assertEquals(52, p.ju.juNo)
+        assertEquals(2, p.ju.taiyiPalaceNo)   // 1宫→2宫，3日一移
+        assertEquals("理天", p.ju.liTianDiRen)
+    }
 }
