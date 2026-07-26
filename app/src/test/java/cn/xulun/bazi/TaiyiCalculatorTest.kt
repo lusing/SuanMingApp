@@ -393,4 +393,28 @@ class TaiyiCalculatorTest {
         assertEquals(2, p.ju.taiyiPalaceNo)   // 1宫→2宫，3日一移
         assertEquals("理天", p.ju.liTianDiRen)
     }
+
+    @Test
+    fun `日计 2026-07-26 星宿 民基亥 臣基戌 君基巳 地乙乾 五福中 小游乾`() {
+        val p = TaiyiCalculator.build(LocalDateTime.of(2026, 7, 26, 12, 0), TaiyiCountType.DAY)
+        val jx = p.jiXing.associateBy { it.name }
+        // 三基组（suanBase+24，起戌）
+        assertEquals("亥", jx["民基"]?.location)
+        assertEquals("戌", jx["臣基"]?.location)
+        assertEquals("巳", jx["君基"]?.location)
+        // 四神组（suanBase）
+        assertEquals("中5宫", jx["四神"]?.location)
+        assertEquals("绛宫", jx["天乙"]?.location)
+        assertEquals("乾1宫", jx["地乙"]?.location)
+        assertEquals("巽9宫", jx["直符"]?.location)
+        // 大游（suanBase）
+        assertEquals("兑6宫", jx["大游"]?.location)
+        // 五福（suanBase+190）
+        assertEquals("中", jx["五福"]?.location)
+        // 小游=太乙宫
+        assertEquals("乾1宫", jx["小游"]?.location)
+        // 日计不排阳九百六/飞符
+        assertNull(jx["阳九"])
+        assertNull(jx["百六"])
+    }
 }

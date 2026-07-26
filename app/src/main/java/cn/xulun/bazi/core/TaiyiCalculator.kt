@@ -66,7 +66,7 @@ object TaiyiCalculator {
         val menOnTaiyi = computeMenOnTaiyi(zhiShiMen, ju.taiyiPalaceNo)
         val patterns = computePatterns(ju.taiyiPalaceNo, wenChang, shiJi, zhuDa, zhuCan, keDa, keCan, zhiShiMen)
         val suanClass = classifySuan(zhuSuan, keSuan, ju.taiyiPalaceNo)
-        val jiXing = computeJiXing(dt.year, ju.taiyiPalaceNo, ju.inGongOffset, taiSui)
+        val jiXing = computeJiXing(dt.year, ju.suanBase, type, ju.taiyiPalaceNo, ju.inGongOffset, taiSui)
         return TaiyiPlate(
             ju = ju,
             taiSui = taiSui,
@@ -195,42 +195,46 @@ object TaiyiCalculator {
      * - 四神/天乙/地乙/直符（卷五 四神三元五纪立成）：统一 12 位环[1..9,绛,明,玉]，命起 1/6/9/5，step=(积年−1) mod 36 ÷3。
      *   （立成表逐格核定；直符中元列刻本疑讹按推法公式；飞符为淘金歌概念，不列。）
      */
-    private fun computeJiXing(year: Int, taiyiPalaceNo: Int, inGongOffset: Int, taiSui: EarthlyBranch): List<TaiyiJiXing> {
+    private fun computeJiXing(
+        year: Int, suanBase: Long, type: TaiyiCountType,
+        taiyiPalaceNo: Int, inGongOffset: Int, taiSui: EarthlyBranch,
+    ): List<TaiyiJiXing> {
         val out = mutableListOf<TaiyiJiXing>()
-        val ruZhou = floorMod(year - 113, 360)          // 三基入周（0..359）；戌邦 idx=10
-        // 君基：大周360，30年/邦
+        val isDay = type == TaiyiCountType.DAY
+        val unit = if (isDay) "日" else "年"
+        // 三基命起戌邦（卷四；§17「起午」讹）；年计 ruZhou=(year-113)mod360，日计 ruZhou=(suanBase+24)mod360（六日钉死）
+        val ruZhou = if (isDay) floorMod(suanBase + 24, 360) else floorMod(year - 113, 360)
         val junBang = ruZhou / 30
         out += TaiyiJiXing("君基", EarthlyBranch.fromIndex(floorMod(10 + junBang, 12)).chinese, null,
-            "360年/30年一邦", ruZhou % 30 + 1, true, "治国安民·依卷四起戌邦")
-        // 臣基：小周36，3年/邦
+            "360${unit}/30${unit}一邦", ruZhou % 30 + 1, true, "治国安民·依卷四起戌邦")
         val chenXiao = ruZhou % 36
         out += TaiyiJiXing("臣基", EarthlyBranch.fromIndex(floorMod(10 + chenXiao / 3, 12)).chinese, null,
-            "360年/3年一邦", chenXiao % 3 + 1, true, "辅上治下·依卷四起戌邦")
-        // 民基：小周12，1年/邦
+            "360${unit}/3${unit}一邦", chenXiao % 3 + 1, true, "辅上治下·依卷四起戌邦")
         val minXiao = ruZhou % 12
         out += TaiyiJiXing("民基", EarthlyBranch.fromIndex(floorMod(10 + minXiao, 12)).chinese, null,
-            "12年/1年一邦", minXiao + 1, true, "求财·依卷四起戌邦")
-        // 五福：独立锚 year+12607，225年/5宫/45年，序乾→艮→巽→坤→中
-        val wuFuRu = floorMod(year + 12607, 225).let { if (it == 0) 225 else it }
+            "12${unit}/1${unit}一邦", minXiao + 1, true, "求财·依卷四起戌邦")
+        // 五福：年计 (year+12607)mod225；日计 (suanBase+190)mod225（C5=190，12-30/31跨宫钉死）；序乾→艮→巽→坤→中
+        val wuFuRu = (if (isDay) floorMod(suanBase + 190, 225) else floorMod(year + 12607, 225))
+            .let { if (it == 0) 225 else it }
         val wuFuGong = (wuFuRu - 1) / 45
         val wuFuSeq = listOf("乾", "艮", "巽", "坤", "中")
         out += TaiyiJiXing("五福", wuFuSeq[wuFuGong], null,
-            "225年/45年一宫", wuFuRu - wuFuGong * 45, true, "福佑无灾·依卷四独立积年")
-        // 大游：甲寅游锚 year-353，元4320/小周288/36年宫，起七宫，序[7,8,9,1,2,3,4,6]
-        val daYouXiao = floorMod(year - 353, 4320) % 288
+            "225${unit}/45${unit}一宫", wuFuRu - wuFuGong * 45, true, "福佑无灾·依卷四独立积年")
+        // 大游：年计 (year-353)mod4320%288；日计 suanBase mod288；起七宫序[7,8,9,1,2,3,4,6]
+        val daYouXiao = if (isDay) floorMod(suanBase, 288) else floorMod(year - 353, 4320) % 288
         val daYouSeq = listOf(7, 8, 9, 1, 2, 3, 4, 6)
         val daYouPalace = daYouSeq[daYouXiao / 36]
         out += TaiyiJiXing("大游", "${TaiyiPalace.of(daYouPalace).trigram}${daYouPalace}宫", daYouPalace,
-            "288年/36年一宫", daYouXiao % 36 + 1, false, "肃杀·依卷四起七宫")
+            "288${unit}/36${unit}一宫", daYouXiao % 36 + 1, false, "肃杀·依卷四起七宫")
         // 小游：＝太乙宫（卷四「与太乙同法」）
         out += TaiyiJiXing("小游", "${TaiyiPalace.of(taiyiPalaceNo).trigram}${taiyiPalaceNo}宫", taiyiPalaceNo,
-            "24年/3年一宫(同太乙)", inGongOffset + 1, false, "游移不安·同太乙宫")
+            "24${unit}/3${unit}一宫(同太乙)", inGongOffset + 1, false, "游移不安·同太乙宫")
 
         // ── 卷五符神/乙神：四神/天乙/地乙/直符（四神三元五纪立成，KR3g0047_005 逐格核定）──
         // 统一 12 位环 [1..9,绛,明,玉]，命起 四神1/天乙6/地乙9/直符5；step=(积年−1) mod 36 ÷3。
         // 立成表 180 格中 160 格与公式全合；直符·中元列 20 格四库本印作 1..9,1..9,绛,明
         // （与推法正文及其余 11 列块矛盾，疑刻本讹），按推法统一公式（用户裁定 2026-07-26）。
-        val jiNian1 = year + 10153916L                       // 积年−1（立成相位：甲子/乙丑/丙寅三年同宫）
+        val jiNian1 = if (isDay) suanBase else year + 10153916L   // 积年−1（日计用 suanBase；立成相位甲子/乙丑/丙寅三年同宫）
         val step = floorMod(jiNian1, 36).toInt() / 3         // 0..11
         val inFsYear = floorMod(jiNian1, 3).toInt() + 1      // 入宫第N年
         val yuanJi = floorMod(jiNian1, 180).toInt()          // 0..179
@@ -244,7 +248,7 @@ object TaiyiCalculator {
         }
         fun fsGod(name: String, offset: Int, ausp: Boolean, yi: String): TaiyiJiXing {
             val (loc, pno) = fsLoc(offset)
-            return TaiyiJiXing(name, loc, pno, "36年/3年一宫·九宫含中五+三堂12位", inFsYear, ausp,
+            return TaiyiJiXing(name, loc, pno, "36${unit}/3${unit}一宫·九宫含中五+三堂12位", inFsYear, ausp,
                 "$yi·$yuan·${ji}纪·依卷五立成")
         }
         out += fsGod("四神", 0, true, "水神纪纲有道则昌")
@@ -257,6 +261,7 @@ object TaiyiCalculator {
         //   （13年/邦；156 与跨度 456 不整除，原文如此，存疑——用户裁定按原文+标注）。
         // 百六：4320元(15周×288)，元=u/4320−1（卷七元1起 J8641）、元内=(u/288)%15+1、入年=u%288+1；
         //   邦=寅+(u%288)/24（24年/邦）。锚：618 第十阳九/162 第九/354 元2一百六/642 元2二百六 ✓。
+        if (!isDay) {                                     // 卷七阳九百六为「年」级灾厄，日计不排
         val u = year + 12606L                                  // 积年−1
         fun chongTaiSui(bangIdx: Int): Boolean = floorMod(bangIdx - taiSui.ordinal, 12) == 6
         fun cn(n: Long): String = when {                       // 中文数字（元/序号展示）
@@ -281,6 +286,7 @@ object TaiyiCalculator {
             "4320元/288年一会", b6in, false,
             "第${cn(b6yuan)}元第${cn(b6ci)}百六·篡弑之祸·起寅邦24年一移(卷七)" +
                 (if (b6in == 1) "·值会" else "") + (if (chongTaiSui(b6bangIdx)) "·冲太岁" else ""))
+        }
         return out
     }
 
