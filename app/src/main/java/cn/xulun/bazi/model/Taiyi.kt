@@ -187,3 +187,22 @@ data class TaiyiAnalysisItem(
     val text: String,
     val tone: TaiyiTone = TaiyiTone.NEUTRAL,
 )
+
+/** 卷八「九宫分野(并序)」十二分野：九宫(含中五)配九州 + 绛宫/明堂/玉堂三堂各配一州。 */
+object TaiyiFenYe {
+    /** 宫号 → 州：一宫冀州 二宫荆州 三宫青州 四宫徐州 五宫豫州 六宫雍州 七宫梁州 八宫兖州 九宫扬州。 */
+    val palaceZhou: Map<Int, String> = mapOf(
+        1 to "冀", 2 to "荆", 3 to "青", 4 to "徐", 5 to "豫",
+        6 to "雍", 7 to "梁", 8 to "兖", 9 to "扬",
+    )
+    /** 三堂 → 州：绛宫交州 明堂益州 玉堂幽州。 */
+    val tangZhou: Map<String, String> = mapOf("绛宫" to "交", "明堂" to "益", "玉堂" to "幽")
+    /** 分野图第四行（三堂）顺序。 */
+    val tangOrder: List<String> = listOf("绛宫", "明堂", "玉堂")
+    private val gods = setOf("四神", "天乙", "地乙", "直符")
+
+    /** 四神归格：key=宫号("1".."9")或堂名；value 按 jiXing 原序（多神可同格）。基星/五福/游神不入图。 */
+    fun markers(plate: TaiyiPlate): Map<String, List<TaiyiJiXing>> =
+        plate.jiXing.filter { it.name in gods }
+            .groupBy { it.palaceNo?.toString() ?: it.location }
+}

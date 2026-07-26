@@ -1,11 +1,15 @@
 package cn.xulun.bazi
 
+import cn.xulun.bazi.core.TaiyiCalculator
 import cn.xulun.bazi.model.SixteenGod
+import cn.xulun.bazi.model.TaiyiCountType
+import cn.xulun.bazi.model.TaiyiFenYe
 import cn.xulun.bazi.model.TaiyiPalace
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDateTime
 
 class TaiyiModelTest {
     @Test
@@ -56,5 +60,30 @@ class TaiyiModelTest {
         assertEquals("大义", SixteenGod.at(15).title)
         assertTrue(SixteenGod.at(0).isZheng)
         assertTrue(!SixteenGod.at(15).isZheng)
+    }
+
+    @Test
+    fun `卷八十二分野 宫州与三堂州`() {
+        val expect = mapOf(
+            1 to "冀", 2 to "荆", 3 to "青", 4 to "徐", 5 to "豫",
+            6 to "雍", 7 to "梁", 8 to "兖", 9 to "扬",
+        )
+        expect.forEach { (no, zhou) -> assertEquals(zhou, TaiyiFenYe.palaceZhou[no]) }
+        assertEquals(9, TaiyiFenYe.palaceZhou.size)
+        assertEquals("交", TaiyiFenYe.tangZhou["绛宫"])
+        assertEquals("益", TaiyiFenYe.tangZhou["明堂"])
+        assertEquals("幽", TaiyiFenYe.tangZhou["玉堂"])
+        assertEquals(listOf("绛宫", "明堂", "玉堂"), TaiyiFenYe.tangOrder)
+    }
+
+    @Test
+    fun `markers 2024 四神6宫 天乙明堂 地乙2宫 直符绛宫 仅四神入图`() {
+        val p = TaiyiCalculator.build(LocalDateTime.of(2024, 7, 1, 12, 0), TaiyiCountType.YEAR)
+        val m = TaiyiFenYe.markers(p)
+        assertEquals(listOf("四神"), m["6"]!!.map { it.name })
+        assertEquals(listOf("天乙"), m["明堂"]!!.map { it.name })
+        assertEquals(listOf("地乙"), m["2"]!!.map { it.name })
+        assertEquals(listOf("直符"), m["绛宫"]!!.map { it.name })
+        assertEquals(4, m.values.sumOf { it.size }) // 基星/五福/游神不入图
     }
 }
