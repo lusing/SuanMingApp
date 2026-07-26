@@ -190,8 +190,8 @@ object TaiyiCalculator {
      * - 三基「命起戌邦」（§17「起午」为讹传）；甲寅上元积年系（近锚 year-113，与卷四远锚 285011 在 mod360/12 等价）。
      * - 五福独立积年锚 year+12607（卷四 Image14「开元十二年积一万三千三百三十一岁」＝12607+724；724AD→艮第11年 实例）。
      * - 大游甲寅游锚 year-353，起七宫；小游＝太乙宫（卷四「与太乙同法」）。
-     * - 四神/天乙/直符（卷四 Image36/39/42）：演纪积年，宫数＝入纪年÷3，命起 1/6/5 宫顺尽九宫(含中五)＋绛宫/明堂/玉堂三堂＝12位。
-     *   （卷四原文模型，非 §17/淘金歌「十二支特殊序」；地乙/飞符卷四无独立推法，不列。）
+     * - 四神/天乙/地乙/直符（卷五 四神三元五纪立成）：统一 12 位环[1..9,绛,明,玉]，命起 1/6/9/5，step=(积年−1) mod 36 ÷3。
+     *   （立成表逐格核定；直符中元列刻本疑讹按推法公式；飞符为淘金歌概念，不列。）
      */
     private fun computeJiXing(year: Int, taiyiPalaceNo: Int, inGongOffset: Int): List<TaiyiJiXing> {
         val out = mutableListOf<TaiyiJiXing>()
@@ -224,29 +224,31 @@ object TaiyiCalculator {
         out += TaiyiJiXing("小游", "${TaiyiPalace.of(taiyiPalaceNo).trigram}${taiyiPalaceNo}宫", taiyiPalaceNo,
             "24年/3年一宫(同太乙)", inGongOffset + 1, false, "游移不安·同太乙宫")
 
-        // ── 卷四符神/乙神（四神/天乙/直符；地乙/飞符卷四无独立推法，故不列）──
-        // 与小游同演纪积年系（mod180 与卷四 Image32「2637+year=3361@724」等价）。
-        // 入纪年＝积年mod180 mod36；宫数＝入纪年÷3（0..11）。
-        // 命起 X 宫顺行尽九宫（含中五，1..9 自然序环绕）＋绛宫/明堂/玉堂三堂＝12位。
-        // 卷四原文模型（Image36/39/42），非 §17/淘金歌「十二支特殊序」通行版。
-        val ruJiNian = floorMod(floorMod(year + 10153917, 180), 36)
-        val gongShu = ruJiNian / 3                              // 0..11
-        val inFsYear = ruJiNian % 3 + 1                          // 入宫第N年
+        // ── 卷五符神/乙神：四神/天乙/地乙/直符（四神三元五纪立成，KR3g0047_005 逐格核定）──
+        // 统一 12 位环 [1..9,绛,明,玉]，命起 四神1/天乙6/地乙9/直符5；step=(积年−1) mod 36 ÷3。
+        // 立成表 180 格中 160 格与公式全合；直符·中元列 20 格四库本印作 1..9,1..9,绛,明
+        // （与推法正文及其余 11 列块矛盾，疑刻本讹），按推法统一公式（用户裁定 2026-07-26）。
+        val jiNian1 = year + 10153916L                       // 积年−1（立成相位：甲子/乙丑/丙寅三年同宫）
+        val step = floorMod(jiNian1, 36).toInt() / 3         // 0..11
+        val inFsYear = floorMod(jiNian1, 3).toInt() + 1      // 入宫第N年
+        val yuanJi = floorMod(jiNian1, 180).toInt()          // 0..179
+        val yuan = listOf("上元", "中元", "下元")[yuanJi / 60]
+        val ji = listOf("甲子", "庚子", "丙子", "壬子", "戊子")[yuanJi / 36]
         val sanTang = listOf("绛宫", "明堂", "玉堂")
-        // 命起 start 宫顺尽九宫（含中五）再接三堂；返回 1..9=宫号、10/11/12=绛/明/玉
-        fun fsSeq(start: Int): List<Int> =
-            (0 until 9).map { floorMod(start - 1 + it, 9) + 1 } + listOf(10, 11, 12)
-        fun fsLoc(pos: Int): Pair<String, Int?> = if (pos <= 9)
-            "${TaiyiPalace.of(pos).trigram}${pos}宫" to pos else sanTang[pos - 10] to null
-        val (loc1, pno1) = fsLoc(fsSeq(1)[gongShu])             // 四神 起一宫（水神·半吉）
-        out += TaiyiJiXing("四神", loc1, pno1, "36年/3年一宫·九宫含中五+三堂", inFsYear, true,
-            "纪纲有道则昌无道则殃·水神多变莫测·依卷四起一宫(非淘金歌十二支序)")
-        val (loc2, pno2) = fsLoc(fsSeq(6)[gongShu])             // 天乙 起六宫（金神·凶）
-        out += TaiyiJiXing("天乙", loc2, pno2, "36年/3年一宫·九宫含中五+三堂", inFsYear, false,
-            "金神主兵革·定胜负·依卷四起六宫")
-        val (loc3, pno3) = fsLoc(fsSeq(5)[gongShu])             // 直符 起五宫（火神·凶）
-        out += TaiyiJiXing("直符", loc3, pno3, "36年/3年一宫·九宫含中五+三堂", inFsYear, false,
-            "火神天帝使者·巡察万民·依卷四起五宫")
+        fun fsLoc(offset: Int): Pair<String, Int?> {
+            val pos = (offset + step) % 12                   // 0..8=宫1..9，9..11=绛/明/玉
+            return if (pos < 9) "${TaiyiPalace.of(pos + 1).trigram}${pos + 1}宫" to (pos + 1)
+            else sanTang[pos - 9] to null
+        }
+        fun fsGod(name: String, offset: Int, ausp: Boolean, yi: String): TaiyiJiXing {
+            val (loc, pno) = fsLoc(offset)
+            return TaiyiJiXing(name, loc, pno, "36年/3年一宫·九宫含中五+三堂12位", inFsYear, ausp,
+                "$yi·$yuan·${ji}纪·依卷五立成")
+        }
+        out += fsGod("四神", 0, true, "水神纪纲有道则昌")
+        out += fsGod("天乙", 5, false, "金神主兵革")
+        out += fsGod("地乙", 8, false, "孤立无援(推地乙正文四库本佚,占义从通行)")
+        out += fsGod("直符", 4, false, "火神值日巡察")
         return out
     }
 

@@ -231,50 +231,82 @@ class TaiyiCalculatorTest {
         assertFalse(names.any { it in setOf("四郭固", "四郭杜", "提挟", "执提") })
     }
 
-    // ── Task 8: 卷四符神/乙神（四神/天乙/直符；卷四 9宫含中五+绛宫明堂玉堂三堂 12位模型，非 §17 淘金歌十二支序）──
+    // ── 卷五符神/乙神：四神/天乙/地乙/直符（四神三元五纪立成：统一 12 位环 [1..9,绛,明,玉]，命起 1/6/9/5）──
     @Test
-    fun `2024 卷四符神 四神兑6宫 天乙离2宫 直符乾1宫`() {
+    fun `2024 卷五符神 四神6宫 天乙明堂 地乙2宫 直符绛宫 下元戊子纪`() {
+        // 甲辰下元行(立成表)：六/明/二/絳；(积年−1) mod 3 = 1 → 入宫第2年
         val p = TaiyiCalculator.build(LocalDateTime.of(2024, 7, 1, 12, 0), TaiyiCountType.YEAR)
         val m = p.jiXing.associateBy { it.name }
         assertEquals("兑6宫", m["四神"]!!.location)
         assertEquals(6, m["四神"]!!.palaceNo)
-        assertEquals("离2宫", m["天乙"]!!.location)
-        assertEquals(2, m["天乙"]!!.palaceNo)
-        assertEquals("乾1宫", m["直符"]!!.location)
-        assertEquals(1, m["直符"]!!.palaceNo)
+        assertEquals("明堂", m["天乙"]!!.location)
+        assertNull(m["天乙"]!!.palaceNo)
+        assertEquals("离2宫", m["地乙"]!!.location)
+        assertEquals(2, m["地乙"]!!.palaceNo)
+        assertEquals("绛宫", m["直符"]!!.location)
+        assertNull(m["直符"]!!.palaceNo)
+        assertTrue(m["四神"]!!.note.contains("下元·戊子纪"))
+        assertEquals(2, m["四神"]!!.inYear)
     }
 
     @Test
-    fun `724AD 卷四符神 四神中5宫 天乙乾1宫 直符巽9宫 同入纪年`() {
+    fun `724AD 卷五符神 四神5宫 天乙绛宫 地乙1宫 直符9宫 入宫第1年`() {
+        // 甲子下元行(立成表)：五/絳/一/九；甲子为三年组首年 → 入宫第1年
         val p = TaiyiCalculator.build(LocalDateTime.of(724, 7, 1, 12, 0), TaiyiCountType.YEAR)
         val m = p.jiXing.associateBy { it.name }
         assertEquals("中5宫", m["四神"]!!.location)
         assertEquals(5, m["四神"]!!.palaceNo)
-        assertEquals("乾1宫", m["天乙"]!!.location)
+        assertEquals("绛宫", m["天乙"]!!.location)
+        assertEquals("乾1宫", m["地乙"]!!.location)
         assertEquals("巽9宫", m["直符"]!!.location)
-        // 三神同用入纪年→同 inYear（724 入纪年13→第2年）
-        val years = listOf("四神", "天乙", "直符").map { m[it]!!.inYear }.toSet()
-        assertEquals(setOf(2), years)
+        // 四神同用入纪年→同 inYear
+        val years = listOf("四神", "天乙", "地乙", "直符").map { m[it]!!.inYear }.toSet()
+        assertEquals(setOf(1), years)
     }
 
     @Test
-    fun `卷四十神齐备 地乙飞符不列`() {
+    fun `卷五十神齐备 飞符不列`() {
         val p = TaiyiCalculator.build(LocalDateTime.of(2024, 7, 1, 12, 0), TaiyiCountType.YEAR)
         val names = p.jiXing.map { it.name }
-        // P2 六星（君基/臣基/民基/五福/大游/小游）+ P3 三神（四神/天乙/直符）＝九神；地乙/飞符卷四无，不列
-        listOf("君基", "臣基", "民基", "五福", "大游", "小游", "四神", "天乙", "直符").forEach {
+        // P2 六星（君基/臣基/民基/五福/大游/小游）+ 卷五四神（四神/天乙/地乙/直符）＝十神；飞符为淘金歌概念，不列
+        listOf("君基", "臣基", "民基", "五福", "大游", "小游", "四神", "天乙", "地乙", "直符").forEach {
             assertTrue("$it 缺失: $names", names.contains(it))
         }
-        assertFalse("地乙卷四无独立推法不应出现", names.contains("地乙"))
         assertFalse("飞符为淘金歌概念不应出现", names.contains("飞符"))
     }
 
     @Test
-    fun `1998 四神落三堂绛宫 卷四未给坐标故palaceNo为空`() {
-        // 1998 入纪年27→宫数9→绛宫（三堂首位；九宫1..9之外的三堂，卷四未给空间坐标）
+    fun `1998 戊寅下元 四神9宫 修正积年相位`() {
+        // 戊寅下元行(立成表)：九/二/五/一；step=(积年−1) mod 36 ÷3（P3 误用积年致绛宫，立成表证为9宫）
         val p = TaiyiCalculator.build(LocalDateTime.of(1998, 7, 1, 12, 0), TaiyiCountType.YEAR)
         val m = p.jiXing.associateBy { it.name }
-        assertEquals("绛宫", m["四神"]!!.location)
-        assertNull(m["四神"]!!.palaceNo)
+        assertEquals("巽9宫", m["四神"]!!.location)
+        assertEquals(9, m["四神"]!!.palaceNo)
+        assertEquals("离2宫", m["天乙"]!!.location)
+        assertEquals("中5宫", m["地乙"]!!.location)
+        assertEquals("乾1宫", m["直符"]!!.location)
+    }
+
+    @Test
+    fun `2046 丙寅上元 四神1宫入宫第3年 相位锚`() {
+        // 立成相位：甲子/乙丑/丙寅三年同宫（丙寅上元行 四神=一），丙寅为组内第3年
+        val p = TaiyiCalculator.build(LocalDateTime.of(2046, 7, 1, 12, 0), TaiyiCountType.YEAR)
+        val m = p.jiXing.associateBy { it.name }
+        assertEquals("乾1宫", m["四神"]!!.location)
+        assertEquals(3, m["四神"]!!.inYear)
+        assertTrue(m["四神"]!!.note.contains("上元·甲子纪"))
+    }
+
+    @Test
+    fun `1960 庚子中元 直符1宫 立成表中元列刻本疑讹按推法公式`() {
+        // 统一公式：step=8 → 直符 cycle[(4+8)%12]=1宫；四库本立成表直符中元列此格讹作「四」
+        // 庚子中元行(立成表)四神/天乙/地乙：九/二/五 ✓
+        val p = TaiyiCalculator.build(LocalDateTime.of(1960, 7, 1, 12, 0), TaiyiCountType.YEAR)
+        val m = p.jiXing.associateBy { it.name }
+        assertEquals("乾1宫", m["直符"]!!.location)
+        assertEquals("巽9宫", m["四神"]!!.location)
+        assertEquals("离2宫", m["天乙"]!!.location)
+        assertEquals("中5宫", m["地乙"]!!.location)
+        assertTrue(m["直符"]!!.note.contains("中元·丙子纪"))
     }
 }
