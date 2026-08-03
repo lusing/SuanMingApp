@@ -29,6 +29,7 @@ import cn.xulun.bazi.core.KongWangCalculator
 import cn.xulun.bazi.core.MarriageCalculator
 import cn.xulun.bazi.core.ShenShaCalculator
 import cn.xulun.bazi.core.StudyCalculator
+import cn.xulun.bazi.core.TiaoHouCalculator
 import cn.xulun.bazi.core.WealthCalculator
 import cn.xulun.bazi.core.YongShenCalculator
 import cn.xulun.bazi.core.YunRelationCalculator
@@ -43,6 +44,7 @@ import cn.xulun.bazi.ui.components.MarriageSection
 import cn.xulun.bazi.ui.components.PillarCard
 import cn.xulun.bazi.ui.components.ShenShaSection
 import cn.xulun.bazi.ui.components.StudySection
+import cn.xulun.bazi.ui.components.TiaoHouSection
 import cn.xulun.bazi.ui.components.WealthSection
 import cn.xulun.bazi.ui.components.YongShenSection
 import cn.xulun.bazi.ui.components.YunRelationSection
@@ -57,6 +59,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
     val dayMaster = result.dayPillar.stem
     val geju = GeJuCalculator.determine(result)
     val yongShen = YongShenCalculator.analyze(result)
+    val tiaoHou = TiaoHouCalculator.analyze(result)
     val heHua = HeHuaCalculator.analyze(result)
     val diZhiRelation = DiZhiRelationCalculator.analyze(result)
     val shenSha = ShenShaCalculator.analyze(result)
@@ -119,6 +122,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         }
         ShenShaSection(result = shenSha)
         YongShenSection(result = yongShen)
+        TiaoHouSection(result = tiaoHou)
         if (daYun != null) {
             DaYunSection(
                 info = daYun,
