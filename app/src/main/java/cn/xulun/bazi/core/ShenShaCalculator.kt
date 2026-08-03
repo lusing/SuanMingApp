@@ -1,0 +1,175 @@
+package cn.xulun.bazi.core
+
+import cn.xulun.bazi.model.BaziResult
+import cn.xulun.bazi.model.EarthlyBranch
+import cn.xulun.bazi.model.HeavenlyStem
+import cn.xulun.bazi.model.PillarBranchLabels
+import cn.xulun.bazi.model.PillarStemLabels
+import cn.xulun.bazi.model.ShenShaItem
+import cn.xulun.bazi.model.ShenShaResult
+
+/**
+ * 通用神煞计算器（13 种）。逐字移植自 xuanzong `utils/bazi/shensha.js`。
+ *
+ * - 日干起：天乙贵人、文昌、学堂、羊刃、禄神
+ * - 日支起（三合局分组）：桃花、驿马、华盖、将星、亡神、劫煞
+ * - 月支起：月德贵人（干）、天德贵人（干或支）
+ *
+ * 仅返回目标干/支实际落在原局某柱的神煞项，命中柱位用四柱干/支标签。
+ */
+object ShenShaCalculator {
+
+    /** 三合局分组：0=申子辰 1=亥卯未 2=寅午戌 3=巳酉丑 */
+    fun groupOf(b: EarthlyBranch): Int = when (b) {
+        EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN -> 0
+        EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI -> 1
+        EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU -> 2
+        EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU -> 3
+    }
+
+    // ── 日干 → 天乙贵人（双支）：甲戊庚→丑未 乙己→子申 丙丁→亥酉 壬癸→卯巳 辛→寅午 ──
+    private val tianYi: Map<HeavenlyStem, List<EarthlyBranch>> = mapOf(
+        HeavenlyStem.JIA to listOf(EarthlyBranch.CHOU, EarthlyBranch.WEI),
+        HeavenlyStem.WU to listOf(EarthlyBranch.CHOU, EarthlyBranch.WEI),
+        HeavenlyStem.GENG to listOf(EarthlyBranch.CHOU, EarthlyBranch.WEI),
+        HeavenlyStem.YI to listOf(EarthlyBranch.ZI, EarthlyBranch.SHEN),
+        HeavenlyStem.JI to listOf(EarthlyBranch.ZI, EarthlyBranch.SHEN),
+        HeavenlyStem.BING to listOf(EarthlyBranch.HAI, EarthlyBranch.YOU),
+        HeavenlyStem.DING to listOf(EarthlyBranch.HAI, EarthlyBranch.YOU),
+        HeavenlyStem.REN to listOf(EarthlyBranch.MAO, EarthlyBranch.SI),
+        HeavenlyStem.GUI to listOf(EarthlyBranch.MAO, EarthlyBranch.SI),
+        HeavenlyStem.XIN to listOf(EarthlyBranch.YIN, EarthlyBranch.WU),
+    )
+
+    // ── 日干 → 单支 ──
+    // 文昌：甲巳 乙午 丙戊申 丁己酉 庚亥 辛子 壬寅 癸卯
+    private val wenChang: Map<HeavenlyStem, EarthlyBranch> = mapOf(
+        HeavenlyStem.JIA to EarthlyBranch.SI,
+        HeavenlyStem.YI to EarthlyBranch.WU,
+        HeavenlyStem.BING to EarthlyBranch.SHEN,
+        HeavenlyStem.WU to EarthlyBranch.SHEN,
+        HeavenlyStem.DING to EarthlyBranch.YOU,
+        HeavenlyStem.JI to EarthlyBranch.YOU,
+        HeavenlyStem.GENG to EarthlyBranch.HAI,
+        HeavenlyStem.XIN to EarthlyBranch.ZI,
+        HeavenlyStem.REN to EarthlyBranch.YIN,
+        HeavenlyStem.GUI to EarthlyBranch.MAO,
+    )
+    // 学堂：甲亥 乙午 丙戊寅 丁己酉 庚巳 辛子 壬申 癸卯
+    private val xueTang: Map<HeavenlyStem, EarthlyBranch> = mapOf(
+        HeavenlyStem.JIA to EarthlyBranch.HAI,
+        HeavenlyStem.YI to EarthlyBranch.WU,
+        HeavenlyStem.BING to EarthlyBranch.YIN,
+        HeavenlyStem.WU to EarthlyBranch.YIN,
+        HeavenlyStem.DING to EarthlyBranch.YOU,
+        HeavenlyStem.JI to EarthlyBranch.YOU,
+        HeavenlyStem.GENG to EarthlyBranch.SI,
+        HeavenlyStem.XIN to EarthlyBranch.ZI,
+        HeavenlyStem.REN to EarthlyBranch.SHEN,
+        HeavenlyStem.GUI to EarthlyBranch.MAO,
+    )
+    // 羊刃（帝旺位）：甲卯 乙寅 丙午 丁巳 戊午 己巳 庚酉 辛申 壬子 癸亥
+    private val yangRen: Map<HeavenlyStem, EarthlyBranch> = mapOf(
+        HeavenlyStem.JIA to EarthlyBranch.MAO,
+        HeavenlyStem.YI to EarthlyBranch.YIN,
+        HeavenlyStem.BING to EarthlyBranch.WU,
+        HeavenlyStem.DING to EarthlyBranch.SI,
+        HeavenlyStem.WU to EarthlyBranch.WU,
+        HeavenlyStem.JI to EarthlyBranch.SI,
+        HeavenlyStem.GENG to EarthlyBranch.YOU,
+        HeavenlyStem.XIN to EarthlyBranch.SHEN,
+        HeavenlyStem.REN to EarthlyBranch.ZI,
+        HeavenlyStem.GUI to EarthlyBranch.HAI,
+    )
+    // 禄神：甲寅 乙卯 丙戊巳 丁己午 庚申 辛酉 壬亥 癸子
+    private val luShen: Map<HeavenlyStem, EarthlyBranch> = mapOf(
+        HeavenlyStem.JIA to EarthlyBranch.YIN,
+        HeavenlyStem.YI to EarthlyBranch.MAO,
+        HeavenlyStem.BING to EarthlyBranch.SI,
+        HeavenlyStem.WU to EarthlyBranch.SI,
+        HeavenlyStem.DING to EarthlyBranch.WU,
+        HeavenlyStem.JI to EarthlyBranch.WU,
+        HeavenlyStem.GENG to EarthlyBranch.SHEN,
+        HeavenlyStem.XIN to EarthlyBranch.YOU,
+        HeavenlyStem.REN to EarthlyBranch.HAI,
+        HeavenlyStem.GUI to EarthlyBranch.ZI,
+    )
+
+    // ── 日支三合局分组(0..3) → 地支 ──
+    private val taoHua = arrayOf(EarthlyBranch.YOU, EarthlyBranch.ZI, EarthlyBranch.MAO, EarthlyBranch.WU)      // [9,0,3,6]
+    private val yiMa = arrayOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN, EarthlyBranch.HAI)       // [2,5,8,11]
+    private val huaGai = arrayOf(EarthlyBranch.CHEN, EarthlyBranch.WEI, EarthlyBranch.XU, EarthlyBranch.CHOU)    // [4,7,10,1]
+    private val jiangXing = arrayOf(EarthlyBranch.ZI, EarthlyBranch.MAO, EarthlyBranch.WU, EarthlyBranch.YOU)    // [0,3,6,9]
+    private val wangShen = arrayOf(EarthlyBranch.HAI, EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN)   // [11,2,5,8]
+    private val jieSha = arrayOf(EarthlyBranch.SI, EarthlyBranch.SHEN, EarthlyBranch.HAI, EarthlyBranch.YIN)     // [5,8,11,2]
+
+    // ── 月支三合局分组 → 月德贵人天干：申子辰→壬 亥卯未→甲 寅午戌→丙 巳酉丑→庚 ──
+    private val yueDe = arrayOf(HeavenlyStem.REN, HeavenlyStem.JIA, HeavenlyStem.BING, HeavenlyStem.GENG)       // [8,0,2,6]
+
+    // ── 月支 → 天德贵人（干或支）：寅丁 卯申 辰壬 巳辛 午亥 未甲 申癸 酉寅 戌丙 亥乙 子巳 丑庚 ──
+    private data class TianDe(val isStem: Boolean, val stem: HeavenlyStem? = null, val branch: EarthlyBranch? = null)
+    private val tianDe: Map<EarthlyBranch, TianDe> = mapOf(
+        EarthlyBranch.ZI to TianDe(false, branch = EarthlyBranch.SI),       // 子→巳(支)
+        EarthlyBranch.CHOU to TianDe(true, stem = HeavenlyStem.GENG),       // 丑→庚(干)
+        EarthlyBranch.YIN to TianDe(true, stem = HeavenlyStem.DING),        // 寅→丁(干)
+        EarthlyBranch.MAO to TianDe(false, branch = EarthlyBranch.SHEN),    // 卯→申(支)
+        EarthlyBranch.CHEN to TianDe(true, stem = HeavenlyStem.REN),        // 辰→壬(干)
+        EarthlyBranch.SI to TianDe(true, stem = HeavenlyStem.XIN),          // 巳→辛(干)
+        EarthlyBranch.WU to TianDe(false, branch = EarthlyBranch.HAI),      // 午→亥(支)
+        EarthlyBranch.WEI to TianDe(true, stem = HeavenlyStem.JIA),         // 未→甲(干)
+        EarthlyBranch.SHEN to TianDe(true, stem = HeavenlyStem.GUI),        // 申→癸(干)
+        EarthlyBranch.YOU to TianDe(false, branch = EarthlyBranch.YIN),     // 酉→寅(支)
+        EarthlyBranch.XU to TianDe(true, stem = HeavenlyStem.BING),         // 戌→丙(干)
+        EarthlyBranch.HAI to TianDe(true, stem = HeavenlyStem.YI),          // 亥→乙(干)
+    )
+
+    /** 计算原局神煞，顺序固定（与 xuanzong calcShenSha 一致）。 */
+    fun analyze(bazi: BaziResult): ShenShaResult {
+        val dayStem = bazi.dayPillar.stem
+        val dayBranch = bazi.dayPillar.branch
+        val monthBranch = bazi.monthPillar.branch
+        val g = groupOf(dayBranch)
+        val mg = groupOf(monthBranch)
+        val out = mutableListOf<ShenShaItem>()
+
+        // 日干起
+        scanBranchAny(bazi, "天乙贵人", tianYi.getValue(dayStem), out)
+        scanBranch(bazi, "文昌", wenChang.getValue(dayStem), out)
+        scanBranch(bazi, "学堂", xueTang.getValue(dayStem), out)
+        scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)
+        scanBranch(bazi, "禄神", luShen.getValue(dayStem), out)
+        // 日支起
+        scanBranch(bazi, "桃花", taoHua[g], out)
+        scanBranch(bazi, "驿马", yiMa[g], out)
+        scanBranch(bazi, "华盖", huaGai[g], out)
+        scanBranch(bazi, "将星", jiangXing[g], out)
+        scanBranch(bazi, "亡神", wangShen[g], out)
+        scanBranch(bazi, "劫煞", jieSha[g], out)
+        // 月支起
+        scanStem(bazi, "月德贵人", yueDe[mg], out)
+        tianDe[monthBranch]?.let { td ->
+            if (td.isStem) scanStem(bazi, "天德贵人", td.stem!!, out)
+            else scanBranch(bazi, "天德贵人", td.branch!!, out)
+        }
+        return ShenShaResult(out)
+    }
+
+    /** 命中任一目标地支的柱都产出（天乙贵人可能双支命中多柱）。 */
+    private fun scanBranchAny(bazi: BaziResult, name: String, targets: List<EarthlyBranch>, out: MutableList<ShenShaItem>) {
+        bazi.pillars.forEachIndexed { i, p ->
+            if (p.branch in targets) out.add(ShenShaItem(name, PillarBranchLabels[i], branch = p.branch))
+        }
+    }
+
+    private fun scanBranch(bazi: BaziResult, name: String, target: EarthlyBranch, out: MutableList<ShenShaItem>) {
+        bazi.pillars.forEachIndexed { i, p ->
+            if (p.branch == target) out.add(ShenShaItem(name, PillarBranchLabels[i], branch = target))
+        }
+    }
+
+    private fun scanStem(bazi: BaziResult, name: String, target: HeavenlyStem, out: MutableList<ShenShaItem>) {
+        bazi.pillars.forEachIndexed { i, p ->
+            if (p.stem == target) out.add(ShenShaItem(name, PillarStemLabels[i], stem = target))
+        }
+    }
+}
