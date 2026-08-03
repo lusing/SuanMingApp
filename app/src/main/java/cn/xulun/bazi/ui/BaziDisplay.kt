@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import cn.xulun.bazi.core.DiZhiRelationCalculator
 import cn.xulun.bazi.core.GeJuCalculator
 import cn.xulun.bazi.core.HeHuaCalculator
+import cn.xulun.bazi.core.KongWangCalculator
 import cn.xulun.bazi.core.MarriageCalculator
 import cn.xulun.bazi.core.ShenShaCalculator
 import cn.xulun.bazi.core.StudyCalculator
@@ -59,6 +60,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
     val heHua = HeHuaCalculator.analyze(result)
     val diZhiRelation = DiZhiRelationCalculator.analyze(result)
     val shenSha = ShenShaCalculator.analyze(result)
+    val kongWang = KongWangCalculator.analyze(result)
     val wealth = WealthCalculator.analyze(result, daYun)
     // 选定的大运/流年；随原局切换自动清空
     var selection by remember(result) { mutableStateOf<YunSelection?>(null) }
@@ -96,6 +98,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
                             pillar = pillar,
                             dayMaster = dayMaster,
                             isDayPillar = i == 2,
+                            kong = kongWang.isKong(i),
                             modifier = Modifier.weight(1f),
                         )
                     }

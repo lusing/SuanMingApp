@@ -31,6 +31,7 @@ fun PillarCard(
     pillar: Pillar,
     dayMaster: HeavenlyStem,
     isDayPillar: Boolean,
+    kong: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val stemGod = if (isDayPillar) "日主" else tenGodOfStem(dayMaster, pillar.stem).chinese
@@ -59,13 +60,24 @@ fun PillarCard(
             color = stemColor,
             modifier = Modifier.padding(top = 4.dp),
         )
-        // 地支
-        CharBox(
-            char = pillar.branch.chinese,
-            color = stemColor,
-            fillAlpha = 0.16f,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+        // 地支（落空亡则叠“空”角标）
+        Box {
+            CharBox(
+                char = pillar.branch.chinese,
+                color = stemColor,
+                fillAlpha = 0.16f,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            if (kong) {
+                Text(
+                    text = "空",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SeedRed,
+                    modifier = Modifier.align(Alignment.TopEnd),
+                )
+            }
+        }
         // 藏干及其十神
         Row(
             modifier = Modifier.padding(top = 4.dp),
