@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import cn.xulun.bazi.core.DiZhiRelationCalculator
 import cn.xulun.bazi.core.GeJuCalculator
 import cn.xulun.bazi.core.HeHuaCalculator
+import cn.xulun.bazi.core.JieChongCalculator
 import cn.xulun.bazi.core.KongWangCalculator
 import cn.xulun.bazi.core.MarriageCalculator
 import cn.xulun.bazi.core.ShenShaCalculator
@@ -40,6 +41,7 @@ import cn.xulun.bazi.ui.components.DaYunCard
 import cn.xulun.bazi.ui.components.DiZhiRelationSection
 import cn.xulun.bazi.ui.components.GeJuBanner
 import cn.xulun.bazi.ui.components.HeHuaSection
+import cn.xulun.bazi.ui.components.JieChongSection
 import cn.xulun.bazi.ui.components.MarriageSection
 import cn.xulun.bazi.ui.components.PillarCard
 import cn.xulun.bazi.ui.components.ShenShaSection
@@ -62,6 +64,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
     val tiaoHou = TiaoHouCalculator.analyze(result)
     val heHua = HeHuaCalculator.analyze(result)
     val diZhiRelation = DiZhiRelationCalculator.analyze(result)
+    val jieChong = JieChongCalculator.analyze(result)
     val shenSha = ShenShaCalculator.analyze(result)
     val kongWang = KongWangCalculator.analyze(result)
     val wealth = WealthCalculator.analyze(result, daYun)
@@ -135,6 +138,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         }
         HeHuaSection(result = heHua)
         DiZhiRelationSection(result = diZhiRelation)
+        JieChongSection(result = jieChong)
         WealthSection(result = wealth)
         MarriageSection(result = MarriageCalculator.analyze(result, gender))
         StudySection(result = StudyCalculator.analyze(result, daYun))
