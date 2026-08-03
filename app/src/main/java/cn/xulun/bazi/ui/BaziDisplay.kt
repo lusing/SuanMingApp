@@ -35,6 +35,7 @@ import cn.xulun.bazi.core.WealthCalculator
 import cn.xulun.bazi.core.QuYunCalculator
 import cn.xulun.bazi.core.YongShenCalculator
 import cn.xulun.bazi.core.YunRelationCalculator
+import cn.xulun.bazi.core.WuXingFlowCalculator
 import cn.xulun.bazi.model.BaziResult
 import cn.xulun.bazi.model.DaYunInfo
 import cn.xulun.bazi.model.Gender
@@ -50,6 +51,7 @@ import cn.xulun.bazi.ui.components.ShenShaSection
 import cn.xulun.bazi.ui.components.StudySection
 import cn.xulun.bazi.ui.components.TiaoHouSection
 import cn.xulun.bazi.ui.components.WealthSection
+import cn.xulun.bazi.ui.components.WuXingFlowSection
 import cn.xulun.bazi.ui.components.YongShenSection
 import cn.xulun.bazi.ui.components.YunRelationSection
 import cn.xulun.bazi.ui.theme.CreamSurface
@@ -162,6 +164,12 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
                 selection = sel,
             )
         }
+        val flowPillars: List<cn.xulun.bazi.model.Pillar> = when (val s = selection) {
+            is YunSelection.DaYun -> listOf(s.pillar)
+            is YunSelection.LiuNian -> listOf(s.yun.pillar, s.pillar)
+            null -> emptyList()
+        }
+        WuXingFlowSection(result = WuXingFlowCalculator.analyze(result, flowPillars))
     }
 }
 
