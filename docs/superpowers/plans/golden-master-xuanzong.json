@@ -1,0 +1,611 @@
+{
+  "A_1985_05_20_zi": {
+    "gender": "MALE",
+    "birth": {
+      "year": 1985,
+      "month": 5,
+      "day": 20,
+      "hour": 0,
+      "minute": 10
+    },
+    "fullBazi": "乙丑 辛巳 己未 甲子",
+    "dayCycle": 55,
+    "stems": [
+      1,
+      7,
+      5,
+      0
+    ],
+    "branches": [
+      1,
+      5,
+      7,
+      0
+    ],
+    "xunKong": [
+      0,
+      1
+    ],
+    "kongwangMarks": [
+      {
+        "pillarIdx": 0,
+        "branchIdx": 1
+      },
+      {
+        "pillarIdx": 3,
+        "branchIdx": 0
+      }
+    ],
+    "shensha": [
+      {
+        "name": "天乙贵人",
+        "pillarLabel": "时支",
+        "branchIdx": 0
+      },
+      {
+        "name": "羊刃",
+        "pillarLabel": "月支",
+        "branchIdx": 5
+      },
+      {
+        "name": "桃花",
+        "pillarLabel": "时支",
+        "branchIdx": 0
+      },
+      {
+        "name": "驿马",
+        "pillarLabel": "月支",
+        "branchIdx": 5
+      },
+      {
+        "name": "华盖",
+        "pillarLabel": "日支",
+        "branchIdx": 7
+      },
+      {
+        "name": "天德贵人",
+        "pillarLabel": "月干",
+        "stemIdx": 7
+      }
+    ],
+    "tiaohou": {
+      "climate": "燥",
+      "climateBasis": "生于夏月（巳）火当令、火炎土燥",
+      "tiaoHouElement": 4,
+      "tiaoHouElementCh": "水",
+      "tiaoHouPresent": true,
+      "tiaoHouNote": "燥需水调候，柱中亥子支得调候之神，气候得宜",
+      "urgent": false,
+      "urgentDesc": "",
+      "congGe": null,
+      "formulas": [],
+      "deShi": []
+    },
+    "xing": {
+      "chong": [
+        {
+          "branch1": 1,
+          "branch2": 7,
+          "description": "丑未相冲",
+          "resolved": true,
+          "resolveBy": "丑六合（子）",
+          "note": "丑未相冲：丑为六合（子）所绊，冲不成（会合解冲）"
+        }
+      ],
+      "xing": [],
+      "hasChong": true,
+      "hasUnresolvedChong": false,
+      "hasUnresolvedXing": false,
+      "liuHeCount": 1,
+      "sanHeCount": 0
+    },
+    "flow": {
+      "duanYu": [],
+      "chain": 1,
+      "elems": [
+        2,
+        1,
+        3,
+        1,
+        1
+      ],
+      "war": {
+        "jinMu": false,
+        "shuiHuo": false
+      },
+      "favorable": true
+    },
+    "yongshen_geJuName": "正印格",
+    "yunPillar_tested": {
+      "stemIdx": 6,
+      "branchIdx": 4,
+      "cycleIndex": 16,
+      "nayin": {
+        "chinese": "白蜡金",
+        "element": 3
+      },
+      "fullName": "庚辰"
+    },
+    "quyun": {
+      "ziPeiZhi": {
+        "family": "YIN",
+        "familyCh": "印绶",
+        "subKey": "GUAN_SHA_JING",
+        "subName": "印格官煞竞透（取清）",
+        "note": ""
+      },
+      "gan": {
+        "stemIdx": 6,
+        "godKey": "SHANG_GUAN",
+        "godCh": "伤官",
+        "verdict": "XI",
+        "reason": "食伤、印旺身旺（取清）"
+      },
+      "zhi": {
+        "branchIdx": 4,
+        "godKey": "JIE_CAI",
+        "godCh": "劫财",
+        "verdict": "XI",
+        "reason": "食伤、印旺身旺（取清）"
+      },
+      "summary": {
+        "verdict": "XI",
+        "text": "喜运"
+      },
+      "row": {
+        "name": "印格官煞竞透",
+        "xiText": "食伤、印旺身旺（取清）",
+        "jiText": "再透官煞并行财运立灾",
+        "note": ""
+      }
+    }
+  },
+  "B_1990_12_15_wu": {
+    "gender": "FEMALE",
+    "birth": {
+      "year": 1990,
+      "month": 12,
+      "day": 15,
+      "hour": 12,
+      "minute": 0
+    },
+    "fullBazi": "庚午 戊子 甲寅 庚午",
+    "dayCycle": 50,
+    "stems": [
+      6,
+      4,
+      0,
+      6
+    ],
+    "branches": [
+      6,
+      0,
+      2,
+      6
+    ],
+    "xunKong": [
+      0,
+      1
+    ],
+    "kongwangMarks": [
+      {
+        "pillarIdx": 1,
+        "branchIdx": 0
+      }
+    ],
+    "shensha": [
+      {
+        "name": "禄神",
+        "pillarLabel": "日支",
+        "branchIdx": 2
+      },
+      {
+        "name": "将星",
+        "pillarLabel": "年支",
+        "branchIdx": 6
+      },
+      {
+        "name": "将星",
+        "pillarLabel": "时支",
+        "branchIdx": 6
+      }
+    ],
+    "tiaohou": {
+      "climate": "寒",
+      "climateBasis": "生于冬月（子）水当令、金寒水冷",
+      "tiaoHouElement": 1,
+      "tiaoHouElementCh": "火",
+      "tiaoHouPresent": true,
+      "tiaoHouNote": "寒需火调候，柱中巳午未支得调候之神，气候得宜",
+      "urgent": false,
+      "urgentDesc": "",
+      "congGe": null,
+      "formulas": [],
+      "deShi": [
+        "冬木透官难贵——冬水冻而不生木，官印双全之美受气候所限"
+      ]
+    },
+    "xing": {
+      "chong": [
+        {
+          "branch1": 0,
+          "branch2": 6,
+          "description": "子午相冲",
+          "resolved": false,
+          "resolveBy": null,
+          "note": "子午相冲：无会合相解，冲成立"
+        },
+        {
+          "branch1": 0,
+          "branch2": 6,
+          "description": "子午相冲",
+          "resolved": false,
+          "resolveBy": null,
+          "note": "子午相冲：无会合相解，冲成立"
+        }
+      ],
+      "xing": [
+        {
+          "description": "午自刑（2见）",
+          "kind": "ZI_XING",
+          "involved": "午午",
+          "resolved": false,
+          "resolveBy": null,
+          "note": "午自刑（2见）：无会合相解，刑成立"
+        }
+      ],
+      "hasChong": true,
+      "hasUnresolvedChong": true,
+      "hasUnresolvedXing": true,
+      "liuHeCount": 0,
+      "sanHeCount": 0
+    },
+    "flow": {
+      "duanYu": [
+        {
+          "type": "UNFAVOR",
+          "id": "shui_huo_zhan",
+          "text": "水火交战（子午/巳亥冲），恐伤文途，宜通关化解。"
+        }
+      ],
+      "chain": 2,
+      "elems": [
+        2,
+        2,
+        1,
+        2,
+        1
+      ],
+      "war": {
+        "jinMu": false,
+        "shuiHuo": true
+      },
+      "favorable": false
+    },
+    "yongshen_geJuName": "正印格",
+    "yunPillar_tested": {
+      "stemIdx": 3,
+      "branchIdx": 11,
+      "cycleIndex": 23,
+      "nayin": {
+        "chinese": "屋上土",
+        "element": 2
+      },
+      "fullName": "丁亥"
+    },
+    "quyun": {
+      "ziPeiZhi": {
+        "family": "YIN",
+        "familyCh": "印绶",
+        "subKey": "YONG_SHA",
+        "subName": "印用七煞（杀印相生）",
+        "note": ""
+      },
+      "gan": {
+        "stemIdx": 3,
+        "godKey": "SHANG_GUAN",
+        "godCh": "伤官",
+        "verdict": "XI",
+        "reason": "伤食、身旺"
+      },
+      "zhi": {
+        "branchIdx": 11,
+        "godKey": "PIAN_YIN",
+        "godCh": "偏印",
+        "verdict": "XI",
+        "reason": "伤食、身旺"
+      },
+      "summary": {
+        "verdict": "XI",
+        "text": "喜运"
+      },
+      "row": {
+        "name": "印用七煞",
+        "xiText": "伤食、身旺",
+        "jiText": "一见财乡其凶立至",
+        "note": ""
+      }
+    }
+  },
+  "C_1988_07_20_si": {
+    "gender": "MALE",
+    "birth": {
+      "year": 1988,
+      "month": 7,
+      "day": 20,
+      "hour": 10,
+      "minute": 0
+    },
+    "fullBazi": "戊辰 己未 丙子 癸巳",
+    "dayCycle": 12,
+    "stems": [
+      4,
+      5,
+      2,
+      9
+    ],
+    "branches": [
+      4,
+      7,
+      0,
+      5
+    ],
+    "xunKong": [
+      8,
+      9
+    ],
+    "kongwangMarks": [],
+    "shensha": [
+      {
+        "name": "禄神",
+        "pillarLabel": "时支",
+        "branchIdx": 5
+      },
+      {
+        "name": "华盖",
+        "pillarLabel": "年支",
+        "branchIdx": 4
+      },
+      {
+        "name": "将星",
+        "pillarLabel": "日支",
+        "branchIdx": 0
+      },
+      {
+        "name": "劫煞",
+        "pillarLabel": "时支",
+        "branchIdx": 5
+      }
+    ],
+    "tiaohou": {
+      "climate": "燥",
+      "climateBasis": "生于夏月（未）火当令、火炎土燥",
+      "tiaoHouElement": 4,
+      "tiaoHouElementCh": "水",
+      "tiaoHouPresent": true,
+      "tiaoHouNote": "燥需水调候，柱中壬癸透干、亥子支得调候之神，气候得宜",
+      "urgent": false,
+      "urgentDesc": "",
+      "congGe": null,
+      "formulas": [],
+      "deShi": []
+    },
+    "xing": {
+      "chong": [],
+      "xing": [],
+      "hasChong": false,
+      "hasUnresolvedChong": false,
+      "hasUnresolvedXing": false,
+      "liuHeCount": 0,
+      "sanHeCount": 0
+    },
+    "flow": {
+      "duanYu": [],
+      "chain": 2,
+      "elems": [
+        0,
+        2,
+        4,
+        0,
+        2
+      ],
+      "war": {
+        "jinMu": false,
+        "shuiHuo": false
+      },
+      "favorable": false
+    },
+    "yongshen_geJuName": "伤官格",
+    "yunPillar_tested": {
+      "stemIdx": 6,
+      "branchIdx": 8,
+      "cycleIndex": 56,
+      "nayin": {
+        "chinese": "石榴木",
+        "element": 0
+      },
+      "fullName": "庚申"
+    },
+    "quyun": {
+      "ziPeiZhi": {
+        "family": "SHANG_GUAN",
+        "familyCh": "伤官",
+        "subKey": "SHANG",
+        "subName": "伤官（忌见官，非金水）",
+        "note": ""
+      },
+      "gan": {
+        "stemIdx": 6,
+        "godKey": "PIAN_CAI",
+        "godCh": "偏财",
+        "verdict": "XI",
+        "reason": "伤官生财、伤官佩印"
+      },
+      "zhi": {
+        "branchIdx": 8,
+        "godKey": "PIAN_CAI",
+        "godCh": "偏财",
+        "verdict": "XI",
+        "reason": "伤官生财、伤官佩印"
+      },
+      "summary": {
+        "verdict": "XI",
+        "text": "喜运"
+      },
+      "row": {
+        "name": "伤官",
+        "xiText": "伤官生财、伤官佩印",
+        "jiText": "伤官见官（金水不忌）",
+        "note": ""
+      }
+    }
+  },
+  "D_2000_03_04_mao": {
+    "gender": "FEMALE",
+    "birth": {
+      "year": 2000,
+      "month": 3,
+      "day": 4,
+      "hour": 6,
+      "minute": 0
+    },
+    "fullBazi": "庚辰 戊寅 辛酉 辛卯",
+    "dayCycle": 57,
+    "stems": [
+      6,
+      4,
+      7,
+      7
+    ],
+    "branches": [
+      4,
+      2,
+      9,
+      3
+    ],
+    "xunKong": [
+      0,
+      1
+    ],
+    "kongwangMarks": [],
+    "shensha": [
+      {
+        "name": "天乙贵人",
+        "pillarLabel": "月支",
+        "branchIdx": 2
+      },
+      {
+        "name": "禄神",
+        "pillarLabel": "日支",
+        "branchIdx": 9
+      },
+      {
+        "name": "将星",
+        "pillarLabel": "日支",
+        "branchIdx": 9
+      },
+      {
+        "name": "劫煞",
+        "pillarLabel": "月支",
+        "branchIdx": 2
+      }
+    ],
+    "tiaohou": {
+      "climate": "温和",
+      "climateBasis": "生于春月（寅），气候温和",
+      "tiaoHouElement": null,
+      "tiaoHouElementCh": null,
+      "tiaoHouPresent": false,
+      "tiaoHouNote": "气候温和，无迫切调候之需",
+      "urgent": false,
+      "urgentDesc": "",
+      "congGe": null,
+      "formulas": [],
+      "deShi": []
+    },
+    "xing": {
+      "chong": [
+        {
+          "branch1": 3,
+          "branch2": 9,
+          "description": "卯酉相冲",
+          "resolved": true,
+          "resolveBy": "酉六合（辰）",
+          "note": "卯酉相冲：酉为六合（辰）所绊，冲不成（会合解冲）"
+        }
+      ],
+      "xing": [],
+      "hasChong": true,
+      "hasUnresolvedChong": false,
+      "hasUnresolvedXing": false,
+      "liuHeCount": 1,
+      "sanHeCount": 0
+    },
+    "flow": {
+      "duanYu": [
+        {
+          "type": "UNFAVOR",
+          "id": "jin_mu_zhan",
+          "text": "金木交战（卯酉/寅申冲），恐伤文途，宜通关化解。"
+        }
+      ],
+      "chain": 2,
+      "elems": [
+        2,
+        0,
+        2,
+        4,
+        0
+      ],
+      "war": {
+        "jinMu": true,
+        "shuiHuo": false
+      },
+      "favorable": true
+    },
+    "yongshen_geJuName": "正印格",
+    "yunPillar_tested": {
+      "stemIdx": 3,
+      "branchIdx": 1,
+      "cycleIndex": 13,
+      "nayin": {
+        "chinese": "涧下水",
+        "element": 4
+      },
+      "fullName": "丁丑"
+    },
+    "quyun": {
+      "ziPeiZhi": {
+        "family": "YIN",
+        "familyCh": "印绶",
+        "subKey": "YIN",
+        "subName": "印绶（孤印）",
+        "note": ""
+      },
+      "gan": {
+        "stemIdx": 3,
+        "godKey": "QI_SHA",
+        "godCh": "七杀",
+        "verdict": "XI",
+        "reason": "官杀生印、伤食泄秀"
+      },
+      "zhi": {
+        "branchIdx": 1,
+        "godKey": "PIAN_YIN",
+        "godCh": "偏印",
+        "verdict": "PING",
+        "reason": "于本子配置为平运"
+      },
+      "summary": {
+        "verdict": "XI_ZHONG_PING",
+        "text": "干支一喜一平"
+      },
+      "row": {
+        "name": "印绶",
+        "xiText": "官杀生印、伤食泄秀",
+        "jiText": "贪财坏印",
+        "note": ""
+      }
+    }
+  }
+}
