@@ -16,8 +16,6 @@ import cn.xulun.bazi.model.TenGod
 import cn.xulun.bazi.model.branchHiddenStems
 import cn.xulun.bazi.model.tenGodOfBranch
 import cn.xulun.bazi.model.tenGodOfStem
-import cn.xulun.bazi.model.wenChang
-import cn.xulun.bazi.model.xueTang
 
 /**
  * 学业/学历分析器：印星辨识、学历格局、文昌/学堂神煞、考学岁运（印/官运）。
@@ -39,7 +37,7 @@ object StudyCalculator {
         val foods = findStars(bazi, dayMaster, foodTargets)
         val officers = findStars(bazi, dayMaster, officerTargets)
         val (pattern, basis) = determinePattern(bazi, dayMaster, seals, foods, officers)
-        val shenSha = findShenSha(bazi, dayMaster)
+        val shenSha = findShenSha(bazi)
         val yunFortune = findYunFortune(daYun, dayMaster)
         return StudyResult(seals, pattern, basis, shenSha, yunFortune)
     }
@@ -108,17 +106,15 @@ object StudyCalculator {
         return pattern to parts.joinToString("；")
     }
 
-    // ── 学业神煞：文昌、学堂（日干起）──
-    private fun findShenSha(bazi: BaziResult, dayMaster: HeavenlyStem): List<StudyShenSha> {
-        val branches = bazi.branches
+    // ── 学业神煞：文昌、学堂（取自通用神煞层，日干起）──
+    private fun findShenSha(bazi: BaziResult): List<StudyShenSha> {
         val result = mutableListOf<StudyShenSha>()
-        val wc = dayMaster.wenChang
-        branches.indexOf(wc).takeIf { it >= 0 }?.let {
-            result.add(StudyShenSha("文昌", wc, PillarBranchLabels[it]))
+        val all = ShenShaCalculator.analyze(bazi).items
+        all.firstOrNull { it.name == "文昌" }?.let {
+            result.add(StudyShenSha("文昌", it.branch!!, it.pillarLabel))
         }
-        val xt = dayMaster.xueTang
-        branches.indexOf(xt).takeIf { it >= 0 }?.let {
-            result.add(StudyShenSha("学堂", xt, PillarBranchLabels[it]))
+        all.firstOrNull { it.name == "学堂" }?.let {
+            result.add(StudyShenSha("学堂", it.branch!!, it.pillarLabel))
         }
         return result
     }

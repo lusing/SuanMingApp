@@ -26,6 +26,7 @@ import cn.xulun.bazi.core.DiZhiRelationCalculator
 import cn.xulun.bazi.core.GeJuCalculator
 import cn.xulun.bazi.core.HeHuaCalculator
 import cn.xulun.bazi.core.MarriageCalculator
+import cn.xulun.bazi.core.ShenShaCalculator
 import cn.xulun.bazi.core.StudyCalculator
 import cn.xulun.bazi.core.WealthCalculator
 import cn.xulun.bazi.core.YongShenCalculator
@@ -39,6 +40,7 @@ import cn.xulun.bazi.ui.components.GeJuBanner
 import cn.xulun.bazi.ui.components.HeHuaSection
 import cn.xulun.bazi.ui.components.MarriageSection
 import cn.xulun.bazi.ui.components.PillarCard
+import cn.xulun.bazi.ui.components.ShenShaSection
 import cn.xulun.bazi.ui.components.StudySection
 import cn.xulun.bazi.ui.components.WealthSection
 import cn.xulun.bazi.ui.components.YongShenSection
@@ -56,6 +58,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
     val yongShen = YongShenCalculator.analyze(result)
     val heHua = HeHuaCalculator.analyze(result)
     val diZhiRelation = DiZhiRelationCalculator.analyze(result)
+    val shenSha = ShenShaCalculator.analyze(result)
     val wealth = WealthCalculator.analyze(result, daYun)
     // 选定的大运/流年；随原局切换自动清空
     var selection by remember(result) { mutableStateOf<YunSelection?>(null) }
@@ -111,6 +114,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
                 }
             }
         }
+        ShenShaSection(result = shenSha)
         YongShenSection(result = yongShen)
         if (daYun != null) {
             DaYunSection(

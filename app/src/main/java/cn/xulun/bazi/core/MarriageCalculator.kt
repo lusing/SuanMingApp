@@ -120,14 +120,15 @@ object MarriageCalculator {
         }
     }
 
-    // ── 神煞：桃花（日支起）、孤辰寡宿（年支起）──
+    // ── 神煞：桃花（取自通用神煞层，日支起）、孤辰寡宿（年支起）──
     private fun findShenSha(bazi: BaziResult): List<ShenSha> {
         val branches = bazi.branches
         val result = mutableListOf<ShenSha>()
 
-        val tao = taoHuaOf(branches[2]) // 以日支起
-        val taoIdx = branches.indexOf(tao)
-        if (taoIdx >= 0) result.add(ShenSha("桃花", tao, PillarBranchLabels[taoIdx]))
+        // 桃花：统一由 ShenShaCalculator 计算（日支三合局→咸池），命中原局方取
+        ShenShaCalculator.analyze(bazi).items.firstOrNull { it.name == "桃花" }?.let { tao ->
+            result.add(ShenSha("桃花", tao.branch!!, tao.pillarLabel))
+        }
 
         val year = branches[0]
         guChenOf(year)?.let { g ->
@@ -139,14 +140,6 @@ object MarriageCalculator {
             if (idx >= 0) result.add(ShenSha("寡宿", g, PillarBranchLabels[idx]))
         }
         return result
-    }
-
-    /** 桃花：日支三合局 → 帝旺（桃花）支 */
-    private fun taoHuaOf(branch: EarthlyBranch): EarthlyBranch = when (branch) {
-        EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN -> EarthlyBranch.YOU
-        EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU -> EarthlyBranch.MAO
-        EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU -> EarthlyBranch.WU
-        EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI -> EarthlyBranch.ZI
     }
 
     /** 孤辰：年支按四季 → 孤辰支 */
