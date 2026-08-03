@@ -32,6 +32,7 @@ import cn.xulun.bazi.core.ShenShaCalculator
 import cn.xulun.bazi.core.StudyCalculator
 import cn.xulun.bazi.core.TiaoHouCalculator
 import cn.xulun.bazi.core.WealthCalculator
+import cn.xulun.bazi.core.QuYunCalculator
 import cn.xulun.bazi.core.YongShenCalculator
 import cn.xulun.bazi.core.YunRelationCalculator
 import cn.xulun.bazi.model.BaziResult
@@ -44,6 +45,7 @@ import cn.xulun.bazi.ui.components.HeHuaSection
 import cn.xulun.bazi.ui.components.JieChongSection
 import cn.xulun.bazi.ui.components.MarriageSection
 import cn.xulun.bazi.ui.components.PillarCard
+import cn.xulun.bazi.ui.components.QuYunSection
 import cn.xulun.bazi.ui.components.ShenShaSection
 import cn.xulun.bazi.ui.components.StudySection
 import cn.xulun.bazi.ui.components.TiaoHouSection
@@ -147,6 +149,14 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
                 is YunSelection.DaYun -> listOf(sel.pillar to "大运")
                 is YunSelection.LiuNian -> listOf(sel.yun.pillar to "大运", sel.pillar to "流年")
             }
+            val (yunPillar, yunLabel) = when (sel) {
+                is YunSelection.DaYun -> sel.pillar to "大运"
+                is YunSelection.LiuNian -> sel.pillar to "流年"
+            }
+            QuYunSection(
+                result = QuYunCalculator.analyze(result, yongShen, yunPillar),
+                yunLabel = yunLabel,
+            )
             YunRelationSection(
                 result = YunRelationCalculator.analyze(result, extras),
                 selection = sel,
