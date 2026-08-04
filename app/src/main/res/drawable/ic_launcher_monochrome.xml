@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 单色(themed/monochrome)太极：整盘实色，阴鱼逗号与阳中阴眼镂空(evenOdd)，
+         阴中阳眼为实色点。阴阳与双鱼眼靠「实色/镂空」对比，不靠黑白，
+         故系统套任意主题色都不会糊成一坨，符合「阴在阳之内」。
+         镂空处透出 launcher 背景，实色处取主题色。 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M20,54 a34,34 0 1,0 68,0 a34,34 0 1,0 -68,0 z M54,20 A34,34 0 0,1 54,88 A17,17 0 0,0 54,54 A17,17 0 0,1 54,20 Z M47.5,37 a6.5,6.5 0 1,0 13,0 a6.5,6.5 0 1,0 -13,0 z" />
+    <!-- 阴中阳眼：实色点，落在镂空的阴鱼头内 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M47.5,71 a6.5,6.5 0 1,0 13,0 a6.5,6.5 0 1,0 -13,0 z" />
+</vector>
