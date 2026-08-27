@@ -25,6 +25,7 @@ class ShenShaCalculatorTest {
                 item("太极贵人", "年支", EarthlyBranch.CHOU),
                 item("太极贵人", "日支", EarthlyBranch.WEI),
                 item("太极贵人", "时支", EarthlyBranch.ZI),
+                item("正学堂", "月支", EarthlyBranch.SI),  // 乙丑海中金，学堂巳，辛巳白蜡金同行=正
                 item("羊刃", "月支", EarthlyBranch.SI),
                 item("桃花", "时支", EarthlyBranch.ZI),
                 item("驿马", "月支", EarthlyBranch.SI),

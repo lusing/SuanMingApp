@@ -3,6 +3,7 @@ package cn.xulun.bazi.core
 import cn.xulun.bazi.model.BaziResult
 import cn.xulun.bazi.model.EarthlyBranch
 import cn.xulun.bazi.model.HeavenlyStem
+import cn.xulun.bazi.model.Element
 import cn.xulun.bazi.model.PillarBranchLabels
 import cn.xulun.bazi.model.PillarStemLabels
 import cn.xulun.bazi.model.ShenShaItem
@@ -163,6 +164,7 @@ object ShenShaCalculator {
         val dayBranch = bazi.dayPillar.branch
         val monthBranch = bazi.monthPillar.branch
         val g = groupOf(dayBranch)
+        val yg = groupOf(bazi.yearPillar.branch)
         val mg = groupOf(monthBranch)
         val out = mutableListOf<ShenShaItem>()
 
@@ -183,13 +185,41 @@ object ShenShaCalculator {
         for (tg in listOf(bazi.yearPillar.stem, dayStem).distinct()) {
             scanBranch(bazi, "文昌", wenChang.getValue(tg), out)
         }
-        scanBranch(bazi, "学堂", xueTang.getValue(dayStem), out)
+        // 学堂词馆（年命纳音查月日时：长生=学堂、临官=词馆；柱纳音同行者为"正"——
+        // 教材明训"以十干查词馆有误"；旧干查学堂表弃用）
+        val ynEl = bazi.yearPillar.nayin.element
+        val xueTangZhi = when (ynEl) {
+            Element.WOOD -> EarthlyBranch.HAI; Element.FIRE -> EarthlyBranch.YIN
+            Element.EARTH -> EarthlyBranch.SHEN; Element.METAL -> EarthlyBranch.SI; else -> EarthlyBranch.SHEN
+        }
+        val ciGuanZhi = when (ynEl) {
+            Element.WOOD -> EarthlyBranch.YIN; Element.FIRE -> EarthlyBranch.SI
+            Element.EARTH -> EarthlyBranch.HAI; Element.METAL -> EarthlyBranch.SHEN; else -> EarthlyBranch.HAI
+        }
+        for ((i, pl) in bazi.pillars.withIndex()) {
+            if (i == 0) continue // 以年柱纳音查月日时
+            val same = pl.nayin.element == ynEl
+            if (pl.branch == xueTangZhi) out.add(ShenShaItem(if (same) "正学堂" else "学堂", PillarBranchLabels[i], branch = pl.branch))
+            if (pl.branch == ciGuanZhi) out.add(ShenShaItem(if (same) "正词馆" else "词馆", PillarBranchLabels[i], branch = pl.branch))
+        }
         scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)
         scanBranch(bazi, "禄神", luShen.getValue(dayStem), out)
         // 日支起
         scanBranch(bazi, "桃花", taoHua[g], out)
         scanBranch(bazi, "驿马", yiMa[g], out)
+        // 华盖（三合墓库，年支或日支查**其余各支**——年支组扫月日时；日支组沿 xuanzong 全柱扫）
+        if (yg != g) {
+            bazi.pillars.drop(1).forEachIndexed { i, p ->
+                if (p.branch == huaGai[yg]) out.add(ShenShaItem("华盖", PillarBranchLabels[i + 1], branch = p.branch))
+            }
+        }
         scanBranch(bazi, "华盖", huaGai[g], out)
+        // 将星（三合中神，年支或日支查**其余各支**——年支组扫月日时；日支组沿 xuanzong 全柱扫）
+        if (yg != g) {
+            bazi.pillars.drop(1).forEachIndexed { i, p ->
+                if (p.branch == jiangXing[yg]) out.add(ShenShaItem("将星", PillarBranchLabels[i + 1], branch = p.branch))
+            }
+        }
         scanBranch(bazi, "将星", jiangXing[g], out)
         scanBranch(bazi, "亡神", wangShen[g], out)
         scanBranch(bazi, "劫煞", jieSha[g], out)
