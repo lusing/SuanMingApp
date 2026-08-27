@@ -137,6 +137,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         }
         ShenShaSection(result = shenSha)
         cn.xulun.bazi.ui.components.ShiShenSection(result = shiShen)
+        cn.xulun.bazi.ui.components.HangYeSection(result = cn.xulun.bazi.core.HangYeCalculator.analyze(result))
         YongShenSection(result = yongShen)
         TiaoHouSection(result = tiaoHou)
         if (daYun != null) {
