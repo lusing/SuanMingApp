@@ -49,7 +49,8 @@ object TeShuGeJuCalculator {
         }
         val allAlly = branches.all { allyBranch(it) }
         val chouKeTou = bazi.stems.any { (it.element == dayEl.controls || it.element.controls == dayEl) && it !== bazi.dayPillar.stem }
-        if (allAlly && !chouKeTou && fc(dayEl) + fc(yinEl) >= 0.6 * total) {
+        // 专旺须日主自身有力（≥2.5）——日主力微而印众者为从印非专旺（张先生/印总表例）
+        if (allAlly && !chouKeTou && fc(dayEl) >= 2.5 && fc(dayEl) + fc(yinEl) >= 0.6 * total) {
             val usedBianJie = branches.any { it.element != dayEl && it.element != yinEl } // 变节支使格不纯
             // 岁运破格：克势之行（双体或透+根）→ 还原正格
             val poEl = dayEl.controls // 我克者泄我；克我者伤势——取克我行为破格先锋
@@ -94,8 +95,10 @@ object TeShuGeJuCalculator {
             val fcAdj = { el: Element -> fAdj[el]!! }
             val maxOther = Element.entries.filter { it != dayEl }.maxOf { fAdj[it]!! }
             // 透干比劫/印：被克泄殆尽或坐下截脚者无力（假从之"虚助"）
+            // 印为势首时印透不算虚助（从印格之戊己——印是用神非帮扶）
+            val yinIsShi = fAdj[yinEl]!! >= 2.5 && fAdj[yinEl]!! >= maxOther
             val helperStems = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
-                .filter { it.element == dayEl || it.element == yinEl }
+                .filter { it.element == dayEl || (it.element == yinEl && !yinIsShi) }
             val weakHelpers = helperStems.filter { s ->
                 val self = fAdj[s.element]!!
                 val foes = Element.entries.filter { e -> e.controls == s.element || s.element.controls == e }.sumOf { fAdj[it]!! }

@@ -37,28 +37,66 @@ object CongGeYunCalculator {
         val verdict: YunVerdict
         val newEl: Element?
         val basis: String
+        val strong = ps == pb || ps.generates == pb // 干支同心（干同支或干生支）
         when {
+            // 支在从势而干克势 → 忌（戊子例：支子在杀而干戊克杀为逆）
             pb in shi && shi.any { ps.controls == it } -> {
                 verdict = YunVerdict.JI; newEl = null
                 basis = "岁运${p.fullName}：支${p.branch.chinese}虽在从势，而干${p.stem.chinese}（${ps.chinese}）克从势之行，逆乱格局气势——忌神"
             }
+            // 支在从势 → 用神到位
             pb in shi -> {
                 verdict = YunVerdict.YONG; newEl = null
                 basis = "岁运${p.fullName}之支${p.branch.chinese}（${pb.chinese}）在从势内，助旺格局——用神到位"
             }
-            // 支为日主本气行：假从者还原正格（刑动/帮身破格——刘女士/杨先生例）；真从者与势两停转为身势两气（总表戊戌例）
+            // 支为日主本气行（比劫介入三档）：假从遇根/比劫力不足（含运柱）→还原正格（母慈灭子）；力足→两气转格
             pb == dayEl -> {
-                if (base.fake) {
+                val f0 = cn.xulun.bazi.core.BingYaoCalculator.forces(bazi)
+                val yunTong = (if (ps == dayEl) 1 else 0) + (if (pb == dayEl) 1 else 0)
+                val biLi = f0[dayEl]!! + yunTong
+                val shiLi = shi.maxOf { f0[it]!! }
+                if (base.fake || biLi < 0.28 * shiLi) {
                     verdict = YunVerdict.HUAN_YUAN; newEl = null
-                    basis = "岁运${p.fullName}之支${p.branch.chinese}为日主${dayEl.chinese}之根，原局假从遇根——刑动/帮身破格，还原身弱正格论"
+                    basis = "岁运${p.fullName}之支${p.branch.chinese}为日主${dayEl.chinese}之根" +
+                        (if (base.fake) "，原局假从遇根——刑动/帮身破格，还原身弱正格论"
+                        else "，但比劫之力不足（${biLi} 对 势${shiLi}）——印重身轻正格（母慈灭子），不吉")
                 } else {
                     verdict = YunVerdict.ZHUAN_GE; newEl = dayEl
-                    basis = "岁运${p.fullName}：比劫（${dayEl.chinese}）助日主克住旺势，与势成两停——格局变身为势两气成象，取比劫平衡气势"
+                    basis = "岁运${p.fullName}：比劫（${dayEl.chinese}）助日主力足（${biLi} 对 势${shiLi}），与势成两停——格局变身为势两气成象，取比劫平衡气势"
                 }
             }
-            // 势生之行（泄势者，从儿之財）：强→转两气取之；弱→忌（化泄无力反杂纯势）
-            shi.any { it.generates == pb } && pb != dayEl -> {
-                val strong = ps == pb || ps.generates == pb
+            // 克势之行（壬寅例：官克财势/壬戌例：衰土克杀势）→强转两气/弱忌
+            shi.any { pb.controls == it } -> {
+                if (strong) {
+                    verdict = YunVerdict.ZHUAN_GE; newEl = pb
+                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）克从势之行，干支强旺与势两停——格局转两气从格，取${pb.chinese}为用（按两气成象取用）"
+                } else {
+                    verdict = YunVerdict.JI; newEl = null
+                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）衰弱，无力克住从势，反逆乱格局气势——忌神"
+                }
+            }
+            // 势克之行（受势克而抗之，从印之食伤）→强转/弱忌
+            shi.any { it.controls == pb } && !poGeShen(pb) -> {
+                if (strong) {
+                    verdict = YunVerdict.ZHUAN_GE; newEl = pb
+                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）抗住从势之克，干支强旺与势两停——格局转两气从格，取${pb.chinese}为用以平衡气势"
+                } else {
+                    verdict = YunVerdict.JI; newEl = null
+                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）衰弱，无力抵抗从势之克，反逆乱气势——忌神"
+                }
+            }
+            // 生势而非印（官生印/财生官）→干透势行则用神、否则喜神（丙寅例）；印生势者由势生通道（化泄夺势）
+            shi.any { pb.generates == it } && pb != yinEl -> {
+                if (ps in shi) {
+                    verdict = YunVerdict.YONG; newEl = null
+                    basis = "岁运${p.fullName}之干${p.stem.chinese}（${ps.chinese}）透从势之行且支生扶——用神到位"
+                } else {
+                    verdict = YunVerdict.XI; newEl = null
+                    basis = "岁运${p.fullName}之支${p.branch.chinese}（${pb.chinese}，${godName(pb, dayEl)}）生扶从势——喜神到位"
+                }
+            }
+            // 势生之行（泄势者：从儿之財/从财之官——壬寅例）→强转/弱忌
+            shi.any { it.generates == pb } -> {
                 if (strong) {
                     verdict = YunVerdict.ZHUAN_GE; newEl = pb
                     basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）化泄从势旺气，干支强旺与势两停——格局转两气从格，取${pb.chinese}为用以平衡气势"
@@ -67,26 +105,15 @@ object CongGeYunCalculator {
                     basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）衰弱，无力化泄从势改变格局，反杂乱纯势——忌神"
                 }
             }
-            // 支为破格神行：强弱定转格或忌（支主导——壬寅例：支官杀当权重于干财）
+            // 其余破格神（印比官之不在势不克势者）
             poGeShen(pb) -> {
-                val strong = ps == pb || ps.generates == pb
                 if (strong) {
                     verdict = YunVerdict.ZHUAN_GE; newEl = pb
-                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）干支同心强旺，与从势两停——格局转两气从格，取${pb.chinese}为用（按两气成象取用）"
+                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）干支同心强旺，与从势两停——格局转两气从格，取${pb.chinese}为用"
                 } else {
                     verdict = YunVerdict.JI; newEl = null
-                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）衰弱（干不同支不生支），无力转变格局，反杂乱气势/引日主破格伤身——忌神"
+                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）衰弱，无力转变格局，反杂乱气势——忌神"
                 }
-            }
-            // 干透势行（壬申例：支食伤生势而干透财）
-            ps in shi -> {
-                verdict = YunVerdict.YONG; newEl = null
-                basis = "岁运${p.fullName}之干${p.stem.chinese}（${ps.chinese}）透从势之行，助旺格局——用神到位"
-            }
-            // 支生势（食伤扶旺）
-            shi.any { pb.generates == it } && !poGeShen(pb) -> {
-                verdict = YunVerdict.XI; newEl = null
-                basis = "岁运${p.fullName}之支${p.branch.chinese}（${pb.chinese}）生扶从势（食伤）——喜神到位"
             }
             else -> {
                 verdict = YunVerdict.JI; newEl = null

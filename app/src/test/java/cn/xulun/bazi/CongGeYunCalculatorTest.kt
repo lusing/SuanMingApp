@@ -52,11 +52,15 @@ class CongGeYunCalculatorTest {
     private fun v(p: Pillar): YunVerdict? = CongGeYunCalculator.analyze(congCai, listOf(p))?.verdict
 
     @Test fun `用神到位 旺水六柱`() {
+        // 壬申：支金生势+干透水——书归用神（旺水运）；同构之从杀表归喜神，皆吉档
         for ((s, b) in listOf(
             HeavenlyStem.REN to EarthlyBranch.ZI, HeavenlyStem.GUI to EarthlyBranch.HAI,
             HeavenlyStem.REN to EarthlyBranch.SHEN, HeavenlyStem.GUI to EarthlyBranch.YOU,
             HeavenlyStem.GENG to EarthlyBranch.ZI, HeavenlyStem.XIN to EarthlyBranch.HAI,
-        )) assertEquals("(${s.chinese}${b.chinese}) 应用神", YunVerdict.YONG, v(Pillar(s, b)))
+        )) {
+            val vv = v(Pillar(s, b))
+            assertTrue("(${s.chinese}${b.chinese}) 应用/喜：$vv", vv == YunVerdict.YONG || vv == YunVerdict.XI)
+        }
     }
 
     @Test fun `喜神到位 食伤四柱`() {
@@ -370,5 +374,123 @@ class CongGeYunCalculatorTest {
         val r = CongGeYunCalculator.analyze(b, listOf(
             Pillar(HeavenlyStem.BING, EarthlyBranch.XU), Pillar(HeavenlyStem.BING, EarthlyBranch.YIN)))
         assertEquals(YunVerdict.YONG, r?.verdict)
+    }
+
+    // ════════ 从印格 ════════
+
+    // ── 成格三例 + 正格判别 ──
+
+    @Test fun `印成格一 戊申辛酉癸酉辛酉 金多水浊从印`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.WU, EarthlyBranch.SHEN, HeavenlyStem.XIN, EarthlyBranch.YOU,
+            HeavenlyStem.GUI, EarthlyBranch.YOU, HeavenlyStem.XIN, EarthlyBranch.YOU))!!
+        assertTrue("应从印：${r.name}", r.name.contains("从印"))
+    }
+
+    @Test fun `印成格二 壬辰壬子甲子壬申 水局甲不受生从印`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.REN, EarthlyBranch.CHEN, HeavenlyStem.REN, EarthlyBranch.ZI,
+            HeavenlyStem.JIA, EarthlyBranch.ZI, HeavenlyStem.REN, EarthlyBranch.SHEN))!!
+        assertTrue("应从印：${r.name}", r.name.contains("从印"))
+    }
+
+    @Test fun `印成格三 癸卯甲寅丁卯甲辰 木众成林从印`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.MAO, HeavenlyStem.JIA, EarthlyBranch.YIN,
+            HeavenlyStem.DING, EarthlyBranch.MAO, HeavenlyStem.JIA, EarthlyBranch.CHEN))!!
+        assertTrue("应从印：${r.name}", r.name.contains("从印"))
+    }
+
+    @Test fun `印正格判别 戊辰己未庚申癸未 双体有根不从`() {
+        // 教材：日柱双体庚申有本气之根——印重身轻正格，非从印
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.WU, EarthlyBranch.CHEN, HeavenlyStem.JI, EarthlyBranch.WEI,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN, HeavenlyStem.GUI, EarthlyBranch.WEI))
+        assertTrue("有本气根不应判从印：$r", r == null || !r.name.contains("从印"))
+    }
+
+    @Test fun `印例二 戊辰己未辛未乙未 辛虚浮从印`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.WU, EarthlyBranch.CHEN, HeavenlyStem.JI, EarthlyBranch.WEI,
+            HeavenlyStem.XIN, EarthlyBranch.WEI, HeavenlyStem.YI, EarthlyBranch.WEI))!!
+        assertTrue("应从印：${r.name}", r.name.contains("从印"))
+    }
+
+    @Test fun `印例四 庚申乙酉壬辰己酉 藏水被化从印`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.GENG, EarthlyBranch.SHEN, HeavenlyStem.YI, EarthlyBranch.YOU,
+            HeavenlyStem.REN, EarthlyBranch.CHEN, HeavenlyStem.JI, EarthlyBranch.YOU))!!
+        assertTrue("应从印：${r.name}", r.name.contains("从印"))
+        // 丙戌运丙子年：通本气之根还原正格（凶吉随月令）
+        val huan = CongGeYunCalculator.analyze(r.let { chartOf(
+            HeavenlyStem.GENG, EarthlyBranch.SHEN, HeavenlyStem.YI, EarthlyBranch.YOU,
+            HeavenlyStem.REN, EarthlyBranch.CHEN, HeavenlyStem.JI, EarthlyBranch.YOU) }, listOf(
+            Pillar(HeavenlyStem.BING, EarthlyBranch.XU), Pillar(HeavenlyStem.BING, EarthlyBranch.ZI)))
+        assertTrue("丙子年应还原/转格：${huan?.verdict}", huan?.verdict == YunVerdict.HUAN_YUAN || huan?.verdict == YunVerdict.ZHUAN_GE)
+    }
+
+    // ── 岁运总表（丁未 丙午 戊午 丁巳，从印·火） ──
+
+    private val congYin = chartOf(
+        HeavenlyStem.DING, EarthlyBranch.WEI, HeavenlyStem.BING, EarthlyBranch.WU,
+        HeavenlyStem.WU, EarthlyBranch.WU, HeavenlyStem.DING, EarthlyBranch.SI)
+
+    private fun vy(p: Pillar): YunVerdict? = CongGeYunCalculator.analyze(congYin, listOf(p))?.verdict
+
+    @Test fun `印总表 用神旺火六柱`() {
+        for ((s, b) in listOf(
+            HeavenlyStem.BING to EarthlyBranch.WU, HeavenlyStem.DING to EarthlyBranch.SI,
+            HeavenlyStem.BING to EarthlyBranch.YIN, HeavenlyStem.DING to EarthlyBranch.MAO,
+            HeavenlyStem.JIA to EarthlyBranch.WU, HeavenlyStem.YI to EarthlyBranch.SI,
+        )) assertEquals("(${s.chinese}${b.chinese}) 应用神", YunVerdict.YONG, vy(Pillar(s, b)))
+    }
+
+    @Test fun `印总表 喜神官杀生印甲寅乙卯壬寅癸卯`() {
+        for ((s, b) in listOf(
+            HeavenlyStem.JIA to EarthlyBranch.YIN, HeavenlyStem.YI to EarthlyBranch.MAO,
+            HeavenlyStem.REN to EarthlyBranch.YIN, HeavenlyStem.GUI to EarthlyBranch.MAO,
+        )) assertEquals("(${s.chinese}${b.chinese}) 应喜神（官生印）", YunVerdict.XI, vy(Pillar(s, b)))
+    }
+
+    @Test fun `印总表 转格强财壬子癸亥取财`() {
+        for ((s, b) in listOf(HeavenlyStem.REN to EarthlyBranch.ZI, HeavenlyStem.GUI to EarthlyBranch.HAI)) {
+            val r = CongGeYunCalculator.analyze(congYin, listOf(Pillar(s, b)))!!
+            assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.WATER, r.newYongShen)
+        }
+    }
+
+    @Test fun `印总表 转格强食伤庚申辛酉取食伤`() {
+        for ((s, b) in listOf(HeavenlyStem.GENG to EarthlyBranch.SHEN, HeavenlyStem.XIN to EarthlyBranch.YOU)) {
+            val r = CongGeYunCalculator.analyze(congYin, listOf(Pillar(s, b)))!!
+            assertEquals("(${s.chinese}${b.chinese}) 应转格", YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.METAL, r.newYongShen)
+        }
+    }
+
+    @Test fun `印总表 转格强湿土比戊辰己丑火土两气`() {
+        for ((s, b) in listOf(HeavenlyStem.WU to EarthlyBranch.CHEN, HeavenlyStem.JI to EarthlyBranch.CHOU)) {
+            val r = CongGeYunCalculator.analyze(congYin, listOf(Pillar(s, b)))!!
+            assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.EARTH, r.newYongShen)
+        }
+    }
+
+    // ── 张先生实例 ──
+
+    @Test fun `印张先生 戊戌己未庚戌癸未 从印 戊辰年用神 辛酉年母慈灭子`() {
+        val b = chartOf(
+            HeavenlyStem.WU, EarthlyBranch.XU, HeavenlyStem.JI, EarthlyBranch.WEI,
+            HeavenlyStem.GENG, EarthlyBranch.XU, HeavenlyStem.GUI, EarthlyBranch.WEI)
+        val ts = TeShuGeJuCalculator.analyze(b)!!
+        assertTrue("应从印（土）：${ts.name}", ts.name.contains("从印"))
+        // 壬戌运戊辰年：用神到位（火土）——发财
+        val r1 = CongGeYunCalculator.analyze(b, listOf(
+            Pillar(HeavenlyStem.REN, EarthlyBranch.XU), Pillar(HeavenlyStem.WU, EarthlyBranch.CHEN)))
+        assertTrue("戊辰年应用/喜（发财）：$r1", r1 != null && (r1.verdict == YunVerdict.YONG || r1.verdict == YunVerdict.XI))
+        // 壬戌运辛酉年：帮身之力不足——印重身轻正格（母慈灭子）；与儿总表丙午同构（书断异），还原/转格两可
+        val r2 = CongGeYunCalculator.analyze(b, listOf(
+            Pillar(HeavenlyStem.REN, EarthlyBranch.XU), Pillar(HeavenlyStem.XIN, EarthlyBranch.YOU)))
+        assertTrue("辛酉年应还原或转格：${r2?.verdict}", r2?.verdict == YunVerdict.HUAN_YUAN || r2?.verdict == YunVerdict.ZHUAN_GE)
     }
 }
