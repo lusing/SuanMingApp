@@ -8,6 +8,7 @@ import cn.xulun.bazi.model.DaYunInfo
 import cn.xulun.bazi.model.Element
 import cn.xulun.bazi.model.EarthlyBranch
 import cn.xulun.bazi.model.Gender
+import cn.xulun.bazi.model.HeavenlyStem
 import cn.xulun.bazi.model.GodCategory
 import cn.xulun.bazi.model.HunLianKind
 import cn.xulun.bazi.model.HunYinResult
@@ -57,6 +58,13 @@ object HunYinCalculator {
         setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
         setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN),
         setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI),
+    )
+    /** 三会方局：寅卯辰东方木 巳午未南方火 申酉戌西方金 亥子丑北方水。 */
+    private val sanHuiGroups = mapOf(
+        setOf(EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN) to Element.WOOD,
+        setOf(EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI) to Element.FIRE,
+        setOf(EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU) to Element.METAL,
+        setOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU) to Element.WATER,
     )
     private val sanXingGroups = listOf(
         setOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN),
@@ -144,6 +152,41 @@ object HunYinCalculator {
             unfav += LiuQinItem("日坐${palaceGod.chinese}为忌", body)
         }
 
+        // ── 夫妻关系:日柱干支生克比和(以配偶宫衡量,不以星之生克——星必克干) ──
+        val dayBrEl = dayBranch.element
+        val guanXi = when {
+            dayEl.generates == dayBrEl -> LiuQinItem(
+                "宫干相生·我愛配偶",
+                "日柱干支相生（干生支）——夫妻关系和睦：我喜欢配偶，主动关爱付出。",
+            )
+            dayBrEl.generates == dayEl -> LiuQinItem(
+                "宫干相生·配偶爱我",
+                "日柱干支相生（支生干）——夫妻关系和睦：配偶喜欢我，得配偶之关爱体贴（纵生活清苦而情感满足——例四式）。",
+            )
+            dayEl.controls == dayBrEl -> LiuQinItem(
+                "宫干相克·我压制",
+                "日柱干支相克（干克支）——夫妻关系不睦：我压制配偶，主导强势。",
+            )
+            dayBrEl.controls == dayEl -> LiuQinItem(
+                "宫干相克·配偶压制",
+                "日柱干支相克（支克干）——夫妻关系不睦：配偶压制我，其强势带来心理压力（例三夫人火爆丈夫压抑、例五夫甘做耙耳朵式）。",
+            )
+            else -> LiuQinItem(
+                "宫干比和·朋友之交",
+                "日柱干支比和——夫妻关系犹如朋友：平等相处相亲相爱，难如胶似漆；纵离婚亦不生仇恨，然关系非亲密者他异性可乘虚而入（例一二式）。",
+            )
+        }
+        fav += guanXi
+        // 女命配偶宫被两重官杀夹克——他男进入配偶宫之象(例一两午夹申)
+        if (!male) {
+            val keGongEl = Element.entries.first { it.controls == dayBrEl }
+            if (keGongEl == spouseEl && bazi.branches.count { it.element == keGongEl } >= 2) {
+                unfav += LiuQinItem(
+                    "配偶宫被夹克",
+                    "配偶宫被两重官杀（${keGongEl.chinese}行）夹克——会有其他男人进入配偶宫占据丈夫之位；宫干比和关系非亲密者，情人乘虚而入。",
+                )
+            }
+        }
         // 日支四正/四生/四库——配偶形貌（男命看妻貌，须结合财星）
         val siZheng = setOf(EarthlyBranch.ZI, EarthlyBranch.WU, EarthlyBranch.MAO, EarthlyBranch.YOU)
         val siKu = setOf(EarthlyBranch.CHEN, EarthlyBranch.XU, EarthlyBranch.CHOU, EarthlyBranch.WEI)
@@ -235,6 +278,14 @@ object HunYinCalculator {
         if (allYang) {
             unfav += LiuQinItem("四柱纯阳", "四柱纯阳——婚姻难如意，${if (male) "婚姻不称心" else "性刚而婚多磨"}。")
         }
+        // 夫星弱而无扶（例七：年月日无夫星仅时支余气，身旺欺夫，1988前难成婚）
+        if (!male && starStems.isEmpty() && forces[spouseEl]!! in 0.51..1.0 &&
+            BingYaoCalculator.analyze(bazi).strength == DayStrength.STRONG) {
+            unfav += LiuQinItem(
+                "夫星弱而无扶",
+                "身旺而夫星弱仅余气微藏——身旺欺夫，早年难成婚；须岁运入星乡（火乡）引动夫星、逢桃花值年方能成婚。",
+            )
+        }
         // 配偶星不现——晚婚；女命又透伤官者再婚之命（例二）
         if (starStems.isEmpty() && forces[spouseEl]!! <= 0.5) {
             unfav += LiuQinItem(
@@ -268,10 +319,19 @@ object HunYinCalculator {
             val years = yun.liuNian.map { ln ->
                 val yb = ln.pillar.branch
                 val triggers = mutableListOf<String>()
+                // 争合解冲：流年支与原局同支重复，且同支与原局他支六合——两巳争合一申式，冲力被合绊
+                val gongInJu = (sanHeGroups + sanHuiGroups.keys).any { g ->
+                    dayBranch in g && g.count { it in bazi.branches } >= 3 // 居原局成局之三支全齐方可言破局之冲
+                }
+                val zhengHe = !gongInJu && bazi.branches.contains(yb) &&
+                    liuHePairs.any { pr -> yb in pr && pr.any { it != yb && it in bazi.branches } }
                 // ① 配偶宫引动
                 if (yb == dayBranch) triggers += "流年加临配偶宫${yb.chinese}"
                 else {
-                    if (EarthlyBranch.entries[(yb.ordinal + 6) % 12] == dayBranch) triggers += "${yb.chinese}冲配偶宫${dayBranch.chinese}——婚变动荡"
+                    if (EarthlyBranch.entries[(yb.ordinal + 6) % 12] == dayBranch && !zhengHe) {
+                        triggers += "${yb.chinese}冲配偶宫${dayBranch.chinese}——婚变动荡"
+                    }
+                    if (zhengHe) triggers += "${yb.chinese}与原局${yb.chinese}争合——冲力被合绊（难成婚）"
                     val heWithGong = liuHePairs.any { yb in it && dayBranch in it }
                     if (heWithGong) triggers += "${yb.chinese}合动配偶宫${dayBranch.chinese}"
                     if (anHePairs.any { yb in it && dayBranch in it }) triggers += "${yb.chinese}暗合配偶宫${dayBranch.chinese}"
@@ -285,8 +345,30 @@ object HunYinCalculator {
                 val yGanGod = tenGodOfStem(day, ln.pillar.stem)
                 if (yGanGod.category() == spouseCat) triggers += "${if (male) "财星透" else "官星透"}（${ln.pillar.stem.chinese}${yGanGod.chinese}）"
                 if (branchHiddenStems.getValue(yb).firstOrNull()?.element == spouseEl) triggers += "${if (male) "财星当值" else "官星当值"}（${yb.chinese}）"
-                // ③ 桃花当值（日支起）
-                if (yb == taoBranch) triggers += "桃花当值（${yb.chinese}）"
+                // ②b 岁干与日干五合——配偶星合我（例十五丙辛合，财与日干相合）
+                val ys = ln.pillar.stem
+                val ganHeDay: Boolean = (ys == HeavenlyStem.JIA && day == HeavenlyStem.JI) ||
+                    (ys == HeavenlyStem.JI && day == HeavenlyStem.JIA) ||
+                    (ys == HeavenlyStem.YI && day == HeavenlyStem.GENG) ||
+                    (ys == HeavenlyStem.GENG && day == HeavenlyStem.YI) ||
+                    (ys == HeavenlyStem.BING && day == HeavenlyStem.XIN) ||
+                    (ys == HeavenlyStem.XIN && day == HeavenlyStem.BING) ||
+                    (ys == HeavenlyStem.DING && day == HeavenlyStem.REN) ||
+                    (ys == HeavenlyStem.REN && day == HeavenlyStem.DING) ||
+                    (ys == HeavenlyStem.WU && day == HeavenlyStem.GUI) ||
+                    (ys == HeavenlyStem.GUI && day == HeavenlyStem.WU)
+                if (ganHeDay && yGanGod.category() == spouseCat) {
+                    triggers += "岁干${ln.pillar.stem.chinese}合日干${day.chinese}（配偶星合我）"
+                }
+                // ③ 桃花当值（年支起或日支起，任一命中——例一酉自日支申起、例七酉自年支申起）
+                val taoYear = taoHuaOf(bazi.branches[0])
+                if (yb == taoBranch || yb == taoYear) triggers += "桃花当值（${yb.chinese}）"
+                // ④ 三会方局婚变：年支与原局二支成三会，会局行为日主比劫且克配偶星行——身旺欺夫/欺妻，星熄婚变（例七1994申酉戌会金）
+                sanHuiGroups.forEach { (group, el) ->
+                    if (group.all { it in bazi.branches || it == yb } && el == dayEl && spouseEl.controls == el) {
+                        triggers += "${group.joinToString("") { it.chinese }}三会${el.chinese}局——${el.chinese}多${spouseEl.chinese}熄，身旺欺${if (male) "妻" else "夫"}，婚变离异"
+                    }
+                }
                 // 性质判定
                 val age = ln.year - birthYear
                 val ageNote = when {
@@ -302,11 +384,34 @@ object HunYinCalculator {
                 val xingTou = triggers.any { it.contains("星透") || it.contains("星当值") }
                 val jiaLin = triggers.any { it.contains("加临") }
                 val tao = triggers.any { it.contains("桃花当值") }
-                val heDong = triggers.any { it.contains("合动") || it.contains("暗合") }
+                val heDong = triggers.any { it.contains("合动") }
+                val anHeOnly = triggers.any { it.contains("暗合配偶宫") } && !xingTou
+                val sanHuiBian = triggers.any { it.contains("三会") && it.contains("婚变离异") }
+                val xingGong = triggers.any { it.contains("刑配偶宫") }
+                val shenFu = (ln.pillar.stem.element == dayEl || ln.pillar.stem.element.generates == dayEl ||
+                    yb.element == dayEl || yb.element.generates == dayEl) && age in legalAge..31 // 印比扶身届婚龄（身弱尤验——例九乙亥）
+                val gongKeGan = dayBrEl.controls == dayEl
+                val zhuGong = yb == dayBranch || (gongKeGan && yb.element == dayBranch.element)
                 when {
-                    chongXing && age >= legalAge -> {
+                    zhuGong && gongKeGan && age > legalAge -> {
+                        kind = HunLianKind.BIAN_DONG
+                        text = "岁支${yb.chinese}助起克身之配偶宫（宫本克干）——夫妻关系恶化之年：口角压抑加剧（例三己巳庚午式）。"
+                    }
+                    sanHuiBian -> {
+                        kind = HunLianKind.BIAN_DONG
+                        text = triggers.first { it.contains("三会") }.let { "三会方局成而配偶星熄——婚变之年：身旺欺夫（妻），离异分手多应此（例七甲戌申酉戌会金式）。" }
+                    }
+                    xingGong && xingTou -> {
+                        kind = HunLianKind.TONG_JU
+                        text = "刑动配偶宫而配偶星并动——有人来到身边：恋爱同居之期（例十甲戌丑未戌三刑刑动财星宫式）。"
+                    }
+                    chongXing && age in legalAge..31 -> {
                         kind = HunLianKind.HUN_QING
                         text = "冲动配偶宫且届婚龄——婚庆大事之期：结婚、婚礼、生育多应此年（配偶星并动者尤验）。"
+                    }
+                    chongXing && age > 31 -> {
+                        kind = HunLianKind.BIAN_DONG
+                        text = "岁运与婚姻宫反吟（冲）而过适婚之年——婚变之期：配偶星被刑冲者离异难免，防分居失和。"
                     }
                     chongXing -> {
                         kind = HunLianKind.BIAN_DONG
@@ -316,9 +421,17 @@ object HunYinCalculator {
                         kind = HunLianKind.TONG_JU
                         text = "流年加临配偶宫——婚恋质变之年：恋爱同居、共处如夫妻（实质婚姻）；配偶星并动者成家尤验。"
                     }
+                    ganHeDay && xingTou && age >= legalAge -> {
+                        kind = HunLianKind.HUN_QING
+                        text = "岁干与日干相合而所合为配偶星——财（官）来合我，婚恋喜期：结婚喝喜酒多应此年（例十五丙辛合、例十二己甲合式）。"
+                    }
                     xingTou && gongDong -> {
                         kind = HunLianKind.LIAN_AI
                         text = "配偶星引动且配偶宫被引动——恋爱之年：新恋情萌动，异性缘至。"
+                    }
+                    zhengHe && heDong -> {
+                        kind = HunLianKind.LIAN_AI
+                        text = "流年与原局争合（两${yb.chinese}争合）——合被分争：有人介绍而难成，好事不到一月告吹。"
                     }
                     heDong -> {
                         kind = HunLianKind.TONG_JU
@@ -326,7 +439,15 @@ object HunYinCalculator {
                     }
                     tao && gongDong -> {
                         kind = HunLianKind.HUN_QING
-                        text = "桃花当值且配偶宫引动——婚庆嫁娶之期：恋情公开、缔结婚约（再婚之礼亦应此）。"
+                        text = "桃花当值且配偶宫引动——婚恋之喜：恋情缔结（无官杀逢财旺/无财逢财旺之年亦应）。"
+                    }
+                    shenFu -> {
+                        kind = HunLianKind.HUN_QING
+                        text = "太岁干支生扶身弱之日主且届婚龄——身得帮扶能胜财官，婚成之期（例九乙亥式）。"
+                    }
+                    anHeOnly -> {
+                        kind = HunLianKind.LIAN_AI
+                        text = "流年暗合配偶宫——暗中有情之年：有人暗中追求或地下情愫，无配偶星并动者多无果（竹篮打水）。"
                     }
                     xingTou || gongDong -> {
                         kind = HunLianKind.LIAN_AI
