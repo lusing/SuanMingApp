@@ -75,6 +75,7 @@ object HunYinCalculator {
     private val sanXingGroups = listOf(
         setOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN),
         setOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI),
+        setOf(EarthlyBranch.ZI, EarthlyBranch.MAO), // 子卯互刑
     )
 
     fun analyze(bazi: BaziResult, gender: Gender, daYun: DaYunInfo): HunYinResult {
@@ -104,6 +105,11 @@ object HunYinCalculator {
             )
         }
 
+        val shiEl = elementOf(GodCategory.SHI, dayEl)
+        val shangWangFlag = forces[shiEl]!! >= 3.0
+        val pianCaiFlag = bazi.stems.any { tenGodOfStem(day, it) == TenGod.PIAN_CAI } || bazi.branches.any { br ->
+            branchHiddenStems.getValue(br).firstOrNull()?.element == spouseEl
+        }
         // ── 配偶宫（日支） ──
         val palaceGod = tenGodOfStem(day, branchHiddenStems.getValue(dayBranch).first())
         val diZhi = DiZhiRelationCalculator.analyze(bazi)
@@ -284,6 +290,88 @@ object HunYinCalculator {
         if (allYang) {
             unfav += LiuQinItem("四柱纯阳", "四柱纯阳——婚姻难如意，${if (male) "婚姻不称心" else "性刚而婚多磨"}。")
         }
+        // ── 异性情缘(第六节) ──
+        run {
+            val heDuo = HeHuaCalculator.analyze(bazi).branchLiuHeList.size >= 2
+            // ④男遍地财/女官杀多——近水楼台(纵身弱)
+            val pianCai = bazi.stems.count { tenGodOfStem(day, it) == TenGod.PIAN_CAI } +
+                bazi.branches.count { br -> branchHiddenStems.getValue(br).firstOrNull()?.element == spouseEl }
+            if (male && forces[spouseEl]!! >= 2.5 && pianCai >= 1) {
+                fav += LiuQinItem(
+                    "遍地财·异性缘厚",
+                    "财星多旺(年月日均有财尤验)——异性缘非常好:自己不找异性也找上门,难以抵挡;年月有财初同床者略长于己(例一二式)",
+                )
+            }
+            if (!male && forces[spouseEl]!! >= 3.0) {
+                unfav += LiuQinItem("官杀多·异性缠身", "官杀多而旺——异性主动上门纠缠,纵身弱亦近水楼台;不清则感情纠葛多端。")
+            }
+            // ①身强星为用——追求执着
+            if (spouseCat in d.fav && StrengthEngine.analyze(bazi).verdict == DayStrength.STRONG) {
+                fav += LiuQinItem("身强星为用·追求执着", "身强而${if (male) "财" else "官杀"}为用——对异性追求热情执着,情场永不言败。")
+            }
+            // ②合多——气质吸引
+            if (heDuo) {
+                fav += LiuQinItem("合多·魅力气质", "柱中合多(尤地支六合成对)——独特魅力气质易得异性青睐,易达心灵沟通。")
+            }
+            // ③身旺伤官胆大 / ⑤身弱伤官重无财化——异性缘薄
+            val shangForce = forces[shiEl]!!
+            if (StrengthEngine.analyze(bazi).verdict == DayStrength.STRONG && shangForce >= 2.0) {
+                fav += LiuQinItem("身旺伤食·胆大敢追", "身旺而伤官食神有力——胆大富冒险善表达,敢想敢追;伤官食神亦主性欲,异性相吸(例四式,少年即有婚恋)。")
+            }
+            if (shangForce >= 2.5 && forces[spouseEl]!! <= 0.5) {
+                unfav += LiuQinItem(
+                    "身弱伤重无财化·异性缘薄",
+                    "身弱而伤官泄身过重又无财化泄——有色心无色胆,异性缘薄,有妻难寻(例五式,迟迟未婚配)。",
+                )
+            }
+        }
+        // ── 老少夫妻(第七节) ──
+        run {
+            // 官杀居年柱(父母辈)——嫁老夫;七杀入墓为偏房
+            if (!male) {
+                val shaNian = bazi.stems.getOrNull(0)?.let { tenGodOfStem(day, it) } == TenGod.QI_SHA ||
+                    branchHiddenStems.getValue(bazi.branches[0]).firstOrNull()
+                        ?.let { tenGodOfStem(day, it) } == TenGod.QI_SHA
+                val guanShaRuMu = bazi.branches.contains(LiuQinXiJi.tombOf[spouseEl]!!) && forces[spouseEl]!! <= 1.5
+                if (shaNian) {
+                    unfav += LiuQinItem(
+                        "官杀居年·招老夫",
+                        "七杀/官杀居年柱(父母辈)——丈夫年龄与父母辈不相上下,必嫁老夫" +
+                            (if (guanShaRuMu) ";七杀入墓为偏房,官星入墓作填房——不嫁老夫便为偏房填房(例一式)" else "") +
+                            "(实况多见大15岁以上)",
+                    )
+                }
+                // 官杀居年支入日时之墓——不招老夫必克夫(例四)
+                val riShiMu = bazi.branches.drop(2).contains(LiuQinXiJi.tombOf[spouseEl]!!) &&
+                    branchHiddenStems.getValue(bazi.branches[0]).any { it.element == spouseEl }
+                if (riShiMu) {
+                    unfav += LiuQinItem("年支官杀入日时墓", "官杀居年支而入日时之墓——不招老夫必克夫(例四式,夫大18岁)。")
+                }
+                // 伤官重重无财化——嫁白头郎或填房
+                if (shangWangFlag && forces[spouseEl]!! <= 1.0) {
+                    unfav += LiuQinItem("伤重无财化·嫁白头郎", "伤官重重又无财化泄——定嫁白头郎或填房;伤旺克夫者找老夫,否则不死则离(例七式)。")
+                }
+            }
+            // 戊癸合——老少配
+            val wuGuiHe = (bazi.stems.contains(HeavenlyStem.WU) && bazi.stems.contains(HeavenlyStem.GUI)) ||
+                (day == HeavenlyStem.WU && bazi.stems.contains(HeavenlyStem.GUI)) ||
+                (day == HeavenlyStem.GUI && bazi.stems.contains(HeavenlyStem.WU))
+            if (wuGuiHe) {
+                fav += LiuQinItem("戊癸合·老少之配", "柱逢戊癸之合(无情之合)——老夫配少妇,老妻配少夫,爱人年龄易悬殊。")
+            }
+            // 男伤食旺透+财从遍地财——小得多的情人
+            if (male && forces[shiEl]!! >= 2.5 && forces[spouseEl]!! <= 1.0 && pianCaiFlag) {
+                fav += LiuQinItem("伤食旺财从·少情人", "伤官食神旺透而财从遍地是财——胆大富冒险,有比己小得多的情人(例五式)。")
+            }
+            // 日干旺极弱极——悬殊;中和——差距小;冲战激烈(命硬)——悬殊或欠稳
+            val verdict = StrengthEngine.analyze(bazi).verdict
+            if (diZhi.chongList.size <= 1) {
+                fav += LiuQinItem("四柱平和·年龄相近", "四柱平和无大的冲战,日干中和——爱人年龄差距不大(例八九式,差1-4岁)。")
+            }
+            if (diZhi.chongList.size >= 2) {
+                unfav += LiuQinItem("冲战激烈·命硬", "四柱冲战激烈(命硬)——爱人年龄肯定悬殊,或婚姻欠稳定。")
+            }
+        }
         // ── 早婚/晚婚倾向(第五节) ──
         run {
             // 早婚①:配偶星现于年月柱,不被合走克破,为喜用
@@ -376,7 +464,7 @@ object HunYinCalculator {
         run {
             val posLabels2 = listOf("年支", "月支", "日支", "时支")
             val gongShang = mutableListOf<String>()
-            listOf(1, 3).forEach { i ->
+            listOf(0, 1, 3).forEach { i ->
                 val ob = bazi.branches[i]
                 when {
                     EarthlyBranch.entries[(ob.ordinal + 6) % 12] == dayBranch -> gongShang += "${posLabels2[i]}${ob.chinese}冲配偶宫"
@@ -393,6 +481,38 @@ object HunYinCalculator {
                     "配偶宫被${gongShang.joinToString("、")}——宫之状态即婚姻状态,原局有离婚隐患;" +
                         (if (heYue) "宫与月令合,预示配偶有外遇之兆;日柱干支比和者感情结合不牢,第三者可乘虚而入。" else "") +
                         "再逢刑冲合害配偶宫之大运流年即引发:轻则口角矛盾,重则离异(刑冲尤重)。",
+                )
+            }
+        }
+        // ── 婚外情倾向(第八节) ──
+        run {
+            val gongBeiked = listOf(1, 3).any { i ->
+                val ob = bazi.branches[i]
+                bazi.branches[i].element.controls == dayBranch.element && ob != dayBranch
+            }
+            val nanPianCaiDuo = male && bazi.stems.count { tenGodOfStem(day, it) == TenGod.PIAN_CAI } >= 1 &&
+                forces[spouseEl]!! >= 2.0
+            val nvShaDuo = !male && bazi.stems.count {
+                tenGodOfStem(day, it) == TenGod.QI_SHA || tenGodOfStem(day, it) == TenGod.ZHENG_GUAN
+            } >= 2
+            val shuiWang = forces[Element.WATER]!! >= 3.5
+            val gongShangFlag = unfav.any { it.dim == "配偶宫受伤·离婚隐患" }
+            val waiQing = mutableListOf<String>()
+            if (gongShangFlag) waiQing += "配偶宫被刑冲合害而结构不稳(异性乘虚而入)"
+            if (gongBeiked) waiQing += "配偶宫被月/时支所克(受损求补偿)"
+            if (nanPianCaiDuo) waiQing += "偏财多旺(树欲静而风不止,异性找上门)"
+            if (nvShaDuo) waiQing += "官杀多旺(异性主动纠缠)"
+            if (shuiWang || forces[shiEl]!! >= 2.0) waiQing += "${if (shuiWang) "水" else "食伤"}过旺(难控欲望易出轨)"
+            val xingRuCGong = sanXingGroups.any { bazi.branches[3] in it && dayBranch in it } ||
+                EarthlyBranch.entries[(bazi.branches[3].ordinal + 6) % 12] == dayBranch
+            if (male && branchHiddenStems.getValue(bazi.branches[3]).firstOrNull()?.element == spouseEl && xingRuCGong) {
+                waiQing += "配偶星居时柱而刑入配偶宫(婚后情人之象)"
+            }
+            if (waiQing.size >= 2) {
+                unfav += LiuQinItem(
+                    "婚外情倾向",
+                    waiQing.joinToString("、") + "——婚外情概率高:逢流年刑冲合害配偶宫引发(岁运只作环境,流年才是引信)," +
+                        "异性乘虚而入;食伤财星官杀当值之岁运尤应。偏财(七杀)透年而宫被合入库者,情人登场(例四癸未式)。",
                 )
             }
         }
@@ -562,6 +682,7 @@ object HunYinCalculator {
                 val xingGong = triggers.any { it.contains("刑配偶宫") }
                 val shenFu = (ln.pillar.stem.element == dayEl || ln.pillar.stem.element.generates == dayEl ||
                     yb.element == dayEl || yb.element.generates == dayEl) && age in legalAge..31 // 印比扶身届婚龄（身弱尤验——例九乙亥）
+                val waiQingFlag = unfav.any { it.dim == "婚外情倾向" }
                 val gongKeGan = dayBrEl.controls == dayEl
                 val zhuGong = yb == dayBranch || (gongKeGan && yb.element == dayBranch.element)
                 // 离婚引发:原局宫有伤(冲刑合害)而流年再刑冲合害宫——状态再变,婚变之应
@@ -611,6 +732,11 @@ object HunYinCalculator {
                     jiaLin -> {
                         kind = HunLianKind.TONG_JU
                         text = "流年加临配偶宫——婚恋质变之年：恋爱同居、共处如夫妻（实质婚姻）；配偶星并动者成家尤验。"
+                    }
+                    waiQingFlag && triggers.any { it.contains("合动") || it.contains("三合") } && xingTou && age > legalAge -> { // 明合(暗合属暗恋非婚外)
+                        kind = HunLianKind.BIAN_DONG
+                        text = "配偶宫被合动而配偶星并透,原局带婚外情倾向——婚外情引发之年:第三方进入配偶生活," +
+                            (if (male) "偏财(情人)透干尤验" else "官杀(情人)透干尤验") + ";原配退位之象(例四癸未式)。"
                     }
                     ganHeDay && xingTou && age >= legalAge -> {
                         kind = HunLianKind.HUN_QING
