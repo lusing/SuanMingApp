@@ -55,7 +55,13 @@ object BaziCalculator {
         val yearPillar = calculateYearPillar(birthDate)
         val monthPillar = calculateMonthPillar(birthDate, yearPillar.stem)
         val dayPillar = calculateDayPillar(birthDate)
-        val hourPillar = calculateHourPillar(birthDate.hour, dayPillar.stem)
+        // 夜子时（23:00-24:00）：日柱不进，时干按次日干起子时——壬日夜子=壬子（水专旺篇两例）
+        val hourPillar = if (birthDate.hour == 23) {
+            val nextStem = HeavenlyStem.fromIndex(floorMod(dayPillar.stem.ordinal + 1, 10))
+            calculateHourPillar(0, nextStem)
+        } else {
+            calculateHourPillar(birthDate.hour, dayPillar.stem)
+        }
         return BaziResult(
             yearPillar = yearPillar,
             monthPillar = monthPillar,
