@@ -241,11 +241,17 @@ object CongGeYunCalculator {
                 val x = pb
                 val strong = ps == pb || ps.generates == pb || pb.generates == ps // 双体/覆载相生
                 if (strong) {
-                    // 转正格取印绶（化官生身）；印不在三行中则取克破格之行者
-                    val yong = shi.firstOrNull { it == yinEl } ?: shi.firstOrNull { it.controls == x } ?: yinEl
+                    // 转正格取用随foe型：印型foe（生身之破格行——火土金之木）→身旺印旺，取财（在shi）或食伤损印耗身；
+                    // 其余 → 印绶（在shi）化官制伤生身，印不在三行取比劫（火土金之水→丁日取火）
+                    val yong = if (x.generates == dayEl) {
+                        shi.firstOrNull { it == dayEl.controls } ?: shi.firstOrNull { it == dayEl.generates } ?: dayEl
+                    } else {
+                        shi.firstOrNull { it == yinEl } ?: dayEl
+                    }
                     verdict = YunVerdict.HUAN_YUAN; newEl = yong
-                    basis = "岁运${p.fullName}：${x.chinese}强旺扭转格局气势——转为正格（日主克泄交加偏弱），" +
-                        "用神取印绶${yong.chinese}以化官制伤生身，平衡局中气势"
+                    basis = "岁运${p.fullName}：${x.chinese}强旺扭转格局气势——转为正格，" +
+                        (if (x.generates == dayEl) "身旺印旺食伤财星弱，用神取${yong.chinese}损印耗身"
+                         else "日主克泄交加偏弱，用神取${yong.chinese}（印比扶身化官）") + "，平衡局中气势"
                 } else {
                     verdict = YunVerdict.JI; newEl = null
                     basis = "岁运${p.fullName}：${x.chinese}衰弱无力扭转格局，反逆乱${shi.joinToString("") { it.chinese }}三气纯势——忌神"

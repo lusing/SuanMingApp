@@ -326,6 +326,54 @@ object TeShuGeJuCalculator {
             }
         }
 
+        // ── 3. 三气成象：日主有力参与三行连环相生，弱者补之 ──
+        // 日主为链首（木生火生土之泄秀流）不忌身弱——戊辰丁巳甲寅乙丑甲木巳月休囚仍成象；
+        // 链尾受生（土金水之杀印型——通关一）身弱仍归正格
+        val engine = StrengthEngine.analyze(bazi)
+        for (start in Element.entries) {
+            if (engine.verdict == DayStrength.WEAK && start != dayEl) continue
+                val mid = start.generates
+                val end = mid.generates
+                if (start == end) continue
+                val lines = listOf(start, mid, end)
+                if (dayEl !in lines) continue
+                // 印重身轻（印≥日×2.5，身弱不受生）→从印非三气（丁卯壬寅丁卯壬寅）；潮州李印:日=4:2 仍三气
+                val yinGuoZhong = f[yinEl]!! >= f[dayEl]!! * 2.5
+                // 三行力以朴素原始力计（弱旺如书感——己丑己巳丁巳己酉金唯酉1"略偏弱"）；
+                // 门槛≥1且有根透即可；日主自立须本气根或日行支双现（丁巳盘巳巳双根——缪先生无金支仍从水木火）
+                val f3 = Element.entries.associateWith { el ->
+                    (bazi.stems.count { it.element == el } + branches.count { it.element == el }).toDouble() +
+                        (if (bazi.monthPillar.branch.element == el) 2.0 else 0.0)
+                }
+                val f3t = f3.toMutableMap()
+                for ((bs, el) in heJu) for (b in bs.toSet()) {
+                    if (b.element != el && b in branches) { f3t[b.element] = (f3t[b.element]!! - 1).coerceAtLeast(0.0); f3t[el] = f3t[el]!! + 1 }
+                }
+                // 自立：本气根、日行支双现、或坐下通根（日支本气/藏干含日行——甲寅、潮州李辛巳藏庚；缪先生庚子无金）
+                val daySelfRoot = hasBenQiRoot || branches.count { it.element == dayEl } >= 2 ||
+                    bazi.dayPillar.branch.element == dayEl || branchHiddenStems.getValue(bazi.dayPillar.branch).any { it.element == dayEl } ||
+                    // 透干比劫坐生扶支（例三甲寅丙寅丁丑丁未之丙坐寅印生；缪先生辛坐巳被克不算）
+                    listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).any {
+                        it.stem.element == dayEl && (it.branch.element == dayEl || it.branch.element.generates == dayEl)
+                    }
+                if (daySelfRoot && !yinGuoZhong && lines.all { f3t[it]!! >= 2 } &&
+                    Element.entries.filter { it !in lines }.all { f3t[it]!! <= 1.5 }) {
+                    val sorted = lines.sortedBy { f3[it]!! } // 弱者在前（原始力——金唯酉1"略偏弱"；转移图只作门槛）
+                    // 破格之行值运有力 → 正格取用
+                    val poLines = Element.entries.filter { it !in lines }
+                    if (extraPillars.any { p -> p.stem.element in poLines && p.branch.element in poLines }) return null
+                    return TeShuGeJuResult(
+                        kind = TeShuKind.SAN_QI,
+                        name = lines.joinToString("") { it.chinese } + "三气成象",
+                        yongShen = sorted, xi = sorted.drop(1), ji = poLines,
+                        fake = false, restoreHint = "破格之行（${poLines.joinToString("") { it.chinese }}）值运有力则按正格取用",
+                        basis = "日主有力，${lines.joinToString("→") { it.chinese }}三气成象秀气流通。" +
+                            "三行中弱者补之：首补${sorted.first().chinese}（原局${sorted.joinToString("") { "${it.chinese}${fmtI(f[it]!!)}" }}）。" +
+                            "岁运用神到位（补弱之行）则兴旺；破格之行值运有力则按正格取用。",
+                    )
+                }
+        }
+
         if (!hasBenQiRoot) {
             // 变节力转移：合局成员本气之力与月令加成随化神计（丑在亥子丑水局内之力归水）
             val fAdj = f.toMutableMap()
@@ -495,35 +543,6 @@ object TeShuGeJuCalculator {
             }
         }
 
-        // ── 3. 三气成象：日主有力参与三行连环相生，弱者补之 ──
-        // 日主为链首（木生火生土之泄秀流）不忌身弱——戊辰丁巳甲寅乙丑甲木巳月休囚仍成象；
-        // 链尾受生（土金水之杀印型——通关一）身弱仍归正格
-        val engine = StrengthEngine.analyze(bazi)
-        for (start in Element.entries) {
-            if (engine.verdict == DayStrength.WEAK && start != dayEl) continue
-                val mid = start.generates
-                val end = mid.generates
-                if (start == end) continue
-                val lines = listOf(start, mid, end)
-                if (dayEl !in lines) continue
-                // 印重身轻（印≥日×2.5，身弱不受生）→从印非三气（丁卯壬寅丁卯壬寅）；潮州李印:日=4:2 仍三气
-                val yinGuoZhong = f[yinEl]!! >= f[dayEl]!! * 2.5
-                if (!yinGuoZhong && lines.all { f[it]!! >= 2 } && Element.entries.filter { it !in lines }.all { f[it]!! <= 1.5 }) {
-                    val sorted = lines.sortedBy { f[it]!! } // 弱者在前
-                    // 破格之行值运有力 → 正格取用
-                    val poLines = Element.entries.filter { it !in lines }
-                    if (extraPillars.any { p -> p.stem.element in poLines && p.branch.element in poLines }) return null
-                    return TeShuGeJuResult(
-                        kind = TeShuKind.SAN_QI,
-                        name = lines.joinToString("") { it.chinese } + "三气成象",
-                        yongShen = sorted, xi = sorted.drop(1), ji = poLines,
-                        fake = false, restoreHint = "破格之行（${poLines.joinToString("") { it.chinese }}）值运有力则按正格取用",
-                        basis = "日主有力，${lines.joinToString("→") { it.chinese }}三气成象秀气流通。" +
-                            "三行中弱者补之：首补${sorted.first().chinese}（原局${sorted.joinToString("") { "${it.chinese}${fmtI(f[it]!!)}" }}）。" +
-                            "岁运用神到位（补弱之行）则兴旺；破格之行值运有力则按正格取用。",
-                    )
-                }
-        }
         return null
     }
 
