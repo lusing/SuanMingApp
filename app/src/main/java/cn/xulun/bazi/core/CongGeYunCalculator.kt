@@ -277,6 +277,47 @@ object CongGeYunCalculator {
             }
             banHe || banHui || liuPull
         }
+        // 拉走是否阻断转格：六合捕获（子丑合住——壬子庚子）恒阻断；
+        // 半合/半会唯**墓库支**（丑辰未戌被旺局吞没——戊辰己未之土损、庚辰辛未失生）阻断，
+        // 生地支（巳寅亥申）之合为顺势长生不损干（丁巳巳酉合金仍强旺转格）
+        val pulledBlocks = run {
+            if (pb == dayEl || pb == yinEl) return@run false
+            val liuB = listOf(
+                (EarthlyBranch.ZI to EarthlyBranch.CHOU) to Element.EARTH,
+                (EarthlyBranch.YIN to EarthlyBranch.HAI) to Element.WOOD,
+                (EarthlyBranch.MAO to EarthlyBranch.XU) to Element.FIRE,
+                (EarthlyBranch.CHEN to EarthlyBranch.YOU) to Element.METAL,
+                (EarthlyBranch.SI to EarthlyBranch.SHEN) to Element.WATER,
+                (EarthlyBranch.WU to EarthlyBranch.WEI) to Element.EARTH,
+            ).any { (pr, el) ->
+                el == dayEl && (p.branch == pr.first || p.branch == pr.second) &&
+                    (if (p.branch == pr.first) pr.second in bazi.branches else pr.first in bazi.branches)
+            }
+            val muKu = p.branch in setOf(EarthlyBranch.CHOU, EarthlyBranch.CHEN, EarthlyBranch.WEI, EarthlyBranch.XU)
+            liuB || (pulledPartial && muKu)
+        }
+        // 支与原局半合（中神在原局，p.branch 为生地/墓地）化神即日主行 → 支归局（巳酉合金——辛巳助旺为用）
+        val zhiGuiJu = run {
+            val zhong = mapOf(
+                Element.WOOD to EarthlyBranch.MAO, Element.FIRE to EarthlyBranch.WU,
+                Element.METAL to EarthlyBranch.YOU, Element.WATER to EarthlyBranch.ZI,
+            )
+            val banHeGui = zhong[dayEl]?.let { z ->
+                triAll.any { (g, _) -> z in g && p.branch in g && p.branch != z && z in bazi.branches }
+            } == true
+            val liuGui = listOf(
+                (EarthlyBranch.ZI to EarthlyBranch.CHOU) to Element.EARTH,
+                (EarthlyBranch.YIN to EarthlyBranch.HAI) to Element.WOOD,
+                (EarthlyBranch.MAO to EarthlyBranch.XU) to Element.FIRE,
+                (EarthlyBranch.CHEN to EarthlyBranch.YOU) to Element.METAL,
+                (EarthlyBranch.SI to EarthlyBranch.SHEN) to Element.WATER,
+                (EarthlyBranch.WU to EarthlyBranch.WEI) to Element.EARTH,
+            ).any { (pr, el) ->
+                el == dayEl && (p.branch == pr.first || p.branch == pr.second) &&
+                    (if (p.branch == pr.first) pr.second in bazi.branches else pr.first in bazi.branches)
+            }
+            banHeGui || liuGui
+        }
         // 岁运干与原局透干（含日干）五合化神即日主行——贪合化势顺局：
         // 甲子与日柱己丑天地合化土（格局未变仍取土为用）；甲辰甲戌甲合己化土而支归比劫——不以忌论
         val heHuaShunJu = run {
@@ -299,6 +340,17 @@ object CongGeYunCalculator {
             }
             heOk && (pb == dayEl || pb == yinEl || zhiHe)
         }
+        // 岁运干与原局透干（含日干）五合（不限化神）——被合绊（癸巳戊癸合）
+        val ganHe = listOf(bazi.dayPillar.stem, bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+            .filter { it !== p.stem }
+            .any { o -> (p.stem.ordinal - o.ordinal + 10) % 5 == 0 && p.stem.ordinal != o.ordinal }
+        // 五合且化神即日主行——真化顺局（乙巳乙庚化金），纵支为墓库被吞亦顺（乙丑酉丑半合仍不以忌论）
+        val ganHeDay = listOf(bazi.dayPillar.stem, bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+            .filter { it !== p.stem }
+            .any { o ->
+                (p.stem.ordinal - o.ordinal + 10) % 5 == 0 && p.stem.ordinal != o.ordinal &&
+                    heEl(minOf(p.stem.ordinal, o.ordinal)) == dayEl
+            }
 
         val verdict: YunVerdict
         val newEl: Element?
@@ -320,6 +372,16 @@ object CongGeYunCalculator {
                 basis = "岁运${p.fullName}：支${p.branch.chinese}与原局合入本局（弥补合局不全、反加大格局气势），" +
                     "干头${p.stem.chinese}（${ps.chinese}）衰微只能顺从旺${dayEl.chinese}，利大于弊——喜用神"
             }
+            // 支与原局半合/六合化神即日主行 → 支归局：真化（干合化神即日主行——乙巳乙庚化金）恒顺局；
+            // 干为比劫（辛巳巳酉合金）或干被合绊（癸巳戊癸合）须支未被吞（丙戌比坐墓库被午戌半合吞仍忌）——
+            // 助局之利大于杂局之弊，不以忌论（印支本身如辰仍归印档——戊辰己丑双体印为喜）
+            zhiGuiJu && pb != yinEl && pb != dayEl &&
+                (ganHeDay || (!pulledBlocks && (ps == dayEl || ps == yinEl || ganHe))) -> {
+                verdict = if (ps == dayEl || ps == yinEl) YunVerdict.YONG else YunVerdict.XI; newEl = null
+                basis = "岁运${p.fullName}：支${p.branch.chinese}与原局半合化${dayEl.chinese}归局" +
+                    (if (ps == dayEl || ps == yinEl) "，干${p.stem.chinese}比印扶旺——用神到位"
+                     else "，干${p.stem.chinese}被原局合绊衰微顺从——喜用神不以忌论")
+            }
             // 印绶 → 喜神到位
             pb == yinEl -> {
                 verdict = YunVerdict.XI; newEl = null
@@ -332,14 +394,23 @@ object CongGeYunCalculator {
                     verdict = YunVerdict.JI; newEl = null
                     basis = "岁运${p.fullName}与专旺气势关联不紧——以平淡偏忌论"
                 } else {
+                    // 干与原局透干五合化神为转格线而支即该行——化势转格（丙子：丙辛合水+子水，食伤泄秀为用）
+                    val heEl0 = listOf(bazi.dayPillar.stem, bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+                        .filter { it !== p.stem }
+                        .mapNotNull { o ->
+                            if ((p.stem.ordinal - o.ordinal + 10) % 5 == 0 && p.stem.ordinal != o.ordinal)
+                                heEl(minOf(p.stem.ordinal, o.ordinal)) else null
+                        }
+                        .firstOrNull { it in po3 }
                     // 强旺：双体或覆载相生（受生者须为转格线——财生官/食伤生财/比生食伤/印生干）
                     val newE = when {
                         ps == pb -> ps
                         pb.generates == ps && ps in po3 -> ps
                         ps.generates == pb && pb in po3 -> pb
+                        heEl0 != null && pb == heEl0 -> heEl0
                         else -> null
                     }
-                    if (newE != null && !pulledPartial) {
+                    if (newE != null && !pulledBlocks) {
                         verdict = YunVerdict.ZHUAN_GE; newEl = newE
                         basis = "岁运${p.fullName}：" + when (newE) {
                             guanEl -> "官杀（${newE.chinese}）干支强旺克住日主，与旺${dayEl.chinese}成身杀两停——转格取官杀为用，财滋杀为喜"
