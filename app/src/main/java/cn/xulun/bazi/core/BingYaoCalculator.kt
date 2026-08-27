@@ -4,6 +4,7 @@ import cn.xulun.bazi.model.BaziResult
 import cn.xulun.bazi.model.BingYaoResult
 import cn.xulun.bazi.model.CongGeKind
 import cn.xulun.bazi.model.DayStrength
+import cn.xulun.bazi.model.EarthlyBranch
 import cn.xulun.bazi.model.Element
 import cn.xulun.bazi.model.GodCategory
 import cn.xulun.bazi.model.TiaoHouState
@@ -78,10 +79,12 @@ object BingYaoCalculator {
             )
         }
 
-        // ── 4. 找病 ──
+        // ── 4. 找病（官杀透干贴克，最直接之病优先；第卅九节对症下药） ──
         val bing: GodCategory
         if (strength == DayStrength.WEAK) {
-            bing = listOf(GodCategory.GUAN, GodCategory.CAI, GodCategory.SHI).maxBy { fc(it) }
+            val guanTouGan = bazi.stems.any { it.element == el(GodCategory.GUAN) && it != bazi.dayPillar.stem }
+            bing = if (guanTouGan && fc(GodCategory.GUAN) >= 2) GodCategory.GUAN
+            else listOf(GodCategory.GUAN, GodCategory.CAI, GodCategory.SHI).maxBy { fc(it) }
         } else {
             bing = listOf(GodCategory.YIN, GodCategory.BI).maxBy { fc(it) }
         }
@@ -90,10 +93,12 @@ object BingYaoCalculator {
         val (yong, method, xi, ji, cure) = if (strength == DayStrength.WEAK) cureWeak(bazi, bing, fc, el) else cureStrong(bazi, bing, fc, el)
 
         val tiaoHou = tiaoHouState(bazi, el(yong))
+        val tiaoHouElCh = TiaoHouCalculator.analyze(bazi).tiaoHouElement?.chinese ?: ""
         val tiaoHouNote = when (tiaoHou) {
             TiaoHouState.ALIGNED -> "调候用神与扶抑用神同为${el(yong).chinese}，一药双效。"
             TiaoHouState.CONFLICT -> "调候与扶抑对立，以扶抑为主（截肢保命），美中不足。"
             TiaoHouState.WU_GEN -> "调候之神虚透无根，不宜调候，反宜顺势；岁运逢根防水火交战。"
+            TiaoHouState.ZI_TIAO -> "命局组合已自调寒暖，不需再调候；岁运再逢旺${tiaoHouElCh}反致病（如子月火局自暖再逢火则火多水干）。"
             TiaoHouState.NONE -> ""
         }
 
@@ -226,6 +231,20 @@ object BingYaoCalculator {
     /** 调候与扶抑的关系。 */
     private fun tiaoHouState(bazi: BaziResult, yongEl: Element): TiaoHouState {
         val tiaoHouEl = TiaoHouCalculator.analyze(bazi).tiaoHouElement ?: return TiaoHouState.NONE
+        // 命局自调：寒月火成势 / 燥月水成势（化局全或透干+两支），不需再调候（再逢反病）
+        val m = bazi.monthPillar.branch
+        val cold = m == EarthlyBranch.HAI || m == EarthlyBranch.ZI || m == EarthlyBranch.CHOU
+        val zao = m == EarthlyBranch.SI || m == EarthlyBranch.WU || m == EarthlyBranch.WEI
+        val shiHua = HeHuaCalculator.analyze(bazi).let {
+            it.branchSanHuiList.any { h -> h.resultElement == tiaoHouEl } ||
+                it.branchLiuHeList.isNotEmpty() && false
+        }
+        val sanHe = DiZhiRelationCalculator.analyze(bazi).sanHeList.any { it.resultElement == tiaoHouEl }
+        val touGan = bazi.stems.any { it.element == tiaoHouEl && it != bazi.dayPillar.stem }
+        val zhiCount = bazi.branches.count { it.element == tiaoHouEl }
+        val chengShi = sanHe || shiHua || (touGan && zhiCount >= 2)
+        if (cold && tiaoHouEl == Element.FIRE && chengShi) return TiaoHouState.ZI_TIAO
+        if (zao && tiaoHouEl == Element.WATER && chengShi) return TiaoHouState.ZI_TIAO
         return when {
             tiaoHouEl == yongEl -> TiaoHouState.ALIGNED
             !rooted(bazi, tiaoHouEl) -> TiaoHouState.WU_GEN

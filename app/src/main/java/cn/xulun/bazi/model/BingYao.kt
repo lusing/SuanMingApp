@@ -20,6 +20,8 @@ enum class TiaoHouState(val chinese: String) {
     ALIGNED("调候扶抑一致"),
     CONFLICT("调候冲突，以扶抑为主"),
     WU_GEN("调候神无根，不宜调候"),
+    /** 命局组合已自调寒暖（如子月火局成势），不需调候；再逢反病 */
+    ZI_TIAO("命局自调，不需调候"),
 }
 
 /**

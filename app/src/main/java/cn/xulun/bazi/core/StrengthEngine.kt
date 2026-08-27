@@ -352,9 +352,18 @@ object StrengthEngine {
         val yinTotal = yinUnits.sumOf { it.score }
         val guanTotal = guanUnits.sumOf { it.score }
         if (guanTotal > 0 && yinTotal > 0 && yinRooted(bazi, dayEl)) {
-            // 官不压倒印（≤印×2.2）方能全数转化（两面撮合）；官远强于印则有形无实（忌神越关照克）
-            val t = if (guanTotal <= yinTotal * 2.2) min(guanTotal, yinTotal * 2) * TRANSFER_K
-                    else yinTotal * 0.4
+            // 通关用神必须有力（第卅九节）：印透干或两支以上方堪全数转化（两面撮合）；
+            // 印单支不透则原局无通关（唯靠岁运），官远强于印有形无实（忌神越关照克）
+            val yinEl = Element.entries.first { e -> e.generates == dayEl }
+            val yinStrong = units.any { it.isStem && it.element == yinEl } ||
+                units.count { (it.effectiveElement ?: it.element) == yinEl } >= 2
+            // 印不力（单支不透）：全数转化不给（原局无通关，唯靠岁运）；
+            // 官远强于印的有形无实档仍可吸纳一部分（第卅九节通关一例）
+            val t = when {
+                !yinStrong && guanTotal <= yinTotal * 2.2 -> 0.0
+                guanTotal <= yinTotal * 2.2 -> min(guanTotal, yinTotal * 2) * TRANSFER_K
+                else -> yinTotal * 0.4
+            }
             b -= t; a += t * 0.8
         }
         // 寒暖燥湿折减：寒月（亥子丑）非水日主、燥月（巳午未）非火土日主，扶方×0.9（调候章）

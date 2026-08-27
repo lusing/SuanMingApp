@@ -268,6 +268,31 @@ class BingYaoCalculatorTest {
         assertEquals(TiaoHouState.CONFLICT, r.tiaoHou)
     }
 
+    @Test fun `调候矛盾局 辛丑癸巳丁酉壬寅 夏月组合致弱水调候为忌`() {
+        // 教材补例：丁火生巳月但巳酉丑合金致弱；水克身为忌，调候与扶抑对立，唯靠岁运水木兼行调节
+        val r = BingYaoCalculator.analyze(chartOf(
+            HeavenlyStem.XIN, EarthlyBranch.CHOU,
+            HeavenlyStem.GUI, EarthlyBranch.SI,
+            HeavenlyStem.DING, EarthlyBranch.YOU,
+            HeavenlyStem.REN, EarthlyBranch.YIN,
+        ))
+        assertEquals(DayStrength.WEAK, r.strength)
+        assertEquals(GodCategory.GUAN, r.bing)
+        assertEquals(TiaoHouState.CONFLICT, r.tiaoHou)
+        org.junit.Assert.assertTrue("水为忌：${r.jiShen}", r.jiShen.contains(GodCategory.GUAN))
+    }
+
+    @Test fun `自调局 戊戌甲子壬寅丙午 子月火局自暖不需调候`() {
+        // 教材补例二：支全寅午戌丙透，命局本身之火足暖，不需再调候；再逢旺火反致火多水干
+        val r = BingYaoCalculator.analyze(chartOf(
+            HeavenlyStem.WU, EarthlyBranch.XU,
+            HeavenlyStem.JIA, EarthlyBranch.ZI,
+            HeavenlyStem.REN, EarthlyBranch.YIN,
+            HeavenlyStem.BING, EarthlyBranch.WU,
+        ))
+        assertEquals(TiaoHouState.ZI_TIAO, r.tiaoHou)
+    }
+
     @Test fun `暖极寒无根 癸未丁巳丙午癸巳 不宜调候顺势`() {
         // 教材：巳午未会火暖极，癸弱水无根不可用；岁运逢根反致水火交战
         val r = BingYaoCalculator.analyze(bazi(
