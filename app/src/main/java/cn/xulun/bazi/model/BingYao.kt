@@ -47,6 +47,8 @@ data class BingYaoResult(
     val tiaoHou: TiaoHouState,
     /** 推理链说明 */
     val basis: String,
+    /** 干支强弱排序（八步法引擎产出），如"亥子甲未己丑辛丁" */
+    val strengthRanking: String = "",
 ) {
     override fun toString(): String =
         "${method.chinese}取${yongShen.chinese}（${yongShenElement.chinese}），病${bing?.chinese ?: "无"}，${strength.chinese}"

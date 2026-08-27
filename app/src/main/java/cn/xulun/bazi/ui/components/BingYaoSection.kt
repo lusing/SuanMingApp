@@ -50,6 +50,11 @@ fun BingYaoSection(result: BingYaoResult, modifier: Modifier = Modifier) {
                 Text(text = auxiliary, fontSize = 13.sp, color = Color(0xFF616161))
             }
             Text(
+                text = "干支强弱：${result.strengthRanking}",
+                fontSize = 12.sp,
+                color = Color(0xFF616161),
+            )
+            Text(
                 text = result.basis,
                 fontSize = 12.sp,
                 color = if (result.method.chinese == "顺势") SeedRed else Color(0xFF757575),

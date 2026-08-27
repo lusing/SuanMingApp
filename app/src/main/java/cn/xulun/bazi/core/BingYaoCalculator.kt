@@ -2,7 +2,6 @@ package cn.xulun.bazi.core
 
 import cn.xulun.bazi.model.BaziResult
 import cn.xulun.bazi.model.BingYaoResult
-import cn.xulun.bazi.model.EarthlyBranch
 import cn.xulun.bazi.model.CongGeKind
 import cn.xulun.bazi.model.DayStrength
 import cn.xulun.bazi.model.Element
@@ -10,7 +9,6 @@ import cn.xulun.bazi.model.GodCategory
 import cn.xulun.bazi.model.TiaoHouState
 import cn.xulun.bazi.model.YongShenMethod
 import cn.xulun.bazi.model.branchHiddenStems
-import kotlin.math.min
 
 /**
  * 病药取用（传统扶抑法）：通关、扶抑、顺势、调候。理论见 `.shengke-reference.md` 第卅九~四一节。
@@ -18,19 +16,9 @@ import kotlin.math.min
  * 与子平真诠用神（[YongShenCalculator]）是两派并行：本器以「病药」为纲——
  * 找最关键之病（致病十神大类），对症下药（用神大类），通关为扶抑之特殊形式。
  *
- * 力量模型（粗称，待八步法引擎升级替换）：
- * - 干 1、支本气 1、月令本气再 +2（共 3）；
- * - 克身（官杀）权重 1.3、泄身（食伤）权重 0.8——克重于泄；
- * - 印有根时通关转移：官杀之力经印部分转为生身（×0.6，受印力上限约束）；
- * - 比劫透干 ≥3 为党众聚势（+1）。
+ * 强弱档位由 [StrengthEngine]（八步法）接管；病与药的辨识仍用干支计数粗称（锚点已验证）。
  */
 object BingYaoCalculator {
-
-    private const val GUAN_W = 1.3
-    private const val SHI_W = 0.8
-    private const val TRANSFER_K = 0.6
-    private const val CLIMATE_K = 0.9
-    private const val STRONG_TH = 1.2
 
     /** 十神大类相对日主五行的五行。 */
     fun elementOf(category: GodCategory, dayEl: Element): Element = when (category) {
@@ -39,18 +27,6 @@ object BingYaoCalculator {
         GodCategory.SHI -> dayEl.generates
         GodCategory.CAI -> dayEl.controls
         GodCategory.GUAN -> Element.entries.first { it.controls == dayEl }
-    }
-
-    /** 寒暖燥湿折减系数：寒月（亥子丑）土木金火受冻、燥月（巳午未）水金木受灼；免：冬水、夏火土。 */
-    private fun climatePenalty(bazi: BaziResult, dayEl: Element): Double {
-        val m = bazi.monthPillar.branch
-        return when (m) {
-            EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU ->
-                if (dayEl == Element.WATER) 1.0 else CLIMATE_K
-            EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI ->
-                if (dayEl == Element.FIRE || dayEl == Element.EARTH) 1.0 else CLIMATE_K
-            else -> 1.0
-        }
     }
 
     /** 五行之力：干 1、支本气 1、月令本气再 +2。 */
@@ -84,28 +60,10 @@ object BingYaoCalculator {
             return shunShi(bazi, congGe.kind, congGe.basis, f, dayEl)
         }
 
-        // ── 2. 强弱（含通关转移、党众与寒暖燥湿折减） ──
-        var support = fc(GodCategory.BI) + fc(GodCategory.YIN)
-        var guanF = fc(GodCategory.GUAN)
-        val transfer = if (rooted(bazi, el(GodCategory.YIN))) min(guanF, fc(GodCategory.YIN)) * TRANSFER_K else 0.0
-        support += transfer
-        guanF -= transfer
-        val dangZhong = bazi.stems.count { it.element == dayEl } >= 3
-        if (dangZhong) support += 1.0
-        // 寒暖燥湿折减：寒月土木金火受冻、燥月水金木受灼（当令之水/火土免）
-        val climatePenalty = climatePenalty(bazi, dayEl)
-        if (climatePenalty < 1.0) support *= climatePenalty
-        val drain = guanF * GUAN_W + fc(GodCategory.CAI) + fc(GodCategory.SHI) * SHI_W
-        val diff = support - drain
-        val strength = when {
-            diff >= STRONG_TH -> DayStrength.STRONG
-            diff < 0 -> DayStrength.WEAK
-            else -> DayStrength.BALANCED
-        }
-        val strengthNote = "扶方${fmt(support)}对耗方${fmt(drain)}" +
-            (if (transfer > 0) "（印通根，官杀之力经印转移${fmt(transfer)}生身）" else "") +
-            (if (dangZhong) "（比劫透干党众+1）" else "") +
-            (if (climatePenalty < 1.0) "（日主失时于寒暖燥湿，力×${climatePenalty}）" else "")
+        // ── 2. 强弱 → 强弱引擎（八步法）接管 ──
+        val engine = StrengthEngine.analyze(bazi)
+        val strength = engine.verdict
+        val strengthNote = "八步法干支序${engine.ranking}，扶方${fmt(engine.aSide)}对耗方${fmt(engine.bSide)}"
 
         // ── 3. 中和无病 ──
         if (strength == DayStrength.BALANCED) {
@@ -116,6 +74,7 @@ object BingYaoCalculator {
                 method = YongShenMethod.WU_BING, xiShen = null, jiShen = emptyList(),
                 tiaoHou = tiaoHouState(bazi, el(yong)),
                 basis = "日主中和无大病（${strengthNote}），岁运忌大起大落，顺势取${el(yong).chinese}流通。",
+                strengthRanking = engine.ranking,
             )
         }
 
@@ -149,6 +108,7 @@ object BingYaoCalculator {
             jiShen = ji,
             tiaoHou = tiaoHou,
             basis = "日主${strength.chinese}（${strengthNote}），病在${bing.chinese}（${el(bing).chinese}${fmt(fc(bing))}）。$cure${tiaoHouNote}",
+            strengthRanking = engine.ranking,
         )
     }
 
