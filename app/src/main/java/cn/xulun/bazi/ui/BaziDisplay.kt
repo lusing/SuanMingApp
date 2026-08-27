@@ -54,6 +54,7 @@ import cn.xulun.bazi.ui.components.WealthSection
 import cn.xulun.bazi.ui.components.BingYaoSection
 import cn.xulun.bazi.ui.components.MingGongSection
 import cn.xulun.bazi.ui.components.HuoQuYongSection
+import cn.xulun.bazi.ui.components.JinQuYongSection
 import cn.xulun.bazi.ui.components.MuQuYongSection
 import cn.xulun.bazi.ui.components.TuQuYongSection
 import cn.xulun.bazi.ui.components.WuXingFlowSection
@@ -186,6 +187,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
             cn.xulun.bazi.model.Element.WOOD -> MuQuYongSection(result = cn.xulun.bazi.core.MuQuYongCalculator.analyze(result))
             cn.xulun.bazi.model.Element.FIRE -> HuoQuYongSection(result = cn.xulun.bazi.core.HuoQuYongCalculator.analyze(result))
             cn.xulun.bazi.model.Element.EARTH -> TuQuYongSection(result = cn.xulun.bazi.core.TuQuYongCalculator.analyze(result))
+            cn.xulun.bazi.model.Element.METAL -> JinQuYongSection(result = cn.xulun.bazi.core.JinQuYongCalculator.analyze(result))
             else -> {}
         }
     }

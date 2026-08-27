@@ -23,13 +23,14 @@ fun chartOf(
     mStem: HeavenlyStem, mBranch: EarthlyBranch,
     dStem: HeavenlyStem, dBranch: EarthlyBranch,
     hStem: HeavenlyStem, hBranch: EarthlyBranch,
+    fromYear: Int = 1700, toYear: Int = 2050,
 ): BaziResult {
     val targetDayIdx = (0..59).first { i ->
         HeavenlyStem.fromIndex(i) == dStem && EarthlyBranch.fromIndex(i) == dBranch
     }
     val anchor = LocalDate.of(1985, 5, 20) // 己未
-    var date = LocalDate.of(1700, 1, 1)
-    val end = LocalDate.of(2051, 1, 1)
+    var date = LocalDate.of(fromYear, 1, 1)
+    val end = LocalDate.of(toYear + 1, 1, 1)
     while (date.isBefore(end)) {
         val idx = Math.floorMod(55 + ChronoUnit.DAYS.between(anchor, date).toInt(), 60)
         if (idx == targetDayIdx) {
@@ -46,5 +47,5 @@ fun chartOf(
         }
         date = date.plusDays(1)
     }
-    error("1700-2050 未找到四柱：$yStem$yBranch $mStem$mBranch $dStem$dBranch $hStem$hBranch")
+    error("$fromYear-$toYear 未找到四柱：$yStem$yBranch $mStem$mBranch $dStem$dBranch $hStem$hBranch")
 }

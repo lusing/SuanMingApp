@@ -335,6 +335,17 @@ object StrengthEngine {
                 else -> REL_HAO
             }
             var eff = u.score * proximity(u.pillar, u.isStem) * rel
+            // 金命午未合燥：未土脆金其印如杀。未月合燥且无水润——印如杀，径计入克方；余者×0.6
+            val wuWeiZao = dayEl == Element.METAL &&
+                EarthlyBranch.WU in bazi.branches && EarthlyBranch.WEI in bazi.branches
+            if (rel == REL_SHENG && wuWeiZao) {
+                val hasWater = bazi.branches.any { it == EarthlyBranch.ZI || it == EarthlyBranch.HAI } ||
+                    bazi.stems.any { it.element == Element.WATER }
+                if (bazi.monthPillar.branch == EarthlyBranch.WEI && !hasWater) {
+                    b += eff * 0.8; u.notes.add("印如杀"); return@forEach
+                }
+                eff *= 0.6
+            }
             if (ue.generates == dayEl) yinUnits += u
             if (ue.controls == dayEl) guanUnits += u
             if (rel == REL_SHENG && !dayRooted) {
