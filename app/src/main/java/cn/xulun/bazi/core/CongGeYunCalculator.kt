@@ -2,6 +2,7 @@ package cn.xulun.bazi.core
 
 import cn.xulun.bazi.model.BaziResult
 import cn.xulun.bazi.model.CongGeYunResult
+import cn.xulun.bazi.model.EarthlyBranch
 import cn.xulun.bazi.model.Element
 import cn.xulun.bazi.model.Pillar
 import cn.xulun.bazi.model.YunVerdict
@@ -30,6 +31,20 @@ object CongGeYunCalculator {
         val ps = p.stem.element
         val yinEl = Element.entries.first { it.generates == dayEl }
 
+        val strong = ps == pb || ps.generates == pb // 干支同心（干同支或干生支）
+        // 坐支被原局半合/六合拉向从势（化神在势）——岁干之根随支被拉走（姚先生辛亥：亥卯半合木）
+        val banHeLaZou = run {
+            val tri = listOf(
+                setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+            )
+            val bs = bazi.branches.toSet()
+            // 坐支须为新来（原局已有该支=局已含，岁运再来属加势——总表戊申喜；新来之支被半合拉走——姚亥忌）
+            p.branch !in bs && tri.any { (g, el) -> p.branch in g && el in shi && bs.any { it in g && it != p.branch } }
+        }
+
         // 破格神集合：印、比劫、官杀、克势之行（从杀之食伤——食伤克杀）之不在从势者
         fun poGeShen(el: Element): Boolean = el !in shi &&
             (el == yinEl || el == dayEl || el.controls == dayEl || shi.any { el.controls == it })
@@ -37,7 +52,6 @@ object CongGeYunCalculator {
         val verdict: YunVerdict
         val newEl: Element?
         val basis: String
-        val strong = ps == pb || ps.generates == pb // 干支同心（干同支或干生支）
         when {
             // 支在从势而干克势 → 忌（戊子例：支子在杀而干戊克杀为逆）
             pb in shi && ps !in shi && shi.any { ps.controls == it } && ps.controls == shi.first() -> {
@@ -115,6 +129,12 @@ object CongGeYunCalculator {
                     verdict = YunVerdict.JI; newEl = null
                     basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）衰弱，无力抵抗从势之克，反逆乱气势——忌神"
                 }
+            }
+            // 岁干比劫力不足（坐支不生扶干）→引日主破格伤身——忌（姚先生辛亥年：辛坐亥被合化木）
+            ps == dayEl && !(ps == pb || pb.generates == ps) &&
+                (shi.none { pb.generates == it } || banHeLaZou) -> {
+                verdict = YunVerdict.JI; newEl = null
+                basis = "岁运" + p.fullName + "：干" + p.stem.chinese + "为日主" + dayEl.chinese + "之比劫而坐支不生扶（根被拉走/力不足），反引日主背叛旺势破格伤身——忌神"
             }
             // 生势而非印（官生印/财生官）→干透势行则用神、否则喜神（丙寅例）；印生势者由势生通道（化泄夺势）
             shi.any { pb.generates == it } && pb != yinEl -> {
