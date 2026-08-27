@@ -118,6 +118,7 @@ object ShenShaCalculator {
     private val huaGai = arrayOf(EarthlyBranch.CHEN, EarthlyBranch.WEI, EarthlyBranch.XU, EarthlyBranch.CHOU)    // [4,7,10,1]
     private val jiangXing = arrayOf(EarthlyBranch.ZI, EarthlyBranch.MAO, EarthlyBranch.WU, EarthlyBranch.YOU)    // [0,3,6,9]
 private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.ZI, EarthlyBranch.MAO)     // 灾煞=冲将星（白虎煞）
+        private val liuE = arrayOf(EarthlyBranch.MAO, EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.ZI)       // 六厄=三合死地（水死卯/木死午/火死酉/金死子）
         private val wangShen = arrayOf(EarthlyBranch.HAI, EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN)   // [11,2,5,8]
     private val jieSha = arrayOf(EarthlyBranch.SI, EarthlyBranch.SHEN, EarthlyBranch.HAI, EarthlyBranch.YIN)     // [5,8,11,2]
 
@@ -282,6 +283,12 @@ private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.
         scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)
         scanBranch(bazi, "禄神", luShen.getValue(dayStem), out)
         // 日支起
+        // 桃花/咸池（三合沐浴地，年支或日支查均可——年支组扫月日时；日支组沿 xuanzong 全柱扫）
+        if (yg != g) {
+            bazi.pillars.drop(1).forEachIndexed { i, p ->
+                if (p.branch == taoHua[yg]) out.add(ShenShaItem("桃花", PillarBranchLabels[i + 1], branch = p.branch))
+            }
+        }
         scanBranch(bazi, "桃花", taoHua[g], out)
         // 驿马（三合长生冲位，年支或日支查其余各支——年支组扫月日时；日支组沿 xuanzong 全柱扫）
         if (yg != g) {
@@ -323,7 +330,27 @@ private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.
             if (th.isStem) scanStem(bazi, "天德合", th.stem!!, out)
             else scanBranch(bazi, "天德合", th.branch!!, out)
         }
+        // 孤辰寡宿（年支方位组查其余地支：寅卯辰→孤巳寡丑/巳午未→申辰/申酉戌→亥未/亥子丑→寅戌）
+        val guGua = when (bazi.yearPillar.branch) {
+            EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN -> EarthlyBranch.SI to EarthlyBranch.CHOU
+            EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI -> EarthlyBranch.SHEN to EarthlyBranch.CHEN
+            EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU -> EarthlyBranch.HAI to EarthlyBranch.WEI
+            else -> EarthlyBranch.YIN to EarthlyBranch.XU
+        }
+        bazi.pillars.drop(1).forEachIndexed { i, p ->
+            if (p.branch == guGua.first) out.add(ShenShaItem("孤辰", PillarBranchLabels[i + 1], branch = p.branch))
+            if (p.branch == guGua.second) out.add(ShenShaItem("寡宿", PillarBranchLabels[i + 1], branch = p.branch))
+            // 六厄（三合死地——水死卯金死子火死酉木死午；**以年支查**其余各支，剥官之煞）
+            if (p.branch == liuE[yg]) out.add(ShenShaItem("六厄", PillarBranchLabels[i + 1], branch = p.branch))
+        }
         if (male != null) {
+            // 勾绞煞：阳男阴女命前三辰为勾后三辰为绞；阴男阳女反之以年支查余三柱
+            val yangYear0 = bazi.yearPillar.stem.ordinal % 2 == 0
+            val forward0 = (yangYear0 && male) || (!yangYear0 && !male)
+            val gou = EarthlyBranch.entries[(bazi.yearPillar.branch.ordinal + if (forward0) 3 else 9) % 12]
+            bazi.pillars.drop(1).forEachIndexed { i, p ->
+                if (p.branch == gou) out.add(ShenShaItem("勾煞", PillarBranchLabels[i + 1], branch = p.branch))
+            }
             // 元辰：阳男阴女=冲支+1，阴男阳女=冲支-1（以年支查四柱）
             val yangYear = bazi.yearPillar.stem.ordinal % 2 == 0
             val forward = (yangYear && male) || (!yangYear && !male)

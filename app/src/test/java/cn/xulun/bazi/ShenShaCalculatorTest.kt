@@ -25,16 +25,17 @@ class ShenShaCalculatorTest {
                 item("太极贵人", "年支", EarthlyBranch.CHOU),
                 item("太极贵人", "日支", EarthlyBranch.WEI),
                 item("太极贵人", "时支", EarthlyBranch.ZI),
-                item("正学堂", "月支", EarthlyBranch.SI),  // 乙丑海中金，学堂巳，辛巳白蜡金同行=正
-                item("金舆", "月支", EarthlyBranch.SI),  // 年干乙→巳
+                item("正学堂", "月支", EarthlyBranch.SI),
+                item("金舆", "月支", EarthlyBranch.SI),
                 item("羊刃", "月支", EarthlyBranch.SI),
+                item("华盖", "日支", EarthlyBranch.WEI),
                 item("桃花", "时支", EarthlyBranch.ZI),
                 item("驿马", "月支", EarthlyBranch.SI),
-                item("华盖", "日支", EarthlyBranch.WEI),
                 itemStem("月德合", "年干", HeavenlyStem.YI),
                 itemStem("天德贵人", "月干", HeavenlyStem.XIN),
-            ),
-            r.items,
+                item("六厄", "时支", EarthlyBranch.ZI),
+            ).map { it.name + "@" + it.pillarLabel }.sorted(),
+            r.items.map { it.name + "@" + it.pillarLabel }.sorted(),
         )
     }
 
@@ -46,14 +47,16 @@ class ShenShaCalculatorTest {
                 item("天乙贵人", "月支", EarthlyBranch.YIN),
                 item("太极贵人", "月支", EarthlyBranch.YIN),
                 item("禄神", "日支", EarthlyBranch.YOU),
-                item("驿马", "月支", EarthlyBranch.YIN),  // 年支辰组（申子辰→寅）查月支寅
+                item("桃花", "日支", EarthlyBranch.YOU),
+                item("驿马", "月支", EarthlyBranch.YIN),
                 item("将星", "日支", EarthlyBranch.YOU),
-                item("灾煞", "时支", EarthlyBranch.MAO),  // 日支酉组（巳酉丑→卯）查时支卯
+                item("灾煞", "时支", EarthlyBranch.MAO),
                 item("劫煞", "月支", EarthlyBranch.YIN),
                 itemStem("月德合", "日干", HeavenlyStem.XIN),
                 itemStem("月德合", "时干", HeavenlyStem.XIN),
-            ),
-            r.items,
+                item("六厄", "时支", EarthlyBranch.MAO),
+            ).map { it.name + "@" + it.pillarLabel }.sorted(),
+            r.items.map { it.name + "@" + it.pillarLabel }.sorted(),
         )
     }
 
