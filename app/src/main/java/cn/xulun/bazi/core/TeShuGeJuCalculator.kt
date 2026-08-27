@@ -56,6 +56,12 @@ object TeShuGeJuCalculator {
             return heJu.any { (bs, el) -> b in bs && (el == dayEl || el == yinEl) }
         }
         val allAlly = branches.all { allyBranch(it) }
+        // 专旺份额亦按变节力转移计（巳在巳酉丑金局内其火力归金——乙庚化金例二）
+        val fZhuan = f.toMutableMap()
+        for ((bs, el) in (sanHe.map { it.branches to it.resultElement } + sanHui.map { it.branches to it.resultElement })) {
+            for (b in bs) if (b.element != el && b in branches) { fZhuan[b.element] = fZhuan[b.element]!! - 1; fZhuan[el] = fZhuan[el]!! + 1 }
+        }
+        val totalZhuan = Element.entries.sumOf { fZhuan[it]!! }.coerceAtLeast(0.001)
         // 克耗透干：与日干五合且化神即日主行（甲己合化土于己日）者不算克透——化气格（己未甲戌己丑戊辰例）
         val chouKeTou = bazi.stems.any {
             (it.element == dayEl.controls || it.element.controls == dayEl) && it !== bazi.dayPillar.stem &&
@@ -66,7 +72,7 @@ object TeShuGeJuCalculator {
                 })
         }
         // 专旺须日主自身有力（≥2.5）——日主力微而印众者为从印非专旺（张先生/印总表例）
-        if (allAlly && !chouKeTou && fc(dayEl) >= 2.5 && fc(dayEl) + fc(yinEl) >= 0.6 * total) {
+        if (allAlly && !chouKeTou && fZhuan[dayEl]!! >= 2.5 && fZhuan[dayEl]!! + fZhuan[yinEl]!! >= 0.6 * totalZhuan) {
             val usedBianJie = branches.any { it.element != dayEl && it.element != yinEl } // 变节支使格不纯
             // 岁运破格：克势之行（双体或透+根）→ 还原正格
             val poEl = dayEl.controls // 我克者泄我；克我者伤势——取克我行为破格先锋

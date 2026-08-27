@@ -54,7 +54,7 @@ object CongGeYunCalculator {
         val basis: String
         when {
             // 支在从势而干克势 → 忌（戊子例：支子在杀而干戊克杀为逆）
-            pb in shi && ps !in shi && shi.any { ps.controls == it } && ps.controls == shi.first() -> {
+            pb in shi && ps !in shi && shi.any { ps.controls == it } && ps.controls == shi.first() && !strong -> {
                 verdict = YunVerdict.JI; newEl = null
                 basis = "岁运${p.fullName}：支${p.branch.chinese}虽在从势，而干${p.stem.chinese}（${ps.chinese}）克从势之行，逆乱格局气势——忌神"
             }
@@ -71,7 +71,15 @@ object CongGeYunCalculator {
                     f0x[el] = f0x[el]!! + n * (n - 1) / 2.0 + st
                 }
                 val ruo = shi.minBy { f0x[it]!! }
-                if (pb == ruo || (ps == ruo && pb.generates == ps)) {
+                // 势首克日主（从杀式链含印行）→按单从论：势首=用、生势首=喜（乙庚化金例二：金用土喜）
+                val shiShou = shi.maxBy { f0x[it]!! }
+                if (shiShou.controls == dayEl && pb == shiShou) {
+                    verdict = YunVerdict.YONG; newEl = null
+                    basis = "岁运" + p.fullName + "：" + pb.chinese + "为从势之首（克身之神），助旺格局——用神到位"
+                } else if (shiShou.controls == dayEl && pb.generates == shiShou && pb != yinEl) {
+                    verdict = YunVerdict.XI; newEl = null
+                    basis = "岁运" + p.fullName + "：" + pb.chinese + "生扶势首（" + godName(pb, dayEl) + "生官杀）——喜神到位"
+                } else if (pb == ruo || (ps == ruo && pb.generates == ps)) {
                     verdict = YunVerdict.YONG; newEl = null
                     basis = "岁运${p.fullName}：${pb.chinese}为从势中最弱之行，补之以纠原局之偏——用神到位（纠偏，平衡${shi.joinToString("") { it.chinese }}气势）"
                 } else {
