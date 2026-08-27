@@ -56,7 +56,15 @@ object TeShuGeJuCalculator {
             return heJu.any { (bs, el) -> b in bs && (el == dayEl || el == yinEl) }
         }
         val allAlly = branches.all { allyBranch(it) }
-        val chouKeTou = bazi.stems.any { (it.element == dayEl.controls || it.element.controls == dayEl) && it !== bazi.dayPillar.stem }
+        // 克耗透干：与日干五合且化神即日主行（甲己合化土于己日）者不算克透——化气格（己未甲戌己丑戊辰例）
+        val chouKeTou = bazi.stems.any {
+            (it.element == dayEl.controls || it.element.controls == dayEl) && it !== bazi.dayPillar.stem &&
+                !(run {
+                    val partner = bazi.dayPillar.stem
+                    (it.ordinal - partner.ordinal + 10) % 5 == 0 && it.ordinal != partner.ordinal &&
+                        huaShenOf(it, partner) == dayEl
+                })
+        }
         // 专旺须日主自身有力（≥2.5）——日主力微而印众者为从印非专旺（张先生/印总表例）
         if (allAlly && !chouKeTou && fc(dayEl) >= 2.5 && fc(dayEl) + fc(yinEl) >= 0.6 * total) {
             val usedBianJie = branches.any { it.element != dayEl && it.element != yinEl } // 变节支使格不纯
