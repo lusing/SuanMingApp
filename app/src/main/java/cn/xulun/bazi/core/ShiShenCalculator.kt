@@ -156,6 +156,31 @@ object ShiShenCalculator {
         TenGod.JIE_CAI to "身弱忌糊涂君子不利父难得父产纵得亦少",
     )
 
+    // ── 偏财透干寓意（第六三节六）──
+    private val pianCaiTou: Map<Int, String> = mapOf(
+        0 to "旺相父长寿；旺相喜用祖业丰余得祖荫；忌幼年家贫；早恋（忌不易成婚）；" +
+            "年干支偏财重叠多父之兆；坐驿马父远方创业（遭克过重恐客死他乡）",
+        1 to "年干劫财先贫后富；时干劫财先富后贫；忌挥霍浪费家计不丰；身弱逢月干支偏财易为异性破费引桃色风波；" +
+            "偏财强旺克印太过身弱顽固不化文运不畅不重礼节为人粗俗",
+        2 to "年月柱再有财星婚前多恋结发妻非第一恋人；他柱再无财星妻聪明善待丈夫；衰弱妻多病财运不佳；" +
+            "临将星妻出名门有气质；月干正财妾夺妻权多爱妾少爱妻",
+        3 to "身强晚年发富；旺子女成家而富；喜用老来享子女福（忌难靠子女）",
+    )
+
+    // ── 偏财坐支寓意 ──
+    private val pianCaiZuo: Map<TenGod, String> = mapOf(
+        TenGod.ZHENG_YIN to "喜获福匪浅忌损名节",
+        TenGod.PIAN_YIN to "偏激劳苦拖累宜偏业",
+        TenGod.ZHENG_GUAN to "责任心强得父爱谋事易成",
+        TenGod.QI_SHA to "经营得利辛劳难免；为女人散财女婚姻波折",
+        TenGod.ZHENG_CAI to "身强财利丰厚不免辛劳易为女人破费；女再婚之虑",
+        TenGod.PIAN_CAI to "富经济头脑经营路子宽身强财源滚滚宜出外发展",
+        TenGod.SHANG_GUAN to "身强财源不断别人的失败利自己的成功；经营富谋略手段高明",
+        TenGod.SHI_SHEN to "身强最宜求财左右逢源获厚利，得父或妾助如虎添翼；从政名利双收",
+        TenGod.BI_JIAN to "财运不佳易为兄弟朋友破财防桃色破财伤身败名；偏财弱比肩强父体弱多病",
+        TenGod.JIE_CAI to "易散财财产分配兄弟纠纷为女人情海风波；父烦恼多病（透劫尤甚）",
+    )
+
     fun analyze(bazi: BaziResult): ShiShenResult {
         val dayMaster = bazi.dayPillar.stem
         val items = mutableListOf<ShiShenResult.ShiShenItem>()
@@ -194,6 +219,7 @@ object ShiShenCalculator {
         TenGod.ZHENG_GUAN -> zhengGuanTou[pillar]
         TenGod.QI_SHA -> pianGuanTou[pillar]
         TenGod.ZHENG_CAI -> zhengCaiTou[pillar]
+        TenGod.PIAN_CAI -> pianCaiTou[pillar]
         else -> null
     }
 
@@ -204,6 +230,7 @@ object ShiShenCalculator {
         TenGod.ZHENG_GUAN -> zhengGuanZuo[zuo]
         TenGod.QI_SHA -> pianGuanZuo[zuo]
         TenGod.ZHENG_CAI -> zhengCaiZuo[zuo]
+        TenGod.PIAN_CAI -> pianCaiZuo[zuo]
         else -> null
     }
 
