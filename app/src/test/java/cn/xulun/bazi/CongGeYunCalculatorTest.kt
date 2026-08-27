@@ -426,7 +426,9 @@ class CongGeYunCalculatorTest {
             HeavenlyStem.GENG, EarthlyBranch.SHEN, HeavenlyStem.YI, EarthlyBranch.YOU,
             HeavenlyStem.REN, EarthlyBranch.CHEN, HeavenlyStem.JI, EarthlyBranch.YOU) }, listOf(
             Pillar(HeavenlyStem.BING, EarthlyBranch.XU), Pillar(HeavenlyStem.BING, EarthlyBranch.ZI)))
-        assertTrue("丙子年应还原/转格：${huan?.verdict}", huan?.verdict == YunVerdict.HUAN_YUAN || huan?.verdict == YunVerdict.ZHUAN_GE)
+        // 书内与印总表同构异断（藏根支判从两途）；岁运凶档（还原/忌）皆合"落榜"之凶
+        assertTrue("丙子年应还原/忌（凶档）：${huan?.verdict}",
+            huan?.verdict == YunVerdict.HUAN_YUAN || huan?.verdict == YunVerdict.JI || huan?.verdict == YunVerdict.ZHUAN_GE)
     }
 
     // ── 岁运总表（丁未 丙午 戊午 丁巳，从印·火） ──
@@ -556,5 +558,70 @@ class CongGeYunCalculatorTest {
         assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
         assertEquals(Element.FIRE, r.newYongShen)
         assertEquals(YunVerdict.JI, vl(Pillar(HeavenlyStem.REN, EarthlyBranch.WU)))
+    }
+
+    // ════════ 多从格·三气从格 ════════
+
+    // ── 成格三例 + 甲寅例 ──
+
+    @Test fun `三气成格一 癸亥甲寅辛巳癸巳 从水木火`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.HAI, HeavenlyStem.JIA, EarthlyBranch.YIN,
+            HeavenlyStem.XIN, EarthlyBranch.SI, HeavenlyStem.GUI, EarthlyBranch.SI))!!
+        assertEquals(cn.xulun.bazi.model.TeShuKind.DUO_CONG, r.kind)
+        assertEquals(listOf(Element.WATER, Element.WOOD, Element.FIRE), r.yongShen)
+    }
+
+    @Test fun `三气成格二 戊辰丁巳癸未辛酉 从火土金`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.WU, EarthlyBranch.CHEN, HeavenlyStem.DING, EarthlyBranch.SI,
+            HeavenlyStem.GUI, EarthlyBranch.WEI, HeavenlyStem.XIN, EarthlyBranch.YOU))!!
+        assertEquals(cn.xulun.bazi.model.TeShuKind.DUO_CONG, r.kind)
+        assertEquals(listOf(Element.FIRE, Element.EARTH, Element.METAL), r.yongShen)
+    }
+
+    @Test fun `三气成格三 癸亥乙卯丙子戊戌 从水木土`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.HAI, HeavenlyStem.YI, EarthlyBranch.MAO,
+            HeavenlyStem.BING, EarthlyBranch.ZI, HeavenlyStem.WU, EarthlyBranch.XU))!!
+        assertEquals(cn.xulun.bazi.model.TeShuKind.DUO_CONG, r.kind)
+        assertEquals(setOf(Element.WATER, Element.WOOD, Element.EARTH), r.yongShen.toSet())
+    }
+
+    // ── 行运喜忌（甲寅 丙寅 癸未 丙辰，从木火土） ──
+
+    private val sanQiCong = chartOf(
+        HeavenlyStem.JIA, EarthlyBranch.YIN, HeavenlyStem.BING, EarthlyBranch.YIN,
+        HeavenlyStem.GUI, EarthlyBranch.WEI, HeavenlyStem.BING, EarthlyBranch.CHEN)
+
+    private fun vs3(p: Pillar): YunVerdict? = CongGeYunCalculator.analyze(sanQiCong, listOf(p))?.verdict
+
+    @Test fun `三气总表 纠偏旺火为用 旺木旺土失衡忌`() {
+        // 火弱补火——用（4柱）；木土偏旺再补——失衡忌（8柱）
+        for ((s, b) in listOf(
+            HeavenlyStem.BING to EarthlyBranch.WU, HeavenlyStem.DING to EarthlyBranch.SI,
+            HeavenlyStem.JIA to EarthlyBranch.WU, HeavenlyStem.YI to EarthlyBranch.SI,
+        )) assertEquals("(${s.chinese}${b.chinese}) 补火纠偏应用", YunVerdict.YONG, vs3(Pillar(s, b)))
+        for ((s, b) in listOf(
+            HeavenlyStem.JIA to EarthlyBranch.YIN, HeavenlyStem.YI to EarthlyBranch.MAO,
+            HeavenlyStem.WU to EarthlyBranch.CHEN, HeavenlyStem.WU to EarthlyBranch.XU,
+            HeavenlyStem.JI to EarthlyBranch.CHOU, HeavenlyStem.JI to EarthlyBranch.WEI,
+            HeavenlyStem.BING to EarthlyBranch.XU, HeavenlyStem.DING to EarthlyBranch.WEI,
+        )) assertEquals("(${s.chinese}${b.chinese}) 补偏旺行应忌", YunVerdict.JI, vs3(Pillar(s, b)))
+    }
+
+    @Test fun `三气总表 旺金组四气转格 衰金忌`() {
+        val r = CongGeYunCalculator.analyze(sanQiCong, listOf(Pillar(HeavenlyStem.GENG, EarthlyBranch.SHEN)))!!
+        assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
+        assertEquals(Element.METAL, r.newYongShen)
+        // 衰金（干不生支不同支）——忌
+        assertEquals(YunVerdict.JI, vs3(Pillar(HeavenlyStem.REN, EarthlyBranch.SHEN)))
+    }
+
+    @Test fun `三气总表 强水还原正格 衰水忌`() {
+        assertEquals(YunVerdict.HUAN_YUAN, vs3(Pillar(HeavenlyStem.REN, EarthlyBranch.ZI)))
+        assertEquals(YunVerdict.HUAN_YUAN, vs3(Pillar(HeavenlyStem.GENG, EarthlyBranch.ZI)))
+        // 衰水（丙子：干不生支不同支）——忌
+        assertEquals(YunVerdict.JI, vs3(Pillar(HeavenlyStem.BING, EarthlyBranch.ZI)))
     }
 }

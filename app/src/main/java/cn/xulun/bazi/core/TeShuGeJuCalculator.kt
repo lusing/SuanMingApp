@@ -135,18 +135,26 @@ object TeShuGeJuCalculator {
                         grew = false
                         for (e in others) {
                             if (e in chain) continue
-                            // 强行直入；弱端只顺下游（链生它，势之所趋）——上游饲喂者被吸尽不入；印行不入从链
+                            val tou = bazi.stems.any { it.element == e && it !== bazi.dayPillar.stem }
+                            // 强行直入；弱端只顺下游（链生它，势之所趋）——上游饲喂者被吸尽不入；
+                            // 印行不入从链，唯力≥2 且透干者例外（火土金之印金——三气从格例二）
                             val downstream = chain.any { c -> c.generates == e }
-                            if (e in strong || (fAdj[e]!! >= 1 && downstream && e != yinEl)) {
+                            val yinOk = e != yinEl || (fAdj[e]!! >= 2 && tou)
+                            if (e in strong || (fAdj[e]!! >= 1 && downstream && yinOk)) {
                                 chain += e; grew = true
                             }
                         }
                     }
-                    // 上游饲喂者入链：力≥2 且透干（火生土式——杨先生例；总表財金力1不入）
-                    for (e in others) {
-                        if (e in chain || e == yinEl) continue
-                        val tou = bazi.stems.any { it.element == e && it !== bazi.dayPillar.stem }
-                        if (fAdj[e]!! >= 2 && tou && chain.any { c -> e.generates == c }) chain += e
+                    // 上游饲喂者入链：力≥2 且透干（火生土式——杨先生例）；各倚旺势：链≥2行时力≥2且透干之非印行不拘生克（水木土——例三）；多趟回扫
+                    var grew2 = true
+                    while (grew2) {
+                        grew2 = false
+                        for (e in others) {
+                            if (e in chain) continue
+                            val tou = bazi.stems.any { it.element == e && it !== bazi.dayPillar.stem }
+                            if (fAdj[e]!! >= 2 && tou && chain.any { c -> e.generates == c }) { chain += e; grew2 = true }
+                            else if (chain.size >= 2 && fAdj[e]!! >= 2 && tou && e != yinEl) { chain += e; grew2 = true }
+                        }
                     }
                     // 相生拓扑序：先生它者为链首
                     val chainList = mutableListOf<Element>()

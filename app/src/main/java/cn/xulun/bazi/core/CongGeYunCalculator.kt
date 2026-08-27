@@ -40,20 +40,20 @@ object CongGeYunCalculator {
         val strong = ps == pb || ps.generates == pb // 干支同心（干同支或干生支）
         when {
             // 支在从势而干克势 → 忌（戊子例：支子在杀而干戊克杀为逆）
-            pb in shi && shi.any { ps.controls == it } -> {
+            pb in shi && ps !in shi && shi.any { ps.controls == it } -> {
                 verdict = YunVerdict.JI; newEl = null
                 basis = "岁运${p.fullName}：支${p.branch.chinese}虽在从势，而干${p.stem.chinese}（${ps.chinese}）克从势之行，逆乱格局气势——忌神"
             }
-            // 多行势且日主行不在势（纯两气/三气从）：补弱行=纠偏用神，补最旺行=失衡忌（两气从格总表例）
-            pb in shi && shi.size >= 2 && dayEl !in shi -> {
+            // 多行势且日主行不在势（纯两气/三气从）：补最弱行=纠偏用神，补其余行=失衡忌（"木土偏旺"皆忌）
+            pb in shi && base.kind == cn.xulun.bazi.model.TeShuKind.DUO_CONG && shi.size >= 2 && dayEl !in shi -> {
                 val f0x = cn.xulun.bazi.core.BingYaoCalculator.forces(bazi)
-                val wang = shi.maxBy { f0x[it]!! }
-                if (pb == wang) {
-                    verdict = YunVerdict.JI; newEl = null
-                    basis = "岁运${p.fullName}：${pb.chinese}为从势中最旺之行，再补之使${shi.joinToString("") { it.chinese }}气势失衡——忌神（宜补弱行纠偏）"
-                } else {
+                val ruo = shi.minBy { f0x[it]!! }
+                if (pb == ruo) {
                     verdict = YunVerdict.YONG; newEl = null
-                    basis = "岁运${p.fullName}：${pb.chinese}为从势中偏弱之行，补之以纠原局之偏——用神到位（纠偏）"
+                    basis = "岁运${p.fullName}：${pb.chinese}为从势中最弱之行，补之以纠原局之偏——用神到位（纠偏，平衡${shi.joinToString("") { it.chinese }}气势）"
+                } else {
+                    verdict = YunVerdict.JI; newEl = null
+                    basis = "岁运${p.fullName}：${pb.chinese}为从势中偏旺之行（最弱为${ruo.chinese}），再补之使气势失衡——忌神"
                 }
             }
             // 支在从势 → 用神到位（助旺格局）
@@ -64,9 +64,13 @@ object CongGeYunCalculator {
             // 支为日主本气行：多行从且日主行不在势（两气从）→强比劫助身还原正格（总表例3）；
             // 否则三档：假从遇根/力不足→还原（母慈灭子），力足→两气转格
             pb == dayEl -> {
-                if (shi.size >= 2 && dayEl !in shi) {
+                if (base.fake || (shi.size >= 2 && dayEl !in shi && strong)) {
                     verdict = YunVerdict.HUAN_YUAN; newEl = null
-                    basis = "岁运${p.fullName}：比劫（${dayEl.chinese}）强旺助日主抵抗${shi.joinToString("") { it.chinese }}之耗克——还原正格（身弱财官重，取印比为用）"
+                    basis = "岁运${p.fullName}：比劫（${dayEl.chinese}）" + (if (base.fake) "为日主之根，原局假从遇根——还原身弱正格论"
+                        else "干支强旺助日主抵抗${shi.joinToString("") { it.chinese }}之克耗——还原正格（身弱，取印比助日主任财官）")
+                } else if (shi.size >= 2 && dayEl !in shi) {
+                    verdict = YunVerdict.JI; newEl = null
+                    basis = "岁运${p.fullName}：比劫（${dayEl.chinese}）衰弱，无力助日主改变格局，反引破格伤身——忌神"
                 } else {
                 val f0 = cn.xulun.bazi.core.BingYaoCalculator.forces(bazi)
                 val yunTong = (if (ps == dayEl) 1 else 0) + (if (pb == dayEl) 1 else 0)
