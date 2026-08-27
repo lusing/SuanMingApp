@@ -80,6 +80,14 @@ object TeShuGeJuCalculator {
             return heJuAll.any { (bs, el) -> b in bs && (el == dayEl || el == yinEl) }
         }
         val allAlly = branches.all { allyBranch(it) }
+        // 假专旺之支：非同党支为财官而孤弱无援（强众敌寡，势在去其寡——壬子壬子壬午庚子之午、庚戌甲申庚申辛巳之巳）——
+        // 财官极弱不能损伤日主，仍属专旺而留先天隐患
+        val notAlly = branches.filter { !allyBranch(it) }
+        val foeEls = setOf(dayEl.controls, Element.entries.first { it.controls == dayEl })
+        val weakFoeBranchOk = notAlly.isNotEmpty() && notAlly.all { b ->
+            b.element in foeEls && branches.count { it.element == b.element } <= 1 &&
+                bazi.stems.none { it.element == b.element }
+        }
         // 专旺份额按变节力转移计（巳在巳酉丑金局内其火力归金——乙庚化金例二）。
         // 三合/三会全局直转；半合/六合须**合向强方**（化神行力≥被转行）方化——
         // 两午夹戌半局成化（丙午戊戌丙午癸巳，火5≥土4）；午未合而火6强于土3则不化
@@ -120,10 +128,25 @@ object TeShuGeJuCalculator {
                     val pl = listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).firstOrNull { p -> p.stem === it }
                     val jieJiao = pl != null && pl.branch.element.controls == it.element
                     jieJiao && (it.element == dayEl.controls || it.element == dayEl.generates)
+                }) &&
+                // 官杀透干无本气支根且坐支不生扶、**单透**——极弱隐患不破格（戊申庚申庚戌丁丑之丁）；
+                // 双透者敌众不寡，不入专旺（癸未丁巳丙午癸巳双癸——调候无根例仍归病药顺势）
+                !(run {
+                    it.element.controls == dayEl && bazi.stems.count { s -> s.element == it.element } == 1 &&
+                        branches.none { b -> b.element == it.element } &&
+                        listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).firstOrNull { p -> p.stem === it }
+                            ?.let { pl -> !(pl.branch.element.generates == it.element || pl.branch.element == it.element) } == true
                 })
         }
+        // 官杀透干无根之隐患标记（假专旺）
+        val ruoGuanTou = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem).any {
+            it.element.controls == dayEl && bazi.stems.count { s -> s.element == it.element } == 1 &&
+                branches.none { b -> b.element == it.element } &&
+                listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).firstOrNull { p -> p.stem === it }
+                    ?.let { pl -> !(pl.branch.element.generates == it.element || pl.branch.element == it.element) } == true
+        }
         // 专旺须日主自身有力（≥2.5）——日主力微而印众者为从印非专旺（张先生/印总表例）
-        if (allAlly && !chouKeTou && fZhuan[dayEl]!! >= 2.5 && fZhuan[dayEl]!! + fZhuan[yinEl]!! >= 0.6 * totalZhuan) {
+        if ((allAlly || weakFoeBranchOk) && !chouKeTou && fZhuan[dayEl]!! >= 2.5 && fZhuan[dayEl]!! + fZhuan[yinEl]!! >= 0.6 * totalZhuan) {
             val usedBianJie = branches.any { it.element != dayEl && it.element != yinEl } // 变节支使格不纯
             // 岁运破格：克势之行（双体或透+根）→ 还原正格
             val poEl = dayEl.controls // 我克者泄我；克我者伤势——取克我行为破格先锋
@@ -151,11 +174,18 @@ object TeShuGeJuCalculator {
                     huaShenOf(g, bazi.dayPillar.stem) == dayEl && fZhuan[dayEl]!! >= 2.5
             }
             val geMing = if ((fullJu && bazi.monthPillar.branch in gong) || huaQiCheng) GRID_NAME[dayEl]!! else "${dayEl.chinese}专旺格"
+            // 假专旺：孤弱财官支留存（未变节）或官透无根——先天隐患，岁运帮扶即与旺势交战
+            val jiaZhuan = (weakFoeBranchOk && notAlly.isNotEmpty()) || ruoGuanTou
+            val yinHuanTxt = if (jiaZhuan) {
+                val hs = (notAlly.map { it.element } + if (ruoGuanTou) listOf(Element.entries.first { it.controls == dayEl }) else emptyList()).distinct()
+                "局中${hs.joinToString("") { it.chinese }}极弱不能损伤日主而留**先天隐患**（假专旺）——岁运帮扶之便与旺势交战破格生灾，受抑去之则真。"
+            } else ""
             return TeShuGeJuResult(
                 kind = TeShuKind.ZHUAN_WANG, name = geMing,
                 yongShen = yong, xi = listOf(dayEl.generates), ji = listOf(keEl, poEl),
-                fake = usedBianJie, restoreHint = "岁运${keEl.chinese}${poEl.chinese}破势则还原正格取用",
-                basis = "四柱干支与日主一气${if (usedBianJie) "（有变节支，格不太标准）" else ""}，" +
+                fake = usedBianJie || jiaZhuan, restoreHint = "岁运${keEl.chinese}${poEl.chinese}破势则还原正格取用",
+                basis = "四柱干支与日主一气${if (usedBianJie && !jiaZhuan) "（有变节支，格不太标准）" else ""}，" +
+                    yinHuanTxt +
                     "顺我者昌逆我者亡。用神首选比印（${dayEl.chinese}${yinEl.chinese}），其次有力之食伤（${dayEl.generates.chinese}）。" +
                     "岁运食伤有力则取泄秀，泄神被合绊则回专旺，木火破势则变正格。",
             )

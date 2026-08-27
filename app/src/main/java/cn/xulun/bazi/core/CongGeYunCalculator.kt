@@ -239,6 +239,33 @@ object CongGeYunCalculator {
             setOf(EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU) to Element.METAL,
             setOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU) to Element.WATER,
         )
+        val liuMap = listOf(
+            (EarthlyBranch.ZI to EarthlyBranch.CHOU) to Element.EARTH,
+            (EarthlyBranch.YIN to EarthlyBranch.HAI) to Element.WOOD,
+            (EarthlyBranch.MAO to EarthlyBranch.XU) to Element.FIRE,
+            (EarthlyBranch.CHEN to EarthlyBranch.YOU) to Element.METAL,
+            (EarthlyBranch.SI to EarthlyBranch.SHEN) to Element.WATER,
+            (EarthlyBranch.WU to EarthlyBranch.WEI) to Element.EARTH,
+        )
+        val zhongMap = mapOf(
+            Element.WOOD to EarthlyBranch.MAO, Element.FIRE to EarthlyBranch.WU,
+            Element.METAL to EarthlyBranch.YOU, Element.WATER to EarthlyBranch.ZI,
+        )
+        // 原局支是否已变节归局（全局三合三会 / 半合中神在局 / 六合成对，化神向我生我）——
+        // 变节之财官支不算隐患（卯未半合之未已向木——木章行运例财星强仍转格两停）
+        fun bianJieZhi(b: EarthlyBranch): Boolean {
+            if (b.element == dayEl || b.element == yinEl) return true
+            val toward = { el: Element -> el == dayEl || el == yinEl }
+            val full = (triAll + huiAll).any { (g, el) -> toward(el) && b in g && g.all { it in bazi.branches } }
+            val ban = zhongMap[dayEl]?.let { z -> triAll.any { (g, el) -> toward(el) && b in g && b != z && z in bazi.branches } } == true
+            val liu = liuMap.any { (pr, el) -> toward(el) && (b == pr.first || b == pr.second) &&
+                (if (b == pr.first) pr.second in bazi.branches else pr.first in bazi.branches) }
+            return full || ban || liu
+        }
+        // 假专旺隐患行：原局未变节之财官（干透或孤立本气支）——"强众而敌寡，势在去其寡"
+        val yinHuanSet = setOf(caiEl, guanEl).filter { el ->
+            bazi.stems.any { it.element == el } || bazi.branches.any { it.element == el && !bianJieZhi(it) }
+        }
         // 岁运支补成全三合/三会归专旺行（原局缺此支）
         val joinsFull = (triAll + huiAll).any { (g, el) ->
             p.branch in g && el == dayEl && g.all { it in bazi.branches || it == p.branch } && !bazi.branches.toSet().containsAll(g)
@@ -360,6 +387,14 @@ object CongGeYunCalculator {
             (pb == dayEl && (ps == dayEl || ps == yinEl)) || (ps == dayEl && (pb == dayEl || pb == yinEl)) -> {
                 verdict = YunVerdict.YONG; newEl = null
                 basis = "岁运${p.fullName}：干支比劫覆载相生，强盛${dayEl.chinese}气加旺格局气势——用神到位"
+            }
+            // 假专旺（原局未变节之财官隐患——"强众而敌寡，势在去其寡"）：岁运帮扶隐患之行 → 与旺势交战——凶
+            // （候先生戊午年助午火、赵先生甲戌年透甲——皆灾；干被原局五合绊者不忌——丙戌运丙辛合不为大忌）
+            base.fake && yinHuanSet.any { el -> pb == el || (ps == el && !ganHe) } -> {
+                val el = yinHuanSet.first { el -> pb == el || (ps == el && !ganHe) }
+                verdict = YunVerdict.JI; newEl = null
+                basis = "岁运${p.fullName}：原局${el.chinese}（${godName(el, dayEl)}）为假专旺之先天隐患，" +
+                    "今得帮扶由弱变强，与旺${dayEl.chinese}交战——逆忤旺势，凶咎由此而生（忌神）"
             }
             // 五合化势顺局（化神即日主行）：天地合化或支归比印——格局未变仍取日主为用
             heHuaShunJu -> {
