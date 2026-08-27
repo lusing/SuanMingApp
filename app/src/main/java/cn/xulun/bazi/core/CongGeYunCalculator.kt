@@ -243,7 +243,8 @@ object CongGeYunCalculator {
         val newEl: Element?
         val basis: String
         when {
-            pbEff == ruo -> {
+            // 补弱须干不盖头（戊子土克水——衰弱土运不作补水之用）
+            pbEff == ruo && ps.controls != pbEff -> {
                 verdict = YunVerdict.YONG; newEl = null
                 basis = "岁运${p.fullName}：${pbEff.chinese}为两气中之弱行，补之以平衡${ruo.chinese}${wang.chinese}气势——用神到位" +
                     (if (liuGuiEl != null) "（支${p.branch.chinese}与原局合化${liuGuiEl.chinese}归行）" else "")
@@ -254,18 +255,50 @@ object CongGeYunCalculator {
                     (if (pbEff == Element.FIRE) "（焚弱${ruo.chinese}）" else "") + "——忌神"
             }
             else -> {
-                val x = pb
+                // 第三行：支为两行而被盖头者取干行之（戊子己亥之土）
+                val x = if (pb in shiL) ps else pb
                 val strong = ps == pb || ps.generates == pb || pb.generates == ps // 双体/覆载相生
-                val compat = shiL.any { it.generates == x || x.generates == it }
-                val war = shiL.any { it.controls == x || x.controls == it }
-                when {
-                    strong && compat -> {
-                        verdict = YunVerdict.ZHUAN_GE; newEl = ruo
-                        basis = "岁运${p.fullName}：${x.chinese}强旺与两行相生化合，格局转为${shiL.joinToString("") { it.chinese }}${x.chinese}三气成象——三行中仍以弱者${ruo.chinese}为用（谁弱取谁）"
+                // 相克对两行互耗、合难成化——墓库吞没仅论相生对（水灵戊辰己未己丑被合；
+                // 栋梁戊戌戊辰己未己丑皆强土——书内同柱异断之别）
+                val pairIsWar0 = shiL[0].controls == shiL[1] || shiL[1].controls == shiL[0]
+                // 支被原局合走（**墓库支**被中神半合吞[水灵戊辰己未]或被六合化本线捕获[己丑合子化土]；
+                // 生地支之合不损[庚申]；通关之神如癸亥不拦）——不在强旺之列
+                val pulledLQ = if (pairIsWar0) false else run {
+                    val muKu = p.branch in setOf(EarthlyBranch.CHOU, EarthlyBranch.CHEN, EarthlyBranch.WEI, EarthlyBranch.XU)
+                    if (!muKu) return@run false
+                    // 补全三合/三会（岁运支使全局成化——水灵己未补亥卯未/己丑补亥子丑则吞；
+                    // 卯未半合不全不吞——通明己未仍强土，酉丑无巳不全——金白己丑仍强土）
+                    val fullPull = (listOf(
+                        setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                        setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                        setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                        setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                    ) + listOf(
+                        setOf(EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN) to Element.WOOD,
+                        setOf(EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI) to Element.FIRE,
+                        setOf(EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU) to Element.METAL,
+                        setOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU) to Element.WATER,
+                    )).any { (g, el) ->
+                        el in shiL && p.branch in g && g.all { it in bazi.branches || it == p.branch } &&
+                            !bazi.branches.toSet().containsAll(g)
                     }
-                    strong && war -> {
-                        // 转正格取用随克向：战神克日主→身弱取比劫（毓秀甲寅/通明庚申取土/木）；
-                        // 日主所克之战神→调候取战神（成慈壬子水润）
+                    fullPull
+                }
+                // 链通判定：相生对（A生B）——x 与任一成员相生即延链→三气（水生木/火生土）；
+                // 相克对（金木栋梁式）——x 须与**两者皆相生**（双顺通关——水通金木）才三气，
+                // 一顺一逆（木生火而火克金/土生金而木克土）→正格
+                val pairIsWar = pairIsWar0
+                val compat = if (pairIsWar) shiL.all { it.generates == x || x.generates == it }
+                             else shiL.any { it.generates == x || x.generates == it }
+                when {
+                    strong && !pulledLQ && compat -> {
+                        verdict = YunVerdict.ZHUAN_GE; newEl = ruo
+                        basis = "岁运${p.fullName}：${x.chinese}强旺" + (if (pairIsWar) "通${shiL.joinToString("") { it.chinese }}之关" else "与两行相生化合") +
+                            "，格局转为${shiL.joinToString("") { it.chinese }}${x.chinese}三气成象——三行中仍以弱者${ruo.chinese}为用（谁弱取谁）"
+                    }
+                    strong && !pulledLQ -> {
+                        // 转正格取用随克向：战神克日主→身弱取比劫（毓秀甲寅/通明庚申/水灵戊戌）；
+                        // 日主所克之战神→调候取战神（成慈壬子/金白水清丙午之火）
                         val yong = if (x.controls == dayEl) dayEl else x
                         verdict = YunVerdict.HUAN_YUAN; newEl = yong
                         basis = "岁运${p.fullName}：${x.chinese}强旺与两行交战（${x.chinese}与${shiL.joinToString("") { it.chinese }}相克），强扭格局气势——格局转为正格，" +
@@ -274,7 +307,8 @@ object CongGeYunCalculator {
                     }
                     else -> {
                         verdict = YunVerdict.JI; newEl = null
-                        basis = "岁运${p.fullName}：${x.chinese}衰弱，既不能化泄两气改变格局，反逆乱${shiL.joinToString("") { it.chinese }}纯势——忌神"
+                        basis = "岁运${p.fullName}：${x.chinese}衰弱" + (if (pulledLQ) "（支${p.branch.chinese}与原局合会，不在强旺之列）" else "") +
+                            "，既不能化泄两气改变格局，反逆乱${shiL.joinToString("") { it.chinese }}纯势——忌神"
                     }
                 }
             }

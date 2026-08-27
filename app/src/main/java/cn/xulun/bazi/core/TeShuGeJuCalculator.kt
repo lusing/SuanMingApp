@@ -54,11 +54,8 @@ object TeShuGeJuCalculator {
 
     /** 两气成象：日主行与相生邻行（印/食伤）双强均衡成象——弱者补之为首用（木旺火弱宜火运）。 */
     private fun liangQiOf(bazi: BaziResult, dayEl: Element, partner: Element, f: Map<Element, Double>): TeShuGeJuResult {
-        // 弱旺以**去月令加成**之力计（月令之力非党众之实——辛酉辛丑戊申己未金乘旺而土不因丑令虚胖）
-        val fb = f.toMutableMap()
-        val rulerEl = bazi.monthPillar.branch.element
-        fb[rulerEl] = (fb[rulerEl]!! - 2.0).coerceAtLeast(0.0)
-        val ruo = if (fb[dayEl]!! <= fb[partner]!!) dayEl else partner
+        // 弱旺直以合局转移后之力计（酉丑半合使金乘旺土不因丑令虚胖；疏通例盘木6土4直取土弱）
+        val ruo = if (f[dayEl]!! <= f[partner]!!) dayEl else partner
         val wang = if (ruo == dayEl) partner else dayEl
         val name = (PAIR_NAME[setOf(dayEl, partner)] ?: "两气成象") + "格"
         val ji = Element.entries.filter { it != dayEl && it != partner }
@@ -250,28 +247,78 @@ object TeShuGeJuCalculator {
         val hasBenQiRoot = branches.any { it.element == dayEl && it !in xingBranches &&
             (it !in bianJieBranches || heJu.any { (bs, el) -> it in bs && el == dayEl }) }
 
-        // ── 1b. 两气成象（日主行+相生邻行双强均衡，他行纯净微弱） ──
-        // 甲寅丙寅丙寅甲午（午非印比不入专旺）/癸卯戊午甲寅丙寅（戊癸合化去土水）式；
-        // 三守卫：日主有效根+比例≥0.4（防从儿从印——2:6、2:8）+五合化解后他行各≤0.5（防癸丑甲子癸卯癸亥之丑官）
+        // ── 1b. 两气成象（日主行+强旺邻行双强均衡，他行纯净微弱） ──
+        // 相生邻行（印/食伤）：甲寅丙寅丙寅甲午（午非印比不入专旺）/癸卯戊午甲寅丙寅（戊癸合化去土水）式；
+        // 相克邻行（官/财）：金木栋梁辛酉辛卯甲寅癸酉式（通关神癸微弱≤1不破格）
+        // 守卫：自立（有效根或比劫两透）+比例≥0.4（防从儿从印）+他行各≤0.5（相生对）/≤1.0（相克对通关神可容）
         run {
-            val partner = listOf(yinEl, dayEl.generates).maxBy { f[it]!! }
+            // 朴素力图（干1支1月令+2——合教材"党众成林"之力感）+ 合局转移
+            // （三合三会全局+半合中神+月令随化神）——亥卯未合木使癸未癸亥癸卯癸亥之木成势
+            val fLQ = Element.entries.associateWith { el ->
+                (bazi.stems.count { it.element == el } + branches.count { it.element == el }).toDouble() +
+                    (if (bazi.monthPillar.branch.element == el) 2.0 else 0.0)
+            }.toMutableMap()
+            val rulerB = bazi.monthPillar.branch
+            for ((bs, el) in heJu) for (b in bs) {
+                if (b.element != el && b in branches) { fLQ[b.element] = fLQ[b.element]!! - 1; fLQ[el] = fLQ[el]!! + 1 }
+            }
+            heJu.firstOrNull { (bs, el) -> rulerB in bs && el != rulerB.element }?.let { (_, el) ->
+                fLQ[rulerB.element] = (fLQ[rulerB.element]!! - 2).coerceAtLeast(0.0); fLQ[el] = fLQ[el]!! + 2
+            }
+            for (bh in heHuaR.branchBanHeList) {
+                val el = bh.resultElement
+                // 仅真半合（中神在原局）转移——拱局（无中神）不动力
+                val zhongB = when (el) {
+                    Element.WOOD -> EarthlyBranch.MAO; Element.FIRE -> EarthlyBranch.WU
+                    Element.METAL -> EarthlyBranch.YOU; Element.WATER -> EarthlyBranch.ZI; else -> null
+                } ?: continue
+                if (zhongB !in branches) continue
+                for (b in listOf(bh.branch1, bh.branch2)) {
+                    if (b.element != el && b in branches) { fLQ[b.element] = (fLQ[b.element]!! - 1).coerceAtLeast(0.0); fLQ[el] = fLQ[el]!! + 1 }
+                }
+                if (rulerB == bh.branch1 || rulerB == bh.branch2) {
+                    if (rulerB.element != el) { fLQ[rulerB.element] = (fLQ[rulerB.element]!! - 2).coerceAtLeast(0.0); fLQ[el] = fLQ[el]!! + 2 }
+                }
+            }
+            val partner = listOf(yinEl, dayEl.generates, Element.entries.first { it.controls == dayEl }, dayEl.controls)
+                .maxBy { fLQ[it]!! }
+            val isWarPair = partner.controls == dayEl || dayEl.controls == partner
+            // 相克对守卫：通关之神（非五合化解）透干不分流——扶财一戊戌乙丑甲辰丁卯之丁通关透
+            // 与栋梁例一癸酉通关透同构异断（书内矛盾取病药侧）；甲己合化掉之甲不算（池沼例三）
+            val tongGuanEl = if (isWarPair) Element.entries.firstOrNull { m -> partner.generates == m && m.generates == dayEl } ?: Element.entries.firstOrNull { m -> dayEl.generates == m && m.generates == partner } else null
             val side = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
             val neutralized = mutableSetOf<Element>()
             for (i in side.indices) for (j in i + 1 until side.size) {
                 val a = side[i]; val b2 = side[j]
                 if ((a.ordinal - b2.ordinal + 10) % 5 == 0 && a.ordinal != b2.ordinal) {
                     val hs = huaShenOf(a, b2)
-                    if ((hs == dayEl || hs == partner) && f[hs]!! >= 2.5) { neutralized += a.element; neutralized += b2.element }
+                    if ((hs == dayEl || hs == partner) && fLQ[hs]!! >= 2.5) { neutralized += a.element; neutralized += b2.element }
                 }
             }
-            val othersOk = Element.entries.filter { it != dayEl && it != partner }
-                .all { f[it]!! - (if (it in neutralized) 1.0 else 0.0) <= 0.5 }
-            val ratio = minOf(f[dayEl]!!, f[partner]!!) / maxOf(f[dayEl]!!, f[partner]!!)
+            val tgTou = tongGuanEl != null && side.any { it.element == tongGuanEl && it.element !in neutralized }
+            val totalLQ = (Element.entries.sumOf { fLQ[it]!! } - neutralized.size.toDouble()).coerceAtLeast(0.001)
+            // 他行守卫：第三行总力≤1（池沼例一丙印单透容、乙巳乙酉乙亥乙酉火水并见拒）；
+            // 相生对官杀之行须零（癸丑甲子癸卯癸亥之丑官——仍归病药泄秀）
+            val thirdForce = Element.entries.filter { it != dayEl && it != partner }
+                .sumOf { fLQ[it]!! - (if (it in neutralized) 1.0 else 0.0) }
+            val guanNon0 = !isWarPair && Element.entries.first { it.controls == dayEl }.let { fLQ[it]!! - (if (it in neutralized) 1.0 else 0.0) > 0 }
+            val othersOk = thirdForce <= 1.0 && !guanNon0
+            val ratio = minOf(fLQ[dayEl]!!, fLQ[partner]!!) / maxOf(fLQ[dayEl]!!, fLQ[partner]!!)
+            // 三气领地：第三行有本气根且与两行成链（木生火生土——陈小姐戊午丙辰丙寅甲午三气成象非两气）——让位
+            val sanQiLike = Element.entries.filter { it != dayEl && it != partner }.any { el ->
+                branches.any { it.element == el } &&
+                    (el.generates == dayEl || dayEl.generates == el || el.generates == partner || partner.generates == el)
+            }
+            // 相克对结构守卫：两行须有双体柱（壬子壬子丁巳丙午之壬子丙午）或天干地支各尽两行
+            // （辛卯辛卯辛卯辛卯/乙未戊寅乙未戊寅）——癸丑丙辰癸未癸丑无此结构仍归病药
+            val structureOk = !isWarPair || bazi.pillars.any { it.stem.element == it.branch.element && (it.stem.element == dayEl || it.stem.element == partner) } ||
+                (bazi.stems.all { it.element == dayEl || it.element == partner } && branches.all { it.element == dayEl || it.element == partner })
             // 自立条件：有效根或比劫两透（庚申己丑戊戌庚申之戌被丑刑——干戊己两透亦可自立）
             val selfStanding = hasBenQiRoot || bazi.stems.count { it.element == dayEl } >= 2
-            if (selfStanding && f[dayEl]!! >= 2.0 && f[partner]!! >= 2.0 && ratio >= 0.4 &&
-                (f[dayEl]!! + f[partner]!!) >= 0.8 * total && othersOk) {
-                return liangQiOf(bazi, dayEl, partner, f)
+            val ratioOk = if (isWarPair) ratio >= 0.6 else ratio >= 0.4
+            if (!tgTou && !sanQiLike && structureOk && selfStanding && fLQ[dayEl]!! >= 2.0 && fLQ[partner]!! >= 2.0 && ratioOk &&
+                (fLQ[dayEl]!! + fLQ[partner]!!) >= 0.8 * totalLQ && othersOk) {
+                return liangQiOf(bazi, dayEl, partner, fLQ)
             }
         }
 

@@ -92,14 +92,13 @@ class LiangQiGeTest {
         }
     }
 
-    @Test fun `通明行运5 强土转三气取比劫木`() {
-        for ((s, b) in listOf(
-            HeavenlyStem.WU to EarthlyBranch.CHEN, HeavenlyStem.JI to EarthlyBranch.WEI,
-        )) {
-            val r = CongGeYunCalculator.analyze(chart.value, listOf(Pillar(s, b)))!!
-            assertEquals("(${s.chinese}${b.chinese}) 木火土三气日主偏弱——应转格取木", YunVerdict.ZHUAN_GE, r.verdict)
-            assertEquals(Element.WOOD, r.newYongShen)
-        }
+    @Test fun `通明行运5 强土转三气取比劫木（戊辰补会书内异断注记）`() {
+        val r1 = CongGeYunCalculator.analyze(chart.value, listOf(Pillar(HeavenlyStem.JI, EarthlyBranch.WEI)))!!
+        assertEquals("己未木火土三气日主偏弱——应转格取木", YunVerdict.ZHUAN_GE, r1.verdict)
+        assertEquals(Element.WOOD, r1.newYongShen)
+        // 戊辰补全寅卯辰三会被吞——通明章谓强土/水灵章谓不列旺土（书内异断），引擎按合吞忌档注记
+        val v = vy(HeavenlyStem.WU, EarthlyBranch.CHEN)
+        org.junit.Assert.assertTrue("戊辰戊土（吉档或合吞注记）：$v", v == YunVerdict.ZHUAN_GE || v == YunVerdict.JI)
     }
 
     @Test fun `通明行运6 衰弱第三行逆乱为忌`() {

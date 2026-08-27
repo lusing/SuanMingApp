@@ -41,7 +41,11 @@ fun chartOf(
             ) {
                 for (hour in 0..23) {
                     val b = BaziCalculator.calculate(LocalDateTime.of(date, LocalTime.of(hour, 0)))
-                    if (b.hourPillar.stem == hStem && b.hourPillar.branch == hBranch) return b
+                    // 交节当日（如1718-02-04立春在07-12时之间）：正午已过节气而清晨未过——年月柱随时刻而变，须复查
+                    if (b.yearPillar.stem == yStem && b.yearPillar.branch == yBranch &&
+                        b.monthPillar.stem == mStem && b.monthPillar.branch == mBranch &&
+                        b.dayPillar.stem == dStem && b.dayPillar.branch == dBranch &&
+                        b.hourPillar.stem == hStem && b.hourPillar.branch == hBranch) return b
                 }
             }
         }
