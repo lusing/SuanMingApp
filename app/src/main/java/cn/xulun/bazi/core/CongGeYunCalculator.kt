@@ -35,6 +35,8 @@ object CongGeYunCalculator {
         if (base.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG) return zhuanWangYun(bazi, base, p)
         // 两气成象行运专梯（补弱=用/补旺=忌/强第三行相生转三气相战转正格/弱第三行忌——第五五节一(二)）
         if (base.kind == cn.xulun.bazi.model.TeShuKind.LIANG_QI) return liangQiYun(bazi, base, p)
+        // 三气成象行运专梯（补最弱=用/补余行=忌/强破格行转正格取印/弱破格行忌——第五六节一(二)）
+        if (base.kind == cn.xulun.bazi.model.TeShuKind.SAN_QI) return sanQiYun(bazi, base, p)
 
         val strong = ps == pb || ps.generates == pb // 干支同心（干同支或干生支）
         // 坐支被原局半合/六合拉向从势（化神在势）——岁干之根随支被拉走（姚先生辛亥：亥卯半合木）
@@ -207,6 +209,57 @@ object CongGeYunCalculator {
     /** 天干五合化神（lo=两干序号较小者：0甲己土/1乙庚金/2丙辛水/3丁壬木/4戊癸火）。 */
     private fun heEl(lo: Int): Element = when (lo) {
         0 -> Element.EARTH; 1 -> Element.METAL; 2 -> Element.WATER; 3 -> Element.WOOD; else -> Element.FIRE
+    }
+
+    /**
+     * 三气成象格行运喜忌。理论见 `.shengke-reference.md` 第五六节一(二)：
+     * - 三行中**偏弱者补之为用**（使三行停均流转有情），补其余行（有余者再补）→ 失衡忌；
+     * - 强旺破格之行（三行之外）→ 扭转格局转正格——用神取印绶（化官制伤生身——化杀生身）；
+     * - 衰弱破格之行 → 不能扭转反逆乱气势 → 忌。
+     */
+    private fun sanQiYun(bazi: BaziResult, base: cn.xulun.bazi.model.TeShuGeJuResult, p: Pillar): CongGeYunResult {
+        val dayEl = bazi.dayPillar.stem.element
+        val ps = p.stem.element
+        val pb = p.branch.element
+        val shi = base.yongShen // 三行（弱者在前）
+        val ruo = shi.first()
+        val yinEl = Element.entries.first { it.generates == dayEl }
+
+        val verdict: YunVerdict
+        val newEl: Element?
+        val basis: String
+        when {
+            pb == ruo || (ps == ruo && pb.generates == ps) -> {
+                verdict = YunVerdict.YONG; newEl = null
+                basis = "岁运${p.fullName}：${ruo.chinese}为三行中气势偏弱者，补之以扶弱抑强，使${shi.joinToString("") { it.chinese }}三行停均流转有情——用神到位"
+            }
+            pb in shi -> {
+                verdict = YunVerdict.JI; newEl = null
+                basis = "岁运${p.fullName}：${pb.chinese}为三行中有余之行（最弱为${ruo.chinese}），再补之使气势失衡、生化受阻——忌神"
+            }
+            else -> {
+                val x = pb
+                val strong = ps == pb || ps.generates == pb || pb.generates == ps // 双体/覆载相生
+                if (strong) {
+                    // 转正格取印绶（化官生身）；印不在三行中则取克破格之行者
+                    val yong = shi.firstOrNull { it == yinEl } ?: shi.firstOrNull { it.controls == x } ?: yinEl
+                    verdict = YunVerdict.HUAN_YUAN; newEl = yong
+                    basis = "岁运${p.fullName}：${x.chinese}强旺扭转格局气势——转为正格（日主克泄交加偏弱），" +
+                        "用神取印绶${yong.chinese}以化官制伤生身，平衡局中气势"
+                } else {
+                    verdict = YunVerdict.JI; newEl = null
+                    basis = "岁运${p.fullName}：${x.chinese}衰弱无力扭转格局，反逆乱${shi.joinToString("") { it.chinese }}三气纯势——忌神"
+                }
+            }
+        }
+
+        return CongGeYunResult(
+            geName = base.name,
+            shi = shi,
+            verdict = verdict,
+            newYongShen = newEl,
+            basis = "【${base.name}】$basis",
+        )
     }
 
     /**

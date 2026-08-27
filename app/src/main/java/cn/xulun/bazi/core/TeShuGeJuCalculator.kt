@@ -496,9 +496,11 @@ object TeShuGeJuCalculator {
         }
 
         // ── 3. 三气成象：日主有力参与三行连环相生，弱者补之 ──
+        // 日主为链首（木生火生土之泄秀流）不忌身弱——戊辰丁巳甲寅乙丑甲木巳月休囚仍成象；
+        // 链尾受生（土金水之杀印型——通关一）身弱仍归正格
         val engine = StrengthEngine.analyze(bazi)
-        if (engine.verdict != DayStrength.WEAK) {
-            for (start in Element.entries) {
+        for (start in Element.entries) {
+            if (engine.verdict == DayStrength.WEAK && start != dayEl) continue
                 val mid = start.generates
                 val end = mid.generates
                 if (start == end) continue
@@ -521,7 +523,6 @@ object TeShuGeJuCalculator {
                             "岁运用神到位（补弱之行）则兴旺；破格之行值运有力则按正格取用。",
                     )
                 }
-            }
         }
         return null
     }
