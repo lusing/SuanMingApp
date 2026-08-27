@@ -264,8 +264,13 @@ object CongGeYunCalculator {
                         basis = "岁运${p.fullName}：${x.chinese}强旺与两行相生化合，格局转为${shiL.joinToString("") { it.chinese }}${x.chinese}三气成象——三行中仍以弱者${ruo.chinese}为用（谁弱取谁）"
                     }
                     strong && war -> {
-                        verdict = YunVerdict.HUAN_YUAN; newEl = x
-                        basis = "岁运${p.fullName}：${x.chinese}强旺与两行交战（${x.chinese}与${shiL.joinToString("") { it.chinese }}相克），强扭格局气势——格局转为正格，按正格方法重新取用神（通明式金战取比劫印绶；成慈式水润取调候滋润——旺${x.chinese}扭转气势者为先）"
+                        // 转正格取用随克向：战神克日主→身弱取比劫（毓秀甲寅/通明庚申取土/木）；
+                        // 日主所克之战神→调候取战神（成慈壬子水润）
+                        val yong = if (x.controls == dayEl) dayEl else x
+                        verdict = YunVerdict.HUAN_YUAN; newEl = yong
+                        basis = "岁运${p.fullName}：${x.chinese}强旺与两行交战（${x.chinese}与${shiL.joinToString("") { it.chinese }}相克），强扭格局气势——格局转为正格，" +
+                            (if (x.controls == dayEl) "日主受克偏弱，取比劫${yong.chinese}加强日主之势"
+                             else "旺${yong.chinese}滋润调候平衡气势，取${yong.chinese}为用")
                     }
                     else -> {
                         verdict = YunVerdict.JI; newEl = null

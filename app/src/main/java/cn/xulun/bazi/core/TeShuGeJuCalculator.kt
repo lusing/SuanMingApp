@@ -54,7 +54,11 @@ object TeShuGeJuCalculator {
 
     /** 两气成象：日主行与相生邻行（印/食伤）双强均衡成象——弱者补之为首用（木旺火弱宜火运）。 */
     private fun liangQiOf(bazi: BaziResult, dayEl: Element, partner: Element, f: Map<Element, Double>): TeShuGeJuResult {
-        val ruo = if (f[dayEl]!! <= f[partner]!!) dayEl else partner
+        // 弱旺以**去月令加成**之力计（月令之力非党众之实——辛酉辛丑戊申己未金乘旺而土不因丑令虚胖）
+        val fb = f.toMutableMap()
+        val rulerEl = bazi.monthPillar.branch.element
+        fb[rulerEl] = (fb[rulerEl]!! - 2.0).coerceAtLeast(0.0)
+        val ruo = if (fb[dayEl]!! <= fb[partner]!!) dayEl else partner
         val wang = if (ruo == dayEl) partner else dayEl
         val name = (PAIR_NAME[setOf(dayEl, partner)] ?: "两气成象") + "格"
         val ji = Element.entries.filter { it != dayEl && it != partner }
@@ -263,7 +267,9 @@ object TeShuGeJuCalculator {
             val othersOk = Element.entries.filter { it != dayEl && it != partner }
                 .all { f[it]!! - (if (it in neutralized) 1.0 else 0.0) <= 0.5 }
             val ratio = minOf(f[dayEl]!!, f[partner]!!) / maxOf(f[dayEl]!!, f[partner]!!)
-            if (hasBenQiRoot && f[dayEl]!! >= 2.0 && f[partner]!! >= 2.0 && ratio >= 0.4 &&
+            // 自立条件：有效根或比劫两透（庚申己丑戊戌庚申之戌被丑刑——干戊己两透亦可自立）
+            val selfStanding = hasBenQiRoot || bazi.stems.count { it.element == dayEl } >= 2
+            if (selfStanding && f[dayEl]!! >= 2.0 && f[partner]!! >= 2.0 && ratio >= 0.4 &&
                 (f[dayEl]!! + f[partner]!!) >= 0.8 * total && othersOk) {
                 return liangQiOf(bazi, dayEl, partner, f)
             }
