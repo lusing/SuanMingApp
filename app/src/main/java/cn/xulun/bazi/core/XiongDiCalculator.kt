@@ -35,6 +35,9 @@ object XiongDiCalculator {
         val d = LiuQinXiJi.derive(bazi)
         val forces = BingYaoCalculator.forces(bazi)
         val bing = BingYaoCalculator.analyze(bazi)
+        val diZhiRel = DiZhiRelationCalculator.analyze(bazi)
+        val kong = KongWangCalculator.analyze(bazi)
+        val ssItems = ShenShaCalculator.analyze(bazi).items
 
         val biEl = elementOf(GodCategory.BI, dayEl)
         val biForce = forces[biEl]!!
@@ -100,6 +103,12 @@ object XiongDiCalculator {
         } else {
             var n = 1 /*日主*/ + biStems + biBenQi.size
             basis.append("日主1+干比劫${biStems}+支本气比劫${biBenQi.size}")
+            // 羊刃支（劫财在地支）亦作一数
+            val renBranch = ssItems.firstOrNull { it.name == "羊刃" }?.branch
+            if (renBranch != null && bazi.branches.contains(renBranch)) {
+                n += 1
+                basis.append("；羊刃${renBranch.chinese}（劫财之刃）加1")
+            }
             when (bing.strength) {
                 DayStrength.WEAK -> {
                     val yin = yinStems + yinHidden
@@ -110,10 +119,10 @@ object XiongDiCalculator {
                 }
                 else -> {}
             }
-            // 加倍：比劫旺相（当令或得月令之生）
+            // 加倍：比劫旺相（当令或得月令之生）且透干（藏支之旺不加——例三水酉月相地全藏,4个不加倍）
             val monthEl = bazi.monthPillar.branch.element
             val dangLing = monthEl == biEl || monthEl.generates == biEl
-            if (dangLing) {
+            if (dangLing && biStems > 0) {
                 n *= 2
                 basis.append("；比劫旺相（${monthEl.chinese}月${if (monthEl == biEl) "当令" else "相地"}）加倍→${n}")
             }
@@ -123,9 +132,7 @@ object XiongDiCalculator {
                 basis.append("；比劫不当令（${monthEl.chinese}月）数众而与克泄耗之行相战（${keXieHao}对${biForce}）减半→${n}")
             }
             // 空亡：比劫本气支落旬空每支减1（禄支为实根"铁哥们"，落空亦以实计）
-            val kong = KongWangCalculator.analyze(bazi)
-            val luBranch = ShenShaCalculator.analyze(bazi).items
-                .firstOrNull { it.name == "禄神" }?.branch
+            val luBranch = ssItems.firstOrNull { it.name == "禄神" }?.branch
             val kongBi = benQiBiPillars().count { kong.isKong(it) && bazi.branches[it] != luBranch }
             if (kongBi > 0) {
                 n -= kongBi
@@ -159,7 +166,6 @@ object XiongDiCalculator {
         // ── 断语 ──
         val fav = mutableListOf<LiuQinItem>()
         val unfav = mutableListOf<LiuQinItem>()
-        val ssItems = ShenShaCalculator.analyze(bazi).items
         val biPillarBranches = benQiBiPillars()
         fun ssOnBiBranch(name: String): Boolean =
             ssItems.any { ss -> ss.name == name && biPillarBranches.any { bazi.branches[it] == ss.branch } }
@@ -208,7 +214,54 @@ object XiongDiCalculator {
         }
         // 比劫坐禄（禄支=本气比劫支）
         if (biPillarBranches.isNotEmpty()) {
-            fav += LiuQinItem("比劫坐禄", "比劫坐禄（地支本气比劫）——兄弟姐妹有力富裕之象。")
+            fav += LiuQinItem("比劫坐禄", "比劫坐禄——兄弟姐妹富而贵，哥姐多得力（劫财坐禄者哥姐富贵均有）。")
+        }
+        // 月上官杀为喜用且通根无刑冲——兄弟必贵
+        val monthStemGodX = tenGodOfStem(day, bazi.monthPillar.stem)
+        val guanElX = elementOf(GodCategory.GUAN, dayEl)
+        val monthChongXingX = diZhiRel.chongList.any { it.location.contains("月支") } ||
+            diZhiRel.xingList.any { it.location.contains("月支") }
+        if (monthStemGodX.category() == GodCategory.GUAN && GodCategory.GUAN in d.fav &&
+            (forces[guanElX]!! >= 1.5 ||
+                branchHiddenStems.getValue(bazi.monthPillar.branch).any { it.element == guanElX }) &&
+            !monthChongXingX
+        ) {
+            fav += LiuQinItem("月上官杀·喜用无破", "月上官星为喜用，通根又不被刑冲合害——兄弟必贵。")
+        }
+        // 月支空亡——异性同胞弱
+        if (kong.isKong(1)) {
+            unfav += LiuQinItem(
+                "月支空亡·异性弱",
+                "月支空亡——月支主异性同胞，落空即无根悬浮，男命姐妹、女命兄弟比自己弱。",
+            )
+        }
+        // 比劫干坐下遭克泄（截脚/坐泄）——该同胞贫贱多病（力度扣除日主本身）
+        if (biForce - 1.0 <= 2.5) {
+            bazi.stems.indices.forEach { i ->
+                if (i != 2 && bazi.stems[i].element == biEl) {
+                    val stEl = bazi.stems[i].element
+                    val brEl = bazi.branches[i].element
+                    if (brEl.controls == stEl || stEl.generates == brEl) {
+                        unfav += LiuQinItem(
+                            "比劫坐截脚",
+                            "比劫干（${bazi.stems[i].chinese}）坐下遭克泄——该同胞贫贱多病，或带残疾伤病之人；弱又被克，有克弟兄之信息。",
+                        )
+                    }
+                }
+            }
+        }
+        // 禄刃落空又为忌——夭亡之人
+        val luRenKong = ssItems.any { ss ->
+            (ss.name == "禄神" || ss.name == "羊刃") &&
+                ss.branch?.let { br -> bazi.branches.indexOf(br).let { it >= 0 && kong.isKong(it) } } == true
+        }
+        if (luRenKong && GodCategory.BI in d.unf) {
+            unfav += LiuQinItem("禄刃落空·夭亡", "禄刃落空又为忌——兄弟姐妹中有夭亡之人。")
+        }
+        // 月柱驿马逢冲——远行之人（冲者走也，不走则凶）
+        val maYue = ssItems.firstOrNull { it.name == "驿马" && it.pillarLabel.startsWith("月") }
+        if (maYue != null && diZhiRel.chongList.any { it.location.contains("月支") }) {
+            unfav += LiuQinItem("月柱驿马逢冲", "驿马临月柱而逢冲——冲者走也，兄弟中有远行之人；不远行则防死亡之厄。")
         }
         // 月柱官印/食财为喜用
         val monthStemCat = tenGodOfStem(day, bazi.monthPillar.stem).category()
@@ -247,7 +300,7 @@ object XiongDiCalculator {
         if (ssItems.any { it.name == "华盖" } && count <= 2) {
             unfav += LiuQinItem("华盖而比劫少", "四柱带华盖而比劫少——兄弟姐妹少。")
         }
-        if (benQiBiPillars().any { KongWangCalculator.analyze(bazi).isKong(it) } && biForce <= 2.0) {
+        if (benQiBiPillars().any { kong.isKong(it) } && biForce <= 2.0) {
             unfav += LiuQinItem("比劫休囚旬空", "比劫休囚处旬空——兄弟姐妹少。")
         }
         // 克泄耗忌：身弱，或中和偏弱（扶耗两侧耗>扶）
@@ -260,7 +313,6 @@ object XiongDiCalculator {
         ) {
             unfav += LiuQinItem("年杀月伤为忌", "年逢七杀、月逢伤官为忌（伤官制杀显无礼凶暴）——兄弟不睦，兄弟中易出不孝之人。")
         }
-        val diZhiRel = DiZhiRelationCalculator.analyze(bazi)
         // 三刑组两支亦成刑（丑戌/戌未/未丑、寅巳/巳申/寅申——丑戌刑兄弟宫式，全齐三刑之外）
         val sanXingGroups = listOf(
             setOf(cn.xulun.bazi.model.EarthlyBranch.CHOU, cn.xulun.bazi.model.EarthlyBranch.XU, cn.xulun.bazi.model.EarthlyBranch.WEI),
