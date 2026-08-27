@@ -54,6 +54,29 @@ object CaiYunCalculator {
         setOf(EarthlyBranch.YIN, EarthlyBranch.CHOU), setOf(EarthlyBranch.WU, EarthlyBranch.HAI),
         setOf(EarthlyBranch.ZI, EarthlyBranch.SI), setOf(EarthlyBranch.MAO, EarthlyBranch.SHEN),
     )
+    /** 六合化行。 */
+    private val liuHeHua = mapOf(
+        setOf(EarthlyBranch.ZI, EarthlyBranch.CHOU) to Element.EARTH,
+        setOf(EarthlyBranch.YIN, EarthlyBranch.HAI) to Element.WOOD,
+        setOf(EarthlyBranch.MAO, EarthlyBranch.XU) to Element.FIRE,
+        setOf(EarthlyBranch.CHEN, EarthlyBranch.YOU) to Element.METAL,
+        setOf(EarthlyBranch.SI, EarthlyBranch.SHEN) to Element.WATER,
+        setOf(EarthlyBranch.WU, EarthlyBranch.WEI) to Element.EARTH,
+    )
+    /** 六害。 */
+    private val liuHaiPairs = setOf(
+        setOf(EarthlyBranch.ZI, EarthlyBranch.WEI), setOf(EarthlyBranch.CHOU, EarthlyBranch.WU),
+        setOf(EarthlyBranch.YIN, EarthlyBranch.SI), setOf(EarthlyBranch.MAO, EarthlyBranch.CHEN),
+        setOf(EarthlyBranch.SHEN, EarthlyBranch.HAI), setOf(EarthlyBranch.YOU, EarthlyBranch.XU),
+    )
+    /** 天干五合化行。 */
+    private val ganHeHua = mapOf(
+        setOf(HeavenlyStem.JIA, HeavenlyStem.JI) to Element.EARTH,
+        setOf(HeavenlyStem.YI, HeavenlyStem.GENG) to Element.METAL,
+        setOf(HeavenlyStem.BING, HeavenlyStem.XIN) to Element.WATER,
+        setOf(HeavenlyStem.DING, HeavenlyStem.REN) to Element.WOOD,
+        setOf(HeavenlyStem.WU, HeavenlyStem.GUI) to Element.FIRE,
+    )
     private val ganChong = setOf(
         setOf(HeavenlyStem.JIA, HeavenlyStem.GENG), setOf(HeavenlyStem.YI, HeavenlyStem.XIN),
         setOf(HeavenlyStem.BING, HeavenlyStem.REN), setOf(HeavenlyStem.DING, HeavenlyStem.GUI),
@@ -292,7 +315,61 @@ object CaiYunCalculator {
                     yZhiBenQiEl == shiEl ||
                     // 比劫年支为忌夺财（例六庚辰——比劫行力≥3）
                     (yZhiBenQiEl == biEl && forces[biEl]!! >= 3.0)
-                if (!yinDong) return@forEach
+                // ── 流年干支与原局/大运的作用关系（刑冲会合害+合化成否）──
+                val posLabels = listOf("年支", "月支", "日支", "时支")
+                fun huaCheng(huaEl: Element): String {
+                    val f = Element.entries.associateWith { 0.0 }.toMutableMap()
+                    (bazi.stems + listOf(yun.pillar.stem, ln.pillar.stem)).forEach { f[it.element] = f[it.element]!! + 1.0 }
+                    (bazi.branches + listOf(yun.pillar.branch, ln.pillar.branch)).forEach { f[it.element] = f[it.element]!! + 1.0 }
+                    return if (f[huaEl]!! >= 2.0) "化${huaEl.chinese}成" else "化${huaEl.chinese}不成"
+                }
+                val relations = mutableListOf<String>()
+                val zhiTargets = bazi.branches.mapIndexed { i, br -> br to posLabels[i] } +
+                    listOf(yun.pillar.branch to "运支")
+                zhiTargets.forEach { (tb, pos) ->
+                    if (tb == ln.pillar.branch) return@forEach
+                    when {
+                        br2(ln.pillar.branch) == tb -> relations += "${ln.pillar.branch.chinese}冲${tb.chinese}(${pos})"
+                        liuHePairs.any { ln.pillar.branch in it && tb in it } ->
+                            relations += "${ln.pillar.branch.chinese}合${tb.chinese}(${pos})·" + huaCheng(liuHeHua.entries.first { it.key.contains(ln.pillar.branch) && it.key.contains(tb) }.value)
+                        sanHeGroups.any { it.key.contains(ln.pillar.branch) && it.key.contains(tb) } -> {
+                            val (sg, el) = sanHeGroups.entries.first { it.key.contains(ln.pillar.branch) && it.key.contains(tb) }
+                            relations += "${ln.pillar.branch.chinese}与${tb.chinese}(${pos})三合·" + huaCheng(el)
+                        }
+                        sanXingGroups.any { it.contains(ln.pillar.branch) && it.contains(tb) } ->
+                            relations += "${ln.pillar.branch.chinese}刑${tb.chinese}(${pos})"
+                        liuHaiPairs.any { ln.pillar.branch in it && tb in it } ->
+                            relations += "${ln.pillar.branch.chinese}害${tb.chinese}(${pos})"
+                        anHePairs.any { ln.pillar.branch in it && tb in it } ->
+                            relations += "${ln.pillar.branch.chinese}暗合${tb.chinese}(${pos})"
+                    }
+                }
+                val ganPosLabels = listOf("年干", "月干", "时干")
+                val ganTargets = listOfNotNull(
+                    bazi.stems.getOrNull(0)?.takeIf { it != day }?.let { it to ganPosLabels[0] },
+                    bazi.stems.getOrNull(1)?.takeIf { it != day }?.let { it to ganPosLabels[1] },
+                    bazi.stems.getOrNull(3)?.takeIf { it != day }?.let { it to ganPosLabels[2] },
+                    yun.pillar.stem.takeIf { it != day }?.let { it to "运干" },
+                )
+                ganTargets.forEach { (ts, pos) ->
+                    if (ts == ln.pillar.stem) return@forEach
+                    when {
+                        ganChong.any { ln.pillar.stem in it && ts in it } ->
+                            relations += "${ln.pillar.stem.chinese}冲${ts.chinese}(${pos})"
+                        ganHeHua.entries.any { it.key.contains(ln.pillar.stem) && it.key.contains(ts) } -> {
+                            val el = ganHeHua.entries.first { it.key.contains(ln.pillar.stem) && it.key.contains(ts) }.value
+                            relations += "${ln.pillar.stem.chinese}合${ts.chinese}(${pos})·" + huaCheng(el)
+                        }
+                    }
+                }
+                // ── 十神与喜忌 ──
+                val zhiBenQiGod = tenGodOfStem(day, branchHiddenStems.getValue(ln.pillar.branch).first())
+                val ganZhiGods = "${ln.pillar.stem.chinese}${yGanGod.chinese}·${ln.pillar.branch.chinese}${zhiBenQiGod.chinese}"
+                val ganCat = LiuQinXiJi.categoryOf(ln.pillar.stem.element, dayEl)
+                val zhiCat = LiuQinXiJi.categoryOf(yZhiBenQiEl, dayEl)
+                fun catXiJi(c: cn.xulun.bazi.model.GodCategory): String =
+                    if (c in rawFav) "喜" else if (c in d.unf) "忌" else "闲"
+                val xiJi = "干${catXiJi(ganCat)}支${catXiJi(zhiCat)}"
                 // 覆盖层：岁干支全喜用（按原始扶抑喜忌，不含调候翻转）；官杀支忌值年而年干不帮身；比劫支忌而力强
                 val ganCatFav = LiuQinXiJi.categoryOf(ln.pillar.stem.element, dayEl) in rawFav
                 val zhiCatFav = LiuQinXiJi.categoryOf(yZhiBenQiEl, dayEl) in rawFav
@@ -394,7 +471,24 @@ object CaiYunCalculator {
                         "交战未解（${war.desc}）——宜谨慎小心，切勿冒险求财，图个安稳即可。"
                     }
                 }
-                years += CaiYunYear(ln.year, "${ln.year} ${ln.pillar.stem.chinese}${ln.pillar.branch.chinese}", kind, text)
+                val finalKind: CaiYunKind
+                val finalText: String
+                if (!yinDong) {
+                    finalKind = CaiYunKind.PING
+                    finalText = "财星未被引动——非财运关键年，无大起大落；全局：支${brHe.desc}、干${stHe.desc}。"
+                } else {
+                    finalKind = kind
+                    finalText = text
+                }
+                years += CaiYunYear(
+                    ln.year,
+                    "${ln.year} ${ln.pillar.stem.chinese}${ln.pillar.branch.chinese}",
+                    finalKind,
+                    finalText,
+                    ganZhiGods,
+                    xiJi,
+                    relations,
+                )
             }
             yuns += CaiYunYun(
                 pillar = yun.pillar,

@@ -7,6 +7,7 @@ import cn.xulun.bazi.model.EarthlyBranch
 import cn.xulun.bazi.model.Gender
 import cn.xulun.bazi.model.HeavenlyStem
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
@@ -504,4 +505,24 @@ class CaiYunCalculatorTest {
         assertNotNull(n)
         assertTrue(n!!.kind.chinese.contains("发"))
     }
+
+    @Test
+    fun quanLiangPuKai() {
+        val r = analyze(
+            HeavenlyStem.DING, EarthlyBranch.YOU,
+            HeavenlyStem.JI, EarthlyBranch.YOU,
+            HeavenlyStem.JIA, EarthlyBranch.SHEN,
+            HeavenlyStem.GUI, EarthlyBranch.YOU,
+        )
+        val yun = r.yuns.first { it.pillar.fullName == "甲辰" }
+        assertEquals(10, yun.years.size)
+        val y98 = yun.years.first { it.year == 1998 }
+        assertTrue(y98.ganZhiGods.contains("戊偏财"))
+        assertTrue(y98.relations.any { it.contains("寅冲申") })
+        val y97 = r.yuns.first { it.pillar.fullName == "乙巳" }.years.first { it.year == 1997 }
+        assertTrue(y97.relations.any { it.contains("三合") && it.contains("化金") })
+        // 未引动年为平稳档
+        assertTrue(yun.years.all { it.xiJi.startsWith("干") })
+    }
+
 }
