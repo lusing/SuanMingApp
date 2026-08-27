@@ -77,6 +77,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
     val diZhiRelation = DiZhiRelationCalculator.analyze(result)
     val jieChong = JieChongCalculator.analyze(result)
     val shenSha = ShenShaCalculator.analyze(result)
+    val shiShen = cn.xulun.bazi.core.ShiShenCalculator.analyze(result)
     val kongWang = KongWangCalculator.analyze(result)
     val wealth = WealthCalculator.analyze(result, daYun)
     // 选定的大运/流年；随原局切换自动清空
@@ -135,6 +136,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
             }
         }
         ShenShaSection(result = shenSha)
+        cn.xulun.bazi.ui.components.ShiShenSection(result = shiShen)
         YongShenSection(result = yongShen)
         TiaoHouSection(result = tiaoHou)
         if (daYun != null) {
