@@ -331,14 +331,25 @@ object TeShuGeJuCalculator {
         // 链尾受生（土金水之杀印型——通关一）身弱仍归正格
         val engine = StrengthEngine.analyze(bazi)
         for (start in Element.entries) {
-            if (engine.verdict == DayStrength.WEAK && start != dayEl) continue
+            if (engine.verdict == DayStrength.WEAK && start != dayEl) {
+                // 链尾受生之杀印型身弱者：须他行纯净（≤0.5——通关一戊午己未壬申庚子有午火财根归正格；
+                // 辛丑戊戌壬子己酉丑戌子酉无木火仍成象）
+                val mid0 = start.generates
+                val end0 = mid0.generates
+                val lines0 = listOf(start, mid0, end0)
+                if (!Element.entries.filter { it !in lines0 }.all { f[it]!! <= 0.5 }) continue
+                // 且链内有合局联动（辛丑戊戌壬子己酉酉丑半合清纯；戊戌己未癸亥庚申散戌亥无局仍归病药取印）
+                val chainLianDong = heJu.any { (bs, el) -> el in lines0 } ||
+                    heHuaR.branchBanHeList.any { it.resultElement in lines0 }
+                if (!chainLianDong) continue
+            }
                 val mid = start.generates
                 val end = mid.generates
                 if (start == end) continue
                 val lines = listOf(start, mid, end)
                 if (dayEl !in lines) continue
                 // 印重身轻（印≥日×2.5，身弱不受生）→从印非三气（丁卯壬寅丁卯壬寅）；潮州李印:日=4:2 仍三气
-                val yinGuoZhong = f[yinEl]!! >= f[dayEl]!! * 2.5
+                val yinGuoZhong = f[yinEl]!! > f[dayEl]!! * 2.5 // 恰2.5倍仍三气（戊戌庚申壬子戊申金5水2）
                 // 三行力以朴素原始力计（弱旺如书感——己丑己巳丁巳己酉金唯酉1"略偏弱"）；
                 // 门槛≥1且有根透即可；日主自立须本气根或日行支双现（丁巳盘巳巳双根——缪先生无金支仍从水木火）
                 val f3 = Element.entries.associateWith { el ->
@@ -358,7 +369,8 @@ object TeShuGeJuCalculator {
                     }
                 if (daySelfRoot && !yinGuoZhong && lines.all { f3t[it]!! >= 2 } &&
                     Element.entries.filter { it !in lines }.all { f3t[it]!! <= 1.5 }) {
-                    val sorted = lines.sortedBy { f3[it]!! } // 弱者在前（原始力——金唯酉1"略偏弱"；转移图只作门槛）
+                    // 弱者在前（原始力），力平时链尾（泄端）优先为弱——己巳盘土3金3取金、辛丑戊戌壬子己酉金2水2取水
+                    val sorted = lines.sortedWith(compareBy({ f3[it]!! }, { -lines.indexOf(it) }))
                     // 破格之行值运有力 → 正格取用
                     val poLines = Element.entries.filter { it !in lines }
                     if (extraPillars.any { p -> p.stem.element in poLines && p.branch.element in poLines }) return null
