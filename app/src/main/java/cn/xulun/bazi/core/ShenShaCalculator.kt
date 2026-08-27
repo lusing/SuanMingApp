@@ -150,6 +150,16 @@ object ShenShaCalculator {
         // 日干起（天乙贵人、太极贵人年干、日干均可查——并集去重）
         scanBranchAny(bazi, "天乙贵人", (tianYi.getValue(bazi.yearPillar.stem) + tianYi.getValue(dayStem)).distinct(), out)
         scanBranchAny(bazi, "太极贵人", (taiJi.getValue(bazi.yearPillar.stem) + taiJi.getValue(dayStem)).distinct(), out)
+        // 三奇贵人：天上甲戊庚/地下乙丙丁/人中壬癸辛——须顺布紧连（年月日或月日时），间隔逆乱不取
+        val stems3 = bazi.stems
+        for ((name, tri) in listOf(
+            "三奇贵人（天上）" to listOf(HeavenlyStem.JIA, HeavenlyStem.WU, HeavenlyStem.GENG),
+            "三奇贵人（地下）" to listOf(HeavenlyStem.YI, HeavenlyStem.BING, HeavenlyStem.DING),
+            "三奇贵人（人中）" to listOf(HeavenlyStem.REN, HeavenlyStem.GUI, HeavenlyStem.XIN),
+        )) {
+            if (stems3.subList(0, 3) == tri) out.add(ShenShaItem(name, "年月日干连", stem = stems3[2]))
+            if (stems3.subList(1, 4) == tri) out.add(ShenShaItem(name, "月日时干连", stem = stems3[3]))
+        }
         scanBranch(bazi, "文昌", wenChang.getValue(dayStem), out)
         scanBranch(bazi, "学堂", xueTang.getValue(dayStem), out)
         scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)
