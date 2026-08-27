@@ -76,20 +76,39 @@ object TeShuGeJuCalculator {
             setOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN),
             setOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI),
         )) if (grp.count { it in branches } >= 2) xingBranches += grp.filter { it in branches }
-        val hasBenQiRoot = branches.any { it.element == dayEl && it !in xingBranches }
+        // 本气根：本气支非刑支，且非合局变节成员（辰在申子辰水局内不算土根——总表例）
+        val heJu = sanHe.map { it.branches to it.resultElement } + sanHui.map { it.branches to it.resultElement }
+        val bianJieBranches = heJu.flatMap { (bs, _) -> bs }
+        val hasBenQiRoot = branches.any { it.element == dayEl && it !in xingBranches &&
+            (it !in bianJieBranches || heJu.any { (bs, el) -> it in bs && el == dayEl }) }
         if (!hasBenQiRoot) {
             val maxOther = Element.entries.filter { it != dayEl }.maxOf { f[it]!! }
             // 透干比劫/印：被克泄殆尽或坐下截脚者无力（假从之"虚助"）
-            val helperStems = bazi.stems.filter { it !== bazi.dayPillar.stem && (it.element == dayEl || it.element == yinEl) }
+            val helperStems = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+                .filter { it.element == dayEl || it.element == yinEl }
             val weakHelpers = helperStems.filter { s ->
                 val self = f[s.element]!!
                 val foes = Element.entries.filter { e -> e.controls == s.element || s.element.controls == e }.sumOf { f[it]!! }
                 foes >= 2.5 * self
             }
-            val jieJiaoStems = helperStems.filter { s -> pillarOfStem(bazi, s)?.let { it.branch.element.controls == s.element } == true }
-            val fake = jieJiaoStems.isNotEmpty() || weakHelpers.isNotEmpty()
+            // 截脚按实际柱位（枚举同值防首配错柱）；湿土（丑辰）不截水根——藏水之根（A5 教材例）
+            val jieJiaoStems = helperStems.filter { s ->
+                listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).any { pl ->
+                    pl.stem === s && pl.branch.element.controls == s.element &&
+                        !(s.element == Element.WATER && (pl.branch == EarthlyBranch.CHOU || pl.branch == EarthlyBranch.CHEN))
+                }
+            }
+            // 合化入势从真：透劫/印与另一透干五合且化神在从势内（癸合戊化火/乙合庚化金）——不以虚助论
+            val heHuaRuShi = helperStems.filter { s ->
+                bazi.stems.any { o ->
+                    o !== bazi.dayPillar.stem && o !== s &&
+                        (s.ordinal - o.ordinal + 10) % 5 == 0 && s.ordinal != o.ordinal
+                }
+            }
+            val weakSet = (jieJiaoStems + weakHelpers).toSet() - heHuaRuShi.toSet()
+            val fake = weakSet.isNotEmpty()
             // 日行有效力：透干虚助被殆尽/截脚者折尽
-            val effDayLine = (fc(dayEl) - weakHelpers.size - jieJiaoStems.size).coerceAtLeast(0.0)
+            val effDayLine = (fc(dayEl) - weakSet.size).coerceAtLeast(0.0)
             if (effDayLine <= 0.4 * maxOther) {
                 // 从势：有力诸行（≥2.5），相生连链；连接行力可低
                 val others = Element.entries.filter { it != dayEl }
@@ -110,6 +129,10 @@ object TeShuGeJuCalculator {
                             }
                         }
                     }
+                    // 上游财入链：财透干或力≥2 且生链中某行（火生土式——杨先生例）
+                    val caiEl = dayEl.controls
+                    if (caiEl !in chain && (f[caiEl]!! >= 2 || bazi.stems.any { it.element == caiEl && it !== bazi.dayPillar.stem }) &&
+                        chain.any { c -> caiEl.generates == c }) chain += caiEl
                     // 相生拓扑序：先生它者为链首
                     val chainList = mutableListOf<Element>()
                     val rest = chain.toMutableSet()
@@ -144,10 +167,10 @@ object TeShuGeJuCalculator {
                     if (extraPillars.any { it.branch.element == dayEl || it.branch.element == yinEl }) return null
                     val kind = if (chainList.size == 1) TeShuKind.JIA_CONG
                     else if (fake) TeShuKind.JIA_CONG else TeShuKind.DUO_CONG
-                    val relName = when (chainList.first()) {
-                        dayEl.controls -> if (chainList.first() == yinEl) "从印" else "从财"
-                        yinEl -> "从印"
-                        dayEl.generates -> "从儿"
+                    val relName = when {
+                        dayEl.controls in chainList -> "从财" // 财在势内即为从财（财生官之势亦从财——杨先生/刘女士例）
+                        chainList.first() == yinEl -> "从印"
+                        chainList.first() == dayEl.generates -> "从儿"
                         else -> "从杀"
                     }
                     val name = (if (fake) "假" else "") + relName + "格"
