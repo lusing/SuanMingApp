@@ -175,24 +175,29 @@ object TeShuGeJuCalculator {
                             }
                         }
                     }
-                    // 官杀双透且官力不足（非强势成员）→ 阻从（从财条件③——调候矛盾局壬癸双透例；单透虚官不阻——席女士辛/癸巳例戊）
+                    // 官杀双透且官力不足（非强势成员）且未被彻底制住 → 阻从（调候矛盾局壬癸双透例）；
+                    // 官被克官之行彻底制住（≥2.5×官力——丙戌庚寅甲午庚午例火6制金2）不阻
                     val guanEl0 = Element.entries.first { it.controls == dayEl }
                     val guanTouCount = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
                         .count { it.element == guanEl0 }
-                    if (fAdj[guanEl0]!! < 2.5 && guanTouCount >= 2) {
+                    val zhiGuanEl = Element.entries.first { it.controls == guanEl0 }
+                    val guanCrushed = fAdj[zhiGuanEl]!! >= 2.5 * fAdj[guanEl0]!!
+                    if (fAdj[guanEl0]!! < 2.5 && guanTouCount >= 2 && !guanCrushed) {
                         // 落入三气成象/正格
                     } else {
                     // 岁运还原：日主得禄之支（如庚禄在申）或印得本气根（如壬通根子生日干——朱先生丙子年）→ 回正格身弱
                     if (extraPillars.any { it.branch.element == dayEl || it.branch.element == yinEl }) return null
                     val kind = if (chainList.size == 1) TeShuKind.JIA_CONG
                     else if (fake) TeShuKind.JIA_CONG else TeShuKind.DUO_CONG
+                    // 命名按势首（最强成员）与日主之关系：財→从财、官→从杀、食伤→从儿、印→从印
+                    // （杨先生火財5:4土官→从财；丁巳例火食6:2土財→从儿——同构异名，关系定之）
+                    val shiShou = chainList.maxBy { fAdj[it]!! }
                     val relName = when {
-                        // 财在势且力≥2→从财（杨先生火2/刘女士水5）；財力1虚透不入（总表殺格金1——从杀）
-                        chainList.any { it == dayEl.controls && fAdj[it]!! >= 2 } -> "从财"
-                        chainList.any { it.controls == dayEl } -> "从杀"
-                        chainList.first() == yinEl -> "从印"
-                        chainList.first() == dayEl.generates -> "从儿"
-                        else -> "从杀"
+                        shiShou == dayEl.controls -> "从财"
+                        shiShou.controls == dayEl -> "从杀"
+                        shiShou == dayEl.generates -> "从儿"
+                        shiShou == yinEl -> "从印"
+                        else -> "从"
                     }
                     val name = (if (fake) "假" else "") + relName + "格"
                     val rootDesc = if (fake) "日主无有效根（透干之助被克泄殆尽或截脚无力，假从），" else "日主无有效根，弱极无依，"

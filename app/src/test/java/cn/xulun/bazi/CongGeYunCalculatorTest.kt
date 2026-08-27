@@ -263,4 +263,112 @@ class CongGeYunCalculatorTest {
             Pillar(HeavenlyStem.YI, EarthlyBranch.HAI), Pillar(HeavenlyStem.JI, EarthlyBranch.WEI)))
         assertEquals(YunVerdict.HUAN_YUAN, r?.verdict)
     }
+
+    // ════════ 从儿格 ════════
+
+    // ── 成格四例 ──
+
+    @Test fun `儿成格一 丁巳丙午甲戌己巳 从儿`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.DING, EarthlyBranch.SI, HeavenlyStem.BING, EarthlyBranch.WU,
+            HeavenlyStem.JIA, EarthlyBranch.XU, HeavenlyStem.JI, EarthlyBranch.SI))!!
+        assertTrue("应从儿：${r.name}", r.name.contains("从儿"))
+    }
+
+    @Test fun `儿成格二 戊戌己未丙辰己丑 食伤四库从儿`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.WU, EarthlyBranch.XU, HeavenlyStem.JI, EarthlyBranch.WEI,
+            HeavenlyStem.BING, EarthlyBranch.CHEN, HeavenlyStem.JI, EarthlyBranch.CHOU))!!
+        assertTrue("应从儿：${r.name}", r.name.contains("从儿"))
+    }
+
+    @Test fun `儿成格三 庚申乙酉戊戌庚申 申酉戌三会从儿`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.GENG, EarthlyBranch.SHEN, HeavenlyStem.YI, EarthlyBranch.YOU,
+            HeavenlyStem.WU, EarthlyBranch.XU, HeavenlyStem.GENG, EarthlyBranch.SHEN))!!
+        assertTrue("应从儿：${r.name}", r.name.contains("从儿"))
+    }
+
+    @Test fun `儿成格四 壬子壬子庚子丁亥 丁壬反化从儿`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.REN, EarthlyBranch.ZI, HeavenlyStem.REN, EarthlyBranch.ZI,
+            HeavenlyStem.GENG, EarthlyBranch.ZI, HeavenlyStem.DING, EarthlyBranch.HAI))!!
+        assertTrue("应从儿：${r.name}", r.name.contains("从儿"))
+    }
+
+    @Test fun `儿非提纲一 丙戌庚寅甲午庚午 支合食伤局从儿`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.BING, EarthlyBranch.XU, HeavenlyStem.GENG, EarthlyBranch.YIN,
+            HeavenlyStem.JIA, EarthlyBranch.WU, HeavenlyStem.GENG, EarthlyBranch.WU))!!
+        assertTrue("应从儿（食伤不在提纲，层次稍低）：${r.name}", r.name.contains("从儿"))
+    }
+
+    @Test fun `儿非提纲三 壬辰戊申庚子丙子 申子辰从儿`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.REN, EarthlyBranch.CHEN, HeavenlyStem.WU, EarthlyBranch.SHEN,
+            HeavenlyStem.GENG, EarthlyBranch.ZI, HeavenlyStem.BING, EarthlyBranch.ZI))!!
+        assertTrue("应从儿：${r.name}", r.name.contains("从儿"))
+    }
+
+    // ── 岁运总表（己未 戊辰 丙戌 戊戌，从儿·土） ──
+
+    private val congEr = chartOf(
+        HeavenlyStem.JI, EarthlyBranch.WEI, HeavenlyStem.WU, EarthlyBranch.CHEN,
+        HeavenlyStem.BING, EarthlyBranch.XU, HeavenlyStem.WU, EarthlyBranch.XU)
+
+    private fun ve(p: Pillar): YunVerdict? = CongGeYunCalculator.analyze(congEr, listOf(p))?.verdict
+
+    @Test fun `儿总表 用神旺土四柱`() {
+        for ((s, b) in listOf(
+            HeavenlyStem.WU to EarthlyBranch.CHEN, HeavenlyStem.WU to EarthlyBranch.XU,
+            HeavenlyStem.JI to EarthlyBranch.CHOU, HeavenlyStem.JI to EarthlyBranch.WEI,
+        )) assertEquals("(${s.chinese}${b.chinese}) 应用神", YunVerdict.YONG, ve(Pillar(s, b)))
+    }
+
+    @Test fun `儿总表 转格强印甲寅乙卯取印`() {
+        for ((s, b) in listOf(HeavenlyStem.JIA to EarthlyBranch.YIN, HeavenlyStem.YI to EarthlyBranch.MAO)) {
+            val r = CongGeYunCalculator.analyze(congEr, listOf(Pillar(s, b)))!!
+            assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.WOOD, r.newYongShen)
+        }
+    }
+
+    @Test fun `儿总表 转格强官壬子癸亥取官`() {
+        for ((s, b) in listOf(HeavenlyStem.REN to EarthlyBranch.ZI, HeavenlyStem.GUI to EarthlyBranch.HAI)) {
+            val r = CongGeYunCalculator.analyze(congEr, listOf(Pillar(s, b)))!!
+            assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.WATER, r.newYongShen)
+        }
+    }
+
+    @Test fun `儿总表 转格强财庚申辛酉取财`() {
+        for ((s, b) in listOf(HeavenlyStem.GENG to EarthlyBranch.SHEN, HeavenlyStem.XIN to EarthlyBranch.YOU)) {
+            val r = CongGeYunCalculator.analyze(congEr, listOf(Pillar(s, b)))!!
+            assertEquals("(${s.chinese}${b.chinese}) 应转格", YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.METAL, r.newYongShen)
+        }
+    }
+
+    @Test fun `儿总表 转格强比丙午丁巳身食两气`() {
+        for ((s, b) in listOf(HeavenlyStem.BING to EarthlyBranch.WU, HeavenlyStem.DING to EarthlyBranch.SI)) {
+            val r = CongGeYunCalculator.analyze(congEr, listOf(Pillar(s, b)))!!
+            assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.FIRE, r.newYongShen)
+        }
+    }
+
+    // ── 实例 ──
+
+    @Test fun `儿李先生 辛卯庚寅癸未乙卯 卯未半合不破格 丙寅年吉`() {
+        val b = chartOf(
+            HeavenlyStem.XIN, EarthlyBranch.MAO, HeavenlyStem.GENG, EarthlyBranch.YIN,
+            HeavenlyStem.GUI, EarthlyBranch.WEI, HeavenlyStem.YI, EarthlyBranch.MAO)
+        val ts = TeShuGeJuCalculator.analyze(b)!!
+        assertTrue("应从儿（木）：${ts.name}", ts.name.contains("从儿"))
+        assertEquals(listOf(Element.WOOD), ts.yongShen)
+        // 丙戌运丙寅年：寅木在势+丙辛合卯戌合和局——吉（升官）
+        val r = CongGeYunCalculator.analyze(b, listOf(
+            Pillar(HeavenlyStem.BING, EarthlyBranch.XU), Pillar(HeavenlyStem.BING, EarthlyBranch.YIN)))
+        assertEquals(YunVerdict.YONG, r?.verdict)
+    }
 }

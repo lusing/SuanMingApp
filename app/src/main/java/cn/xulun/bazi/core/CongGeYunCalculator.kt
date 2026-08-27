@@ -56,6 +56,17 @@ object CongGeYunCalculator {
                     basis = "岁运${p.fullName}：比劫（${dayEl.chinese}）助日主克住旺势，与势成两停——格局变身为势两气成象，取比劫平衡气势"
                 }
             }
+            // 势生之行（泄势者，从儿之財）：强→转两气取之；弱→忌（化泄无力反杂纯势）
+            shi.any { it.generates == pb } && pb != dayEl -> {
+                val strong = ps == pb || ps.generates == pb
+                if (strong) {
+                    verdict = YunVerdict.ZHUAN_GE; newEl = pb
+                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）化泄从势旺气，干支强旺与势两停——格局转两气从格，取${pb.chinese}为用以平衡气势"
+                } else {
+                    verdict = YunVerdict.JI; newEl = null
+                    basis = "岁运${p.fullName}：${pb.chinese}（${godName(pb, dayEl)}）衰弱，无力化泄从势改变格局，反杂乱纯势——忌神"
+                }
+            }
             // 支为破格神行：强弱定转格或忌（支主导——壬寅例：支官杀当权重于干财）
             poGeShen(pb) -> {
                 val strong = ps == pb || ps.generates == pb
