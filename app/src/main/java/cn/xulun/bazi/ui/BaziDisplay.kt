@@ -51,6 +51,7 @@ import cn.xulun.bazi.ui.components.QuYunSection
 import cn.xulun.bazi.ui.components.ShenShaSection
 import cn.xulun.bazi.ui.components.StudySection
 import cn.xulun.bazi.ui.components.TiaoHouSection
+import cn.xulun.bazi.ui.components.CaiYunSection
 import cn.xulun.bazi.ui.components.WealthSection
 import cn.xulun.bazi.ui.components.BingYaoSection
 import cn.xulun.bazi.ui.components.MingGongSection
@@ -162,6 +163,9 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
             ),
         )
         WealthSection(result = wealth)
+        daYun?.let { dy ->
+            CaiYunSection(result = cn.xulun.bazi.core.CaiYunCalculator.analyze(result, gender, dy))
+        }
         MarriageSection(result = MarriageCalculator.analyze(result, gender))
         LiuQinSection(result = cn.xulun.bazi.core.LiuQinCalculator.analyze(result, gender))
         StudySection(result = StudyCalculator.analyze(result, daYun))
