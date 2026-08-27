@@ -231,6 +231,20 @@ object ShenShaCalculator {
             else -> Pillar(HeavenlyStem.JIA, EarthlyBranch.ZI)
         }
         if (bazi.dayPillar == tianShe) out.add(ShenShaItem("天赦", "日柱", branch = tianShe.branch))
+        // 阴注阳受（荫星，月支查表——寅子/卯亥/辰戌/巳酉/午戌/未亥/申子/酉丑/戌寅/亥卯/子寅/丑丑；查年日时支）
+        val yinZhu = mapOf(
+            EarthlyBranch.YIN to EarthlyBranch.ZI, EarthlyBranch.MAO to EarthlyBranch.HAI,
+            EarthlyBranch.CHEN to EarthlyBranch.XU, EarthlyBranch.SI to EarthlyBranch.YOU,
+            EarthlyBranch.WU to EarthlyBranch.XU, EarthlyBranch.WEI to EarthlyBranch.HAI,
+            EarthlyBranch.SHEN to EarthlyBranch.ZI, EarthlyBranch.YOU to EarthlyBranch.CHOU,
+            EarthlyBranch.XU to EarthlyBranch.YIN, EarthlyBranch.HAI to EarthlyBranch.MAO,
+            EarthlyBranch.ZI to EarthlyBranch.YIN, EarthlyBranch.CHOU to EarthlyBranch.CHOU,
+        )
+        yinZhu[monthBranch]?.let { yz ->
+            bazi.pillars.forEachIndexed { i, pl ->
+                if (i != 1 && pl.branch == yz) out.add(ShenShaItem("阴注阳受", PillarBranchLabels[i], branch = yz))
+            }
+        }
         scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)
         scanBranch(bazi, "禄神", luShen.getValue(dayStem), out)
         // 日支起
