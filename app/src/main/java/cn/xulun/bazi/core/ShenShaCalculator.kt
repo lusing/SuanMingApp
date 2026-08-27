@@ -4,6 +4,7 @@ import cn.xulun.bazi.model.BaziResult
 import cn.xulun.bazi.model.EarthlyBranch
 import cn.xulun.bazi.model.HeavenlyStem
 import cn.xulun.bazi.model.Element
+import cn.xulun.bazi.model.Pillar
 import cn.xulun.bazi.model.PillarBranchLabels
 import cn.xulun.bazi.model.PillarStemLabels
 import cn.xulun.bazi.model.ShenShaItem
@@ -202,6 +203,34 @@ object ShenShaCalculator {
             if (pl.branch == xueTangZhi) out.add(ShenShaItem(if (same) "正学堂" else "学堂", PillarBranchLabels[i], branch = pl.branch))
             if (pl.branch == ciGuanZhi) out.add(ShenShaItem(if (same) "正词馆" else "词馆", PillarBranchLabels[i], branch = pl.branch))
         }
+        // 金舆（禄神前二位——年日干查：甲辰乙巳丙未丁申戊未己申庚戌辛亥壬丑癸寅）
+        val jinYu = mapOf(
+            HeavenlyStem.JIA to EarthlyBranch.CHEN, HeavenlyStem.YI to EarthlyBranch.SI,
+            HeavenlyStem.BING to EarthlyBranch.WEI, HeavenlyStem.DING to EarthlyBranch.SHEN,
+            HeavenlyStem.WU to EarthlyBranch.WEI, HeavenlyStem.JI to EarthlyBranch.SHEN,
+            HeavenlyStem.GENG to EarthlyBranch.XU, HeavenlyStem.XIN to EarthlyBranch.HAI,
+            HeavenlyStem.REN to EarthlyBranch.CHOU, HeavenlyStem.GUI to EarthlyBranch.YIN,
+        )
+        for (jg in listOf(bazi.yearPillar.stem, dayStem).distinct()) {
+            scanBranch(bazi, "金舆", jinYu.getValue(jg), out)
+        }
+        // 天医（月支前一位——以月支查年日时支：寅月丑、卯月寅……丑月子）
+        val tianYi2 = EarthlyBranch.entries[(monthBranch.ordinal + 11) % 12]
+        for ((i, pl) in bazi.pillars.withIndex()) {
+            if (i == 1) continue // 以月支查年日时
+            if (pl.branch == tianYi2) out.add(ShenShaItem("天医", PillarBranchLabels[i], branch = pl.branch))
+        }
+        // 天赦（四季查日柱：春戊寅/夏甲午/秋戊申/冬甲子——天生地立，凶神退避）
+        val tianShe = when (monthBranch) {
+            EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN ->
+                Pillar(HeavenlyStem.WU, EarthlyBranch.YIN)
+            EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI ->
+                Pillar(HeavenlyStem.JIA, EarthlyBranch.WU)
+            EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU ->
+                Pillar(HeavenlyStem.WU, EarthlyBranch.SHEN)
+            else -> Pillar(HeavenlyStem.JIA, EarthlyBranch.ZI)
+        }
+        if (bazi.dayPillar == tianShe) out.add(ShenShaItem("天赦", "日柱", branch = tianShe.branch))
         scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)
         scanBranch(bazi, "禄神", luShen.getValue(dayStem), out)
         // 日支起
