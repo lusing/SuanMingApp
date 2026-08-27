@@ -53,6 +53,7 @@ import cn.xulun.bazi.ui.components.TiaoHouSection
 import cn.xulun.bazi.ui.components.WealthSection
 import cn.xulun.bazi.ui.components.BingYaoSection
 import cn.xulun.bazi.ui.components.MingGongSection
+import cn.xulun.bazi.ui.components.MuQuYongSection
 import cn.xulun.bazi.ui.components.WuXingFlowSection
 import cn.xulun.bazi.ui.components.YongShenSection
 import cn.xulun.bazi.ui.components.YunRelationSection
@@ -179,6 +180,9 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         }
         WuXingFlowSection(result = WuXingFlowCalculator.analyze(result, flowPillars))
         BingYaoSection(result = cn.xulun.bazi.core.BingYaoCalculator.analyze(result))
+        if (dayMaster.element == cn.xulun.bazi.model.Element.WOOD) {
+            MuQuYongSection(result = cn.xulun.bazi.core.MuQuYongCalculator.analyze(result))
+        }
     }
 }
 
