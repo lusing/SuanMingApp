@@ -15,6 +15,8 @@ data class LiuQinResult(
     val fuMu: FuMuResult,
     /** 兄弟姐妹（第四块）——比劫为手足星，禄刃印从变通计数 */
     val xiongDi: XiongDiResult,
+    /** 子女（第五块）——男杀子官女/女伤子食女；子女宫=时柱 */
+    val ziNv: ZiNvResult,
 )
 
 /** 六亲单项断语（各亲属块通用）。 */
@@ -40,6 +42,21 @@ data class WaiGongResult(
 
 /** 父母分析结果：有利/不利断语 + 小结。 */
 data class FuMuResult(
+    val favorable: List<LiuQinItem> = emptyList(),
+    val unfavorable: List<LiuQinItem> = emptyList(),
+    val summary: String = "",
+)
+
+/** 子女分析结果：头胎性别+子女数目+宫位注记+断语。 */
+data class ZiNvResult(
+    /** 头胎性别推断，如 "头胎生女（时干丁与日干丙阴阳异性）" */
+    val headFirst: String = "",
+    /** 子女数目近似，如 "4个左右" */
+    val count: String = "",
+    /** 计数依据 */
+    val countBasis: String = "",
+    /** 子女宫（时支本气）与日干阴阳注记——同性儿女双全/异性多生女男 */
+    val palaceNote: String? = null,
     val favorable: List<LiuQinItem> = emptyList(),
     val unfavorable: List<LiuQinItem> = emptyList(),
     val summary: String = "",

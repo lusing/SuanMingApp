@@ -16,5 +16,6 @@ object LiuQinCalculator {
             waiGong = WaiGongCalculator.analyze(bazi),
             fuMu = FuMuCalculator.analyze(bazi, gender),
             xiongDi = XiongDiCalculator.analyze(bazi, gender),
+            ziNv = ZiNvCalculator.analyze(bazi, gender),
         )
 }

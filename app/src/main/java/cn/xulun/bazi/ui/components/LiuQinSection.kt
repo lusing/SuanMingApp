@@ -21,8 +21,9 @@ import cn.xulun.bazi.ui.theme.SeedRed
  * 六亲展示区域（容器）。第一块：祖业——年柱（祖上宫）十神喜忌/神煞/冲合断语；
  * 第二块：外公家族——伤官居年月柱而旺制官杀（外祖父星）；
  * 第三块：父母——父星（男偏财/女正财）母星（男正印/女偏印）+父母宫（年柱）；
- * 第四块：兄弟姐妹——比劫为手足星，旺相加倍/相战减半/从格合并单元计数。
- * 理论见 .liuqin-reference.md。后续子女等章节在此容器内追加子块。
+ * 第四块：兄弟姐妹——比劫为手足星，旺相加倍/相战减半/从格合并单元计数；
+ * 第五块：子女——男杀子官女/女伤子食女，子女宫=时柱，头胎性别+数目+从象。
+ * 理论见 .liuqin-reference.md。
  */
 @Composable
 fun LiuQinSection(result: LiuQinResult, modifier: Modifier = Modifier) {
@@ -219,6 +220,68 @@ fun LiuQinSection(result: LiuQinResult, modifier: Modifier = Modifier) {
             }
             Text(
                 text = xd.summary,
+                fontSize = 12.sp,
+                color = Color(0xFF6D4C41),
+                modifier = Modifier.padding(top = 14.dp),
+            )
+
+            // ── 子女 ──
+            Text(
+                text = "—— 子女 ——",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = SeedRed,
+                modifier = Modifier.padding(top = 18.dp),
+            )
+            val zn = result.ziNv
+            Text(
+                text = zn.headFirst,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                text = "子女数目：${zn.count}",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            Text(
+                text = "计数：" + zn.countBasis,
+                fontSize = 12.sp,
+                color = Color(0xFF6D4C41),
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            zn.palaceNote?.let {
+                Text(
+                    text = it,
+                    fontSize = 12.sp,
+                    color = Color(0xFF6D4C41),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            zn.favorable.forEach { item ->
+                Text(
+                    text = "◆ " + item.dim,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2E7D32),
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                Text(text = item.text, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
+            }
+            zn.unfavorable.forEach { item ->
+                Text(
+                    text = "◇ " + item.dim,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SeedRed,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                Text(text = item.text, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
+            }
+            Text(
+                text = zn.summary,
                 fontSize = 12.sp,
                 color = Color(0xFF6D4C41),
                 modifier = Modifier.padding(top = 14.dp),
