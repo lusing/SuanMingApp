@@ -187,11 +187,13 @@ object TeShuGeJuCalculator {
                 (p.stem.element == keEl && p.branch.element == keEl) || (p.stem.element == poEl && p.branch.element == poEl)
             }
             if (broken) return null
-            // 两气成象分流：印/食伤之相生邻行力≥八成日行且两行份额≥八成——
-            // 日主与邻行均衡成象非独旺（甲午丙寅丙寅甲午木6火4——通明非炎上；
-            // 庚申庚辰庚申庚辰土4金6仅0.67仍专旺——金众土寡）
+            // 两气成象分流：印/食伤之相生邻行与日行均衡（份额≥八成）——
+            // 均衡门槛随月令：日主当令（己巳戊辰戊午戊午火3土7月令辰=0.43成慈）取0.4，
+            // 印当令则须高度均衡0.8（甲午丙寅丙寅甲午木6火4通明；庚申庚辰庚申庚辰土4金6=0.67仍专旺——金众土寡）
             val partner0 = listOf(yinEl, dayEl.generates).maxBy { fZhuan[it]!! }
-            if (fZhuan[partner0]!! >= 0.8 * fZhuan[dayEl]!! && fZhuan[partner0]!! >= 2.0 &&
+            val divertTh = if (bazi.monthPillar.branch.element == dayEl) 0.4 else 0.8
+            // 有财官隐患（假专旺）者不分流——戊申庚申庚戌丁丑之丁官无根仍留专旺档
+            if (!ruoGuanTou && fZhuan[partner0]!! >= divertTh * fZhuan[dayEl]!! && fZhuan[partner0]!! >= 2.0 &&
                 (fZhuan[dayEl]!! + fZhuan[partner0]!!) >= 0.8 * totalZhuan) {
                 return liangQiOf(bazi, dayEl, partner0, fZhuan)
             }
