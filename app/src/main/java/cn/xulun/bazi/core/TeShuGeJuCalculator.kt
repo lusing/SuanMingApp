@@ -349,7 +349,9 @@ object TeShuGeJuCalculator {
                 val lines = listOf(start, mid, end)
                 if (dayEl !in lines) continue
                 // 印重身轻（印≥日×2.5，身弱不受生）→从印非三气（丁卯壬寅丁卯壬寅）；潮州李印:日=4:2 仍三气
-                val yinGuoZhong = f[yinEl]!! > f[dayEl]!! * 2.5 // 恰2.5倍仍三气（戊戌庚申壬子戊申金5水2）
+                // 印重身轻→从印，唯印有源头（生印之行在链——金生水流通非壅塞）仍三气（壬申壬子甲寅癸酉水6木2）；
+                // 恰2.5倍仍三气（戊戌庚申壬子戊申金5水2）
+                val yinGuoZhong = f[yinEl]!! > f[dayEl]!! * 2.5 && yinEl.generates !in lines
                 // 三行力以朴素原始力计（弱旺如书感——己丑己巳丁巳己酉金唯酉1"略偏弱"）；
                 // 门槛≥1且有根透即可；日主自立须本气根或日行支双现（丁巳盘巳巳双根——缪先生无金支仍从水木火）
                 val f3 = Element.entries.associateWith { el ->
@@ -367,7 +369,10 @@ object TeShuGeJuCalculator {
                     listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).any {
                         it.stem.element == dayEl && (it.branch.element == dayEl || it.branch.element.generates == dayEl)
                     }
-                if (daySelfRoot && !yinGuoZhong && lines.all { f3t[it]!! >= 2 } &&
+                // 日干五合化为他行者（真化从格——丁卯壬寅两壬合两丁化木从印）优先化气格；
+                // 化神即日主行者化助自身仍三气（甲己化土于戊日——火土金例三）
+                val hua0 = huaShenElOf(bazi)
+                if (!(hua0 != null && hua0 != dayEl) && daySelfRoot && !yinGuoZhong && lines.all { f3t[it]!! >= 2 } &&
                     Element.entries.filter { it !in lines }.all { f3t[it]!! <= 1.5 }) {
                     // 弱者在前（原始力），力平时链尾（泄端）优先为弱——己巳盘土3金3取金、辛丑戊戌壬子己酉金2水2取水
                     val sorted = lines.sortedWith(compareBy({ f3[it]!! }, { -lines.indexOf(it) }))
