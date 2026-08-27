@@ -6,9 +6,13 @@ import cn.xulun.bazi.model.LiuQinResult
 
 /**
  * 六亲分析入口（容器）。各亲属块独立计算，后续章节在此聚合。
+ * 喜忌统一由 [LiuQinXiJi] 按教材口径派生。
  */
 object LiuQinCalculator {
 
     fun analyze(bazi: BaziResult, @Suppress("UNUSED_PARAMETER") gender: Gender): LiuQinResult =
-        LiuQinResult(zuYe = ZuYeCalculator.analyze(bazi))
+        LiuQinResult(
+            zuYe = ZuYeCalculator.analyze(bazi),
+            waiGong = WaiGongCalculator.analyze(bazi),
+        )
 }

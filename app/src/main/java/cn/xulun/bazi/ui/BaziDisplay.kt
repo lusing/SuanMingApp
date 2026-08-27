@@ -163,7 +163,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         )
         WealthSection(result = wealth)
         MarriageSection(result = MarriageCalculator.analyze(result, gender))
-        LiuQinSection(zuYe = cn.xulun.bazi.core.LiuQinCalculator.analyze(result, gender).zuYe)
+        LiuQinSection(result = cn.xulun.bazi.core.LiuQinCalculator.analyze(result, gender))
         StudySection(result = StudyCalculator.analyze(result, daYun))
         selection?.let { sel ->
             val extras: List<Pair<cn.xulun.bazi.model.Pillar, String>> = when (sel) {
