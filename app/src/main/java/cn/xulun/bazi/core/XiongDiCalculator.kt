@@ -180,6 +180,22 @@ object XiongDiCalculator {
                 "比劫为忌——兄弟不宜合伙做事，否则不利；朋友对事业前途无实质帮助，反为其拖累，宜独立创业。",
             )
         }
+        // 旺相度与财从专旺（计数块外亦需判定）
+        val monthElX = bazi.monthPillar.branch.element
+        val dangLingX = monthElX == biEl || monthElX.generates == biEl
+        val caiElX = elementOf(GodCategory.CAI, dayEl)
+        val caiForceX = forces[caiElX]!!
+        val zhuanWang = bing.congGe?.kind == cn.xulun.bazi.model.CongGeKind.CONG_STRONG ||
+            (biForce >= 5.0 && caiForceX <= 1.5 && dangLingX)
+        val caiTou = bazi.stems.indices.any { it != 2 && bazi.stems[it].element == caiElX }
+        if (zhuanWang) {
+            fav += LiuQinItem("众比成林·财从", "比劫成林（专旺）而财从——父母家无多遗产可争，兄弟各自发奋，关系融洽，同甘共苦。")
+        } else if (biForce >= 3.0 && caiTou && caiForceX <= biForce / 2 && GodCategory.BI in d.unf) {
+            unfav += LiuQinItem(
+                "群比夺财",
+                "财弱而透、比劫旺（${biForce}对${caiForceX}）——群比夺财，兄弟吃喝玩乐耗费家财，反目失和；遗产不多反成争夺之源。",
+            )
+        }
         if (ssOnBiBranch("桃花")) fav += LiuQinItem("比劫临桃花", "比劫临桃花——兄弟姐妹中有重情风流之人。")
         if (ssOnBiBranch("天乙贵人") || ssOnBiBranch("天德贵人") || ssOnBiBranch("月德贵人")) {
             fav += LiuQinItem("比劫临贵人", "比劫临天乙/天德/月德——兄弟姐妹仁慈。")
@@ -234,15 +250,28 @@ object XiongDiCalculator {
         if (benQiBiPillars().any { KongWangCalculator.analyze(bazi).isKong(it) } && biForce <= 2.0) {
             unfav += LiuQinItem("比劫休囚旬空", "比劫休囚处旬空——兄弟姐妹少。")
         }
+        // 克泄耗忌：身弱，或中和偏弱（扶耗两侧耗>扶）
+        val engX = StrengthEngine.analyze(bazi)
+        val keXieHaoJi = bing.strength == DayStrength.WEAK ||
+            (bing.strength == DayStrength.BALANCED && engX.aSide < engX.bSide)
         if (yearStemGod == TenGod.QI_SHA &&
             (tenGodOfStem(day, bazi.monthPillar.stem) == TenGod.SHANG_GUAN) &&
-            GodCategory.GUAN in d.unf && GodCategory.SHI in d.unf
+            keXieHaoJi
         ) {
-            unfav += LiuQinItem("年杀月伤为忌", "年逢七杀、月逢伤官为忌——兄弟姐妹感情不和。")
+            unfav += LiuQinItem("年杀月伤为忌", "年逢七杀、月逢伤官为忌（伤官制杀显无礼凶暴）——兄弟不睦，兄弟中易出不孝之人。")
         }
-        val chongLocs2 = DiZhiRelationCalculator.analyze(bazi).chongList
-        if (chongLocs2.any { it.location.contains("月支") }) {
-            unfav += LiuQinItem("月柱逢冲", "月柱逢冲——兄弟姐妹天各一方。")
+        val diZhiRel = DiZhiRelationCalculator.analyze(bazi)
+        // 三刑组两支亦成刑（丑戌/戌未/未丑、寅巳/巳申/寅申——丑戌刑兄弟宫式，全齐三刑之外）
+        val sanXingGroups = listOf(
+            setOf(cn.xulun.bazi.model.EarthlyBranch.CHOU, cn.xulun.bazi.model.EarthlyBranch.XU, cn.xulun.bazi.model.EarthlyBranch.WEI),
+            setOf(cn.xulun.bazi.model.EarthlyBranch.YIN, cn.xulun.bazi.model.EarthlyBranch.SI, cn.xulun.bazi.model.EarthlyBranch.SHEN),
+        )
+        val monthBranch = bazi.monthPillar.branch
+        val monthXingPair = sanXingGroups.any { g -> monthBranch in g && bazi.branches.count { it in g } >= 2 }
+        val monthChongXing = diZhiRel.chongList.any { it.location.contains("月支") } ||
+            diZhiRel.xingList.any { it.location.contains("月支") } || monthXingPair
+        if (monthChongXing) {
+            unfav += LiuQinItem("月柱逢刑冲", "月令遭刑冲——兄弟宫被动，命主与兄弟背井离乡外出创业，天各一方，难聚首。")
         }
         if (biForce >= 4.0 && bing.strength == DayStrength.STRONG) {
             unfav += LiuQinItem("日主旺比劫重叠", "日主旺而比劫重叠——兄弟姐妹不和或败家。")
@@ -252,6 +281,7 @@ object XiongDiCalculator {
         }
         // 比劫冲损用神
         val favBranchElements = d.fav.map { elementOf(it, dayEl) }.toSet()
+        val chongLocs2 = diZhiRel.chongList
         if (chongLocs2.any { ch ->
                 val b1God = branchHiddenStems.getValue(ch.branch1).firstOrNull()?.let { it.element }
                 val b2God = branchHiddenStems.getValue(ch.branch2).firstOrNull()?.let { it.element }
