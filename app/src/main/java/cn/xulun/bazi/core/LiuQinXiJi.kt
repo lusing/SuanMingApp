@@ -3,6 +3,7 @@ package cn.xulun.bazi.core
 import cn.xulun.bazi.model.BaziResult
 import cn.xulun.bazi.model.DayStrength
 import cn.xulun.bazi.model.Element
+import cn.xulun.bazi.model.EarthlyBranch
 import cn.xulun.bazi.model.GodCategory
 import cn.xulun.bazi.model.TenGod
 
@@ -43,6 +44,24 @@ internal object LiuQinXiJi {
         dayEl.controls == el -> GodCategory.CAI
         else -> GodCategory.GUAN
     }
+
+    /** 五行之墓（水土同墓于辰）。 */
+    val tombOf = mapOf(
+        Element.WOOD to EarthlyBranch.WEI,
+        Element.FIRE to EarthlyBranch.XU,
+        Element.METAL to EarthlyBranch.CHOU,
+        Element.WATER to EarthlyBranch.CHEN,
+        Element.EARTH to EarthlyBranch.CHEN,
+    )
+
+    /** 五行绝地（阳干寄生：木绝申、火绝亥、金绝寅、水绝巳、土随水绝巳）。 */
+    val jueOf = mapOf(
+        Element.WOOD to EarthlyBranch.SHEN,
+        Element.FIRE to EarthlyBranch.HAI,
+        Element.METAL to EarthlyBranch.YIN,
+        Element.WATER to EarthlyBranch.SI,
+        Element.EARTH to EarthlyBranch.SI,
+    )
 
     /** 派生喜忌结论。 */
     class Derived(val fav: Set<GodCategory>, val unf: Set<GodCategory>, val basis: String)

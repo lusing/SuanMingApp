@@ -10,9 +10,10 @@ import cn.xulun.bazi.model.LiuQinResult
  */
 object LiuQinCalculator {
 
-    fun analyze(bazi: BaziResult, @Suppress("UNUSED_PARAMETER") gender: Gender): LiuQinResult =
+    fun analyze(bazi: BaziResult, gender: Gender): LiuQinResult =
         LiuQinResult(
             zuYe = ZuYeCalculator.analyze(bazi),
             waiGong = WaiGongCalculator.analyze(bazi),
+            fuMu = FuMuCalculator.analyze(bazi, gender),
         )
 }

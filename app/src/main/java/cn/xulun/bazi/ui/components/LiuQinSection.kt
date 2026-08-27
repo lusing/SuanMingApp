@@ -19,8 +19,9 @@ import cn.xulun.bazi.ui.theme.SeedRed
 
 /**
  * 六亲展示区域（容器）。第一块：祖业——年柱（祖上宫）十神喜忌/神煞/冲合断语；
- * 第二块：外公家族——伤官居年月柱而旺制官杀（外祖父星）。
- * 理论见 .liuqin-reference.md。后续父母/兄弟/子女等章节在此容器内追加子块。
+ * 第二块：外公家族——伤官居年月柱而旺制官杀（外祖父星）；
+ * 第三块：父母——父星（男偏财/女正财）母星（男正印/女偏印）+父母宫（年柱）。
+ * 理论见 .liuqin-reference.md。后续兄弟/子女等章节在此容器内追加子块。
  */
 @Composable
 fun LiuQinSection(result: LiuQinResult, modifier: Modifier = Modifier) {
@@ -114,6 +115,52 @@ fun LiuQinSection(result: LiuQinResult, modifier: Modifier = Modifier) {
             if (result.waiGong.items.isNotEmpty()) {
                 Text(
                     text = result.waiGong.summary,
+                    fontSize = 12.sp,
+                    color = Color(0xFF6D4C41),
+                    modifier = Modifier.padding(top = 14.dp),
+                )
+            }
+
+            // ── 父母 ──
+            Text(
+                text = "—— 父母 ——",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = SeedRed,
+                modifier = Modifier.padding(top = 18.dp),
+            )
+            if (result.fuMu.favorable.isEmpty() && result.fuMu.unfavorable.isEmpty()) {
+                Text(
+                    text = result.fuMu.summary,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+            result.fuMu.favorable.forEach { item ->
+                Text(
+                    text = "◆ " + item.dim,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2E7D32),
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                Text(text = item.text, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
+            }
+            result.fuMu.unfavorable.forEach { item ->
+                Text(
+                    text = "◇ " + item.dim,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SeedRed,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                Text(text = item.text, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
+            }
+            if (result.fuMu.summary.isNotBlank() &&
+                (result.fuMu.favorable.isNotEmpty() || result.fuMu.unfavorable.isNotEmpty())
+            ) {
+                Text(
+                    text = result.fuMu.summary,
                     fontSize = 12.sp,
                     color = Color(0xFF6D4C41),
                     modifier = Modifier.padding(top = 14.dp),
