@@ -18,10 +18,10 @@ import cn.xulun.bazi.ui.theme.CreamSurface
 import cn.xulun.bazi.ui.theme.SeedRed
 
 /**
- * 性格分析展示区域。理论见 .shengke-reference.md 第六五节。
+ * 性格分析展示区域。理论见 .shengke-reference.md 第六五节（含六 合断八步法）。
  */
 @Composable
-fun XingGeSection(result: XingGeResult, modifier: Modifier = Modifier) {
+fun XingGeSection(result: XingGeResult, composite: XingGeResult? = null, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -35,11 +35,42 @@ fun XingGeSection(result: XingGeResult, modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "五行气势主导 + 日干心性 + 交战混杂注记（主导而不太过之行）",
+                text = "五行气势/十神/神煞/多重 + 合断八步（干支复合·主流与潜伏）",
                 fontSize = 11.sp,
                 color = Color(0xFF9E9E9E),
                 modifier = Modifier.padding(top = 4.dp),
             )
+            if (composite != null) {
+                Text(
+                    text = "—— 合断（十神心性×五行特性复合）——",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SeedRed,
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+                composite.items.forEach { item ->
+                    Text(
+                        text = "◆ " + item.dim,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SeedRed,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                    Text(
+                        text = item.text,
+                        fontSize = 13.sp,
+                        color = Color(0xFF424242),
+                        lineHeight = 20.sp,
+                    )
+                }
+                Text(
+                    text = "—— 分线细断 ——",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SeedRed,
+                    modifier = Modifier.padding(top = 14.dp),
+                )
+            }
             result.items.forEach { item ->
                 Text(
                     text = "◆ " + item.dim,

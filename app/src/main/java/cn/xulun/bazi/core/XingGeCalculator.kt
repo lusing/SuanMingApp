@@ -250,4 +250,133 @@ object XingGeCalculator {
         }
         return XingGeResult(items)
     }
+
+    // ── 合断版（第六五节六 八步法：十神心性与五行特性取复合含义）──
+
+    /** 地支五行特性·阳支显现（子寅辰午申戌） */
+    private val zhiPos = mapOf(
+        Element.WOOD to "仁慈柔顺有同情心生机向上",
+        Element.FIRE to "彬彬有礼热情外向光明磊落",
+        Element.EARTH to "诚信坚定大度厚重有城府",
+        Element.METAL to "义气豪爽威严果断精明强干",
+        Element.WATER to "机智善变足智善谋",
+    )
+
+    /** 地支五行特性·阴支显现（丑卯巳未酉亥——晦藏之性） */
+    private val zhiNeg = mapOf(
+        Element.WOOD to "柔弱无主见随波逐流",
+        Element.FIRE to "急躁冲动风风火火",
+        Element.EARTH to "怀疑猜忌虚荣心计犹豫",
+        Element.METAL to "尖刻好斗刚愎自用",
+        Element.WATER to "狡猾善变摇摆不定",
+    )
+
+    /** 十神心性短表（力强正面/力弱负面——复合用） */
+    private fun shenXinDuan(g: cn.xulun.bazi.model.TenGod, strong: Boolean): String = when (g) {
+        cn.xulun.bazi.model.TenGod.ZHENG_GUAN -> if (strong) "品性端正稳重守诺重名誉有责任感" else "固执刻板因循守旧不思进取"
+        cn.xulun.bazi.model.TenGod.QI_SHA -> if (strong) "霸道有威信掌权敢作敢为喜强硬手段有仇必报" else "偏激逆反无视礼法好勇斗狠"
+        cn.xulun.bazi.model.TenGod.ZHENG_YIN -> if (strong) "仁慈宽厚有庇荫贵人扶助" else "假仁慈小心眼多诡计善施小恩小惠"
+        cn.xulun.bazi.model.TenGod.PIAN_YIN -> if (strong) "精明能干想法与众不同随机应变" else "尖酸刻薄个性怪异多学少成"
+        cn.xulun.bazi.model.TenGod.ZHENG_CAI -> if (strong) "勤俭务实有经济头脑忠于家庭" else "好逸恶劳得过且过占有欲强"
+        cn.xulun.bazi.model.TenGod.PIAN_CAI -> if (strong) "慷慨大方人缘颇佳能赚会花" else "贪图虚荣浪费虚掷到处留情"
+        cn.xulun.bazi.model.TenGod.BI_JIAN -> if (strong) "刚毅豪迈重友义气喜交能干之友" else "倔强固执争财夺利易得罪人"
+        cn.xulun.bazi.model.TenGod.JIE_CAI -> if (strong) "热诚坦直乐观勇往直前善利用朋友" else "盲目冲动蛮横独断好攀比爱面子"
+        cn.xulun.bazi.model.TenGod.SHI_SHEN -> if (strong) "斯文随和宽厚有专艺涵养" else "老实懦弱贪图享受口才不佳"
+        cn.xulun.bazi.model.TenGod.SHANG_GUAN -> if (strong) "才华横溢擅长演讲表现自己" else "放荡不羁自命不凡招人嫉妒"
+    }
+
+    /** 行为方略（透干最强十神→人生取向——行为决定命运） */
+    private fun fangLue(g: cn.xulun.bazi.model.TenGod): String = when (g) {
+        cn.xulun.bazi.model.TenGod.ZHENG_GUAN, cn.xulun.bazi.model.TenGod.QI_SHA ->
+            "官杀之威——走正道掌权执法军警管理有号召力，入邪道恐涉黑道争斗（西藏鸿先生式：七杀太强喜强硬手段）"
+        cn.xulun.bazi.model.TenGod.SHI_SHEN ->
+            "食神之艺——有技术专长宜专技路线实干发展，口才欠佳不宜行政（湖南元先生式：实干型技术人才）"
+        cn.xulun.bazi.model.TenGod.SHANG_GUAN ->
+            "伤官之才——才华横溢宜表达演艺策划设计，防与官斗招是非官司"
+        cn.xulun.bazi.model.TenGod.ZHENG_YIN, cn.xulun.bazi.model.TenGod.PIAN_YIN ->
+            "印星之学——宜学术文教研究医护，偏印多学少成须专精一门"
+        cn.xulun.bazi.model.TenGod.ZHENG_CAI, cn.xulun.bazi.model.TenGod.PIAN_CAI ->
+            "财星之实——宜财经商贸实业经营，防贪虚荣滥情散财"
+        cn.xulun.bazi.model.TenGod.BI_JIAN, cn.xulun.bazi.model.TenGod.JIE_CAI ->
+            "比劫之竞——宜竞争性行业体育实业凭实力开拓，合伙须慎（比劫争财）"
+    }
+
+    /**
+     * 合断版（第六五节六 八步法）：天干=相对明显性格，地支=相对隐蔽（显隐以力量为主位置为辅）。
+     * 天干线＝干五行特性（阴阳分表）±透干十神心性（力定正负）；
+     * 地支线＝阳支显正面特性、阴支显负面特性（潜伏——待岁运加力迸发）±支藏本气十神；
+     * 最后干支复合：合拍相助相互加强，抵触矛盾力大者占风——弱者潜伏；行为决定命运＋人生方略。
+     */
+    fun analyzeComposite(bazi: BaziResult): XingGeResult {
+        val items = mutableListOf<XingGeResult.XingGeItem>()
+        val dayMaster = bazi.dayPillar.stem
+        val f = BingYaoCalculator.forces(bazi)
+        val total = Element.entries.sumOf { f[it]!! }.coerceAtLeast(0.001)
+
+        // 合绊先判：相邻五合有根者合住无根者（被合绊之干心性打折）
+        val bound = mutableSetOf<cn.xulun.bazi.model.HeavenlyStem>()
+        fun rooted(st: cn.xulun.bazi.model.HeavenlyStem): Boolean = bazi.pillars.any { pl ->
+            val br = pl.branch
+            br.element == st.element || br.element.generates == st.element ||
+                cn.xulun.bazi.model.branchHiddenStems.getValue(br).any { it.element == st.element }
+        }
+        val stems = bazi.pillars.map { it.stem }
+        for (i in 0 until 3) {
+            val a = stems[i]; val b2 = stems[i + 1]
+            if (HeHuaJudge.zhengHua(a, b2) != null) {
+                val aR = rooted(a); val bR = rooted(b2)
+                if (aR == bR) { bound += a; bound += b2 } else if (aR) bound += b2 else bound += a
+            }
+        }
+
+        // ①③⑤ 天干线（明显性格）：四干各自复合
+        val ganLines = mutableListOf<String>()
+        val ganStrong = mutableListOf<String>()
+        for (pl in bazi.pillars) {
+            val st = pl.stem
+            val strong = f[st.element]!! >= 0.2 * total
+            val g = cn.xulun.bazi.model.tenGodOfStem(dayMaster, st)
+            val wx = (if (st.ordinal % 2 == 0) yang[st.element]!! else yin[st.element]!!)
+            ganLines += "${st.chinese}${if (st == dayMaster) "（日主）" else ""}${if (st in bound) "（被合绊）" else ""}：${wx}；作${g.chinese}则${shenXinDuan(g, strong)}${if (strong) "" else "（力弱不明显）"}"
+            if (strong && st != dayMaster && st !in bound) ganStrong += st.chinese + g.chinese
+        }
+        items += XingGeResult.XingGeItem("合断·天干线（明显性格）",
+            ganLines.joinToString("\n") + "\n——干不抵触者皆显现；力弱之干不明显。")
+
+        // ②④⑥ 地支线（相对隐蔽）：阳支显现正面、阴支显现负面（潜伏）
+        val zhiLines = mutableListOf<String>()
+        val qianFu = mutableListOf<String>()
+        for (pl in bazi.pillars) {
+            val br = pl.branch
+            val el = br.element
+            val yangZhi = br.ordinal % 2 == 0
+            val g = cn.xulun.bazi.model.tenGodOfStem(dayMaster, cn.xulun.bazi.model.branchHiddenStems.getValue(br).first())
+            val strong = f[el]!! >= 0.2 * total
+            if (yangZhi) {
+                zhiLines += "${br.chinese}（阳支·显现）：${zhiPos[el]!!}；藏${g.chinese}${shenXinDuan(g, strong)}"
+            } else {
+                zhiLines += "${br.chinese}（阴支·潜伏）：${zhiNeg[el]!!}；藏${g.chinese}${shenXinDuan(g, strong)}"
+                qianFu += "${br.chinese}（${zhiNeg[el]!!.take(4)}）"
+            }
+        }
+        items += XingGeResult.XingGeItem("合断·地支线（相对隐蔽）",
+            zhiLines.joinToString("\n") + "\n——显隐强弱以力量为主、位置为辅：支特强者一目了然，支弱者深藏。")
+
+        // ⑦ 干支最后复合：主流性格并列；阴支之性潜伏
+        items += XingGeResult.XingGeItem("合断·主流性格",
+            (if (ganStrong.isNotEmpty()) "天干强显之性（${ganStrong.joinToString("、")}）与地支阳支显现之性并列整理为主流性格——" else "各干力弱，以地支显现之性为主——") +
+                "干支合拍相助则相互加强，抵触矛盾则力大者占风（干胜则干显而支某部被抑，支胜反之）。")
+        if (qianFu.isNotEmpty()) {
+            items += XingGeResult.XingGeItem("合断·潜伏性格（${qianFu.joinToString("、")}）",
+                "阴支晦藏之性深埋心底别人不易发觉——被强干强支抑制但不消失：待大运流年加大其力量则迸发成赤裸裸的主流性格；食伤氛围特别强的场合（激动场面）也会瞬间暴发。")
+        }
+
+        // ⑧ 行为特征与人生方略（透干力最强之十神——被合绊之干先折力；行为决定命运）
+        val strongest = bazi.pillars.filter { it.stem != dayMaster }
+            .maxBy { f[it.stem.element]!! * (if (it.stem in bound) 0.4 else 1.0) }
+        val gMain = cn.xulun.bazi.model.tenGodOfStem(dayMaster, strongest.stem)
+        items += XingGeResult.XingGeItem("合断·行为与方略（${strongest.stem.chinese}${gMain.chinese}主事${if (strongest.stem in bound) "（被合绊仍主事）" else ""}）",
+            fangLue(gMain) + "。性格随岁运阶段性变化（大运影响更大）——行为决定命运：太强之性须修身养性以化之。")
+        return XingGeResult(items)
+    }
 }
