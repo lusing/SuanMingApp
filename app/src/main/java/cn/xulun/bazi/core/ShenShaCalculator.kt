@@ -179,7 +179,10 @@ object ShenShaCalculator {
             if (stems3.subList(0, 3) == tri) out.add(ShenShaItem(name, "年月日干连", stem = stems3[2]))
             if (stems3.subList(1, 4) == tri) out.add(ShenShaItem(name, "月日时干连", stem = stems3[3]))
         }
-        scanBranch(bazi, "文昌", wenChang.getValue(dayStem), out)
+        // 文昌（食神之禄，年干日干均可查——并集逐支扫）
+        for (tg in listOf(bazi.yearPillar.stem, dayStem).distinct()) {
+            scanBranch(bazi, "文昌", wenChang.getValue(tg), out)
+        }
         scanBranch(bazi, "学堂", xueTang.getValue(dayStem), out)
         scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)
         scanBranch(bazi, "禄神", luShen.getValue(dayStem), out)
