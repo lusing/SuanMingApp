@@ -13,6 +13,8 @@ data class LiuQinResult(
     val waiGong: WaiGongResult,
     /** 父母（第三块）——父星男偏财/女正财，母星男正印/女偏印；父母宫=年柱 */
     val fuMu: FuMuResult,
+    /** 兄弟姐妹（第四块）——比劫为手足星，禄刃印从变通计数 */
+    val xiongDi: XiongDiResult,
 )
 
 /** 六亲单项断语（各亲属块通用）。 */
@@ -38,6 +40,19 @@ data class WaiGongResult(
 
 /** 父母分析结果：有利/不利断语 + 小结。 */
 data class FuMuResult(
+    val favorable: List<LiuQinItem> = emptyList(),
+    val unfavorable: List<LiuQinItem> = emptyList(),
+    val summary: String = "",
+)
+
+/** 兄弟姐妹分析结果：手足数目（左右数）+计数依据+排行+断语。 */
+data class XiongDiResult(
+    /** 如 "6个左右" */
+    val count: String = "",
+    /** 计数机制说明（加倍/减半/空亡/墓门/从格/印比合计） */
+    val countBasis: String = "",
+    /** 排行注记（年月见比劫→非老大），null=老大或不显 */
+    val ranking: String? = null,
     val favorable: List<LiuQinItem> = emptyList(),
     val unfavorable: List<LiuQinItem> = emptyList(),
     val summary: String = "",
