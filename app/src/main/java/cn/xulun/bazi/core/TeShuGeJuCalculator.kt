@@ -140,8 +140,8 @@ object TeShuGeJuCalculator {
                             }
                         }
                     }
-                    // 岁运还原：日主得禄之支（如庚禄在申）→ 回正格身弱
-                    if (extraPillars.any { it.branch.element == dayEl }) return null
+                    // 岁运还原：日主得禄之支（如庚禄在申）或印得本气根（如壬通根子生日干——朱先生丙子年）→ 回正格身弱
+                    if (extraPillars.any { it.branch.element == dayEl || it.branch.element == yinEl }) return null
                     val kind = if (chainList.size == 1) TeShuKind.JIA_CONG
                     else if (fake) TeShuKind.JIA_CONG else TeShuKind.DUO_CONG
                     val relName = when (chainList.first()) {
