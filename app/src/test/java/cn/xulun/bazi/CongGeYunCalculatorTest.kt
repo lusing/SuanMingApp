@@ -144,4 +144,123 @@ class CongGeYunCalculatorTest {
             Pillar(HeavenlyStem.WU, EarthlyBranch.WU), Pillar(HeavenlyStem.XIN, EarthlyBranch.WEI)))
         assertTrue("辛未年应用/喜（吉）：$r", r != null && (r.verdict == YunVerdict.YONG || r.verdict == YunVerdict.XI))
     }
+
+    // ════════ 从官(杀)格 ════════
+
+    // ── 成格三例 ──
+
+    @Test fun `杀成格一 壬申壬子丙子壬辰 申子辰从杀`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.REN, EarthlyBranch.SHEN, HeavenlyStem.REN, EarthlyBranch.ZI,
+            HeavenlyStem.BING, EarthlyBranch.ZI, HeavenlyStem.REN, EarthlyBranch.CHEN))!!
+        assertTrue("应从杀：${r.name}", r.name.contains("从杀"))
+    }
+
+    @Test fun `杀成格二 癸卯乙卯戊辰甲寅 辰会木局从杀`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.MAO, HeavenlyStem.YI, EarthlyBranch.MAO,
+            HeavenlyStem.WU, EarthlyBranch.CHEN, HeavenlyStem.JIA, EarthlyBranch.YIN))!!
+        assertTrue("应从杀：${r.name}", r.name.contains("从杀"))
+    }
+
+    @Test fun `杀成格三 癸巳戊午辛未甲午 火局三会癸合戊化从杀`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.SI, HeavenlyStem.WU, EarthlyBranch.WU,
+            HeavenlyStem.XIN, EarthlyBranch.WEI, HeavenlyStem.JIA, EarthlyBranch.WU))!!
+        assertTrue("应从杀：${r.name}", r.name.contains("从杀"))
+        assertTrue("癸合戊化应从真：fake=${r.fake}", !r.fake)
+    }
+
+    // ── 岁运总表（壬子 癸丑 丁亥 庚子，从杀·水） ──
+
+    private val congSha = chartOf(
+        HeavenlyStem.REN, EarthlyBranch.ZI, HeavenlyStem.GUI, EarthlyBranch.CHOU,
+        HeavenlyStem.DING, EarthlyBranch.HAI, HeavenlyStem.GENG, EarthlyBranch.ZI)
+
+    private fun vs(p: Pillar): YunVerdict? = CongGeYunCalculator.analyze(congSha, listOf(p))?.verdict
+
+    @Test fun `杀总表 用神旺水四柱`() {
+        for ((s, b) in listOf(
+            HeavenlyStem.REN to EarthlyBranch.ZI, HeavenlyStem.GUI to EarthlyBranch.HAI,
+            HeavenlyStem.GENG to EarthlyBranch.ZI, HeavenlyStem.XIN to EarthlyBranch.HAI,
+        )) assertEquals("(${s.chinese}${b.chinese}) 应用神", YunVerdict.YONG, vs(Pillar(s, b)))
+    }
+
+    @Test fun `杀总表 喜神财金四柱`() {
+        // 壬申/癸酉（干透杀+支财）书归喜神而同构之从财表归用神——皆吉档，放宽为喜/用
+        for ((s, b) in listOf(
+            HeavenlyStem.GENG to EarthlyBranch.SHEN, HeavenlyStem.XIN to EarthlyBranch.YOU,
+            HeavenlyStem.REN to EarthlyBranch.SHEN, HeavenlyStem.GUI to EarthlyBranch.YOU,
+        )) {
+            val v = vs(Pillar(s, b))
+            assertTrue("(${s.chinese}${b.chinese}) 应喜/用（吉档）：$v", v == YunVerdict.XI || v == YunVerdict.YONG)
+        }
+    }
+
+    @Test fun `杀总表 转格强食伤戊戌己未丙戌丁未`() {
+        for ((s, b) in listOf(
+            HeavenlyStem.WU to EarthlyBranch.XU, HeavenlyStem.JI to EarthlyBranch.WEI,
+            HeavenlyStem.BING to EarthlyBranch.XU, HeavenlyStem.DING to EarthlyBranch.WEI,
+        )) {
+            val r = CongGeYunCalculator.analyze(congSha, listOf(Pillar(s, b)))!!
+            assertEquals("(${s.chinese}${b.chinese}) 应转格", YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.EARTH, r.newYongShen)
+        }
+    }
+
+    @Test fun `杀总表 转格强印甲寅乙卯壬寅癸卯`() {
+        for ((s, b) in listOf(
+            HeavenlyStem.JIA to EarthlyBranch.YIN, HeavenlyStem.YI to EarthlyBranch.MAO,
+            HeavenlyStem.REN to EarthlyBranch.YIN, HeavenlyStem.GUI to EarthlyBranch.MAO,
+        )) {
+            val r = CongGeYunCalculator.analyze(congSha, listOf(Pillar(s, b)))!!
+            assertEquals("(${s.chinese}${b.chinese}) 应转格", YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.WOOD, r.newYongShen)
+        }
+    }
+
+    @Test fun `杀总表 转格强比丙午丁巳身官两气`() {
+        for ((s, b) in listOf(HeavenlyStem.BING to EarthlyBranch.WU, HeavenlyStem.DING to EarthlyBranch.SI)) {
+            val r = CongGeYunCalculator.analyze(congSha, listOf(Pillar(s, b)))!!
+            assertEquals("(${s.chinese}${b.chinese}) 应转格", YunVerdict.ZHUAN_GE, r.verdict)
+            assertEquals(Element.FIRE, r.newYongShen)
+        }
+    }
+
+    @Test fun `杀总表 忌神衰土戊子己亥壬戌癸未`() {
+        for ((s, b) in listOf(
+            HeavenlyStem.WU to EarthlyBranch.ZI, HeavenlyStem.JI to EarthlyBranch.HAI,
+            HeavenlyStem.REN to EarthlyBranch.XU, HeavenlyStem.GUI to EarthlyBranch.WEI,
+        )) assertEquals("(${s.chinese}${b.chinese}) 应忌神", YunVerdict.JI, vs(Pillar(s, b)))
+    }
+
+    @Test fun `杀总表 忌神衰木印水多木漂甲戌乙未戊寅己卯`() {
+        for ((s, b) in listOf(
+            HeavenlyStem.JIA to EarthlyBranch.XU, HeavenlyStem.YI to EarthlyBranch.WEI,
+            HeavenlyStem.WU to EarthlyBranch.YIN, HeavenlyStem.JI to EarthlyBranch.MAO,
+        )) assertEquals("(${s.chinese}${b.chinese}) 应忌神", YunVerdict.JI, vs(Pillar(s, b)))
+    }
+
+    // ── 实例 ──
+
+    @Test fun `吴先生 丙午乙未庚午壬午 无根无助真从`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.BING, EarthlyBranch.WU, HeavenlyStem.YI, EarthlyBranch.WEI,
+            HeavenlyStem.GENG, EarthlyBranch.WU, HeavenlyStem.REN, EarthlyBranch.WU))!!
+        assertTrue("应从杀（火）：${r.name}", r.name.contains("从杀"))
+        assertTrue("无根无助不受土生应真从：fake=${r.fake}", !r.fake)
+    }
+
+    @Test fun `坤造庚寅戊寅己卯甲子 假从 己未年还原凶`() {
+        val b = chartOf(
+            HeavenlyStem.GENG, EarthlyBranch.YIN, HeavenlyStem.WU, EarthlyBranch.YIN,
+            HeavenlyStem.JI, EarthlyBranch.MAO, HeavenlyStem.JIA, EarthlyBranch.ZI)
+        val ts = TeShuGeJuCalculator.analyze(b)!!
+        assertTrue("应从杀（木）：${ts.name}", ts.name.contains("从杀"))
+        assertTrue("月干戊帮身应假从：fake=${ts.fake}", ts.fake)
+        // 乙亥运己未年：未土破格以弱犯强——还原（凶，离婚）
+        val r = CongGeYunCalculator.analyze(b, listOf(
+            Pillar(HeavenlyStem.YI, EarthlyBranch.HAI), Pillar(HeavenlyStem.JI, EarthlyBranch.WEI)))
+        assertEquals(YunVerdict.HUAN_YUAN, r?.verdict)
+    }
 }

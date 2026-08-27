@@ -82,13 +82,23 @@ object TeShuGeJuCalculator {
         val hasBenQiRoot = branches.any { it.element == dayEl && it !in xingBranches &&
             (it !in bianJieBranches || heJu.any { (bs, el) -> it in bs && el == dayEl }) }
         if (!hasBenQiRoot) {
-            val maxOther = Element.entries.filter { it != dayEl }.maxOf { f[it]!! }
+            // 变节力转移：合局成员本气之力与月令加成随化神计（丑在亥子丑水局内之力归水）
+            val fAdj = f.toMutableMap()
+            for ((bs, el) in heJu) for (b in bs) {
+                if (b.element != el && b in branches) { fAdj[b.element] = fAdj[b.element]!! - 1; fAdj[el] = fAdj[el]!! + 1 }
+            }
+            val rulerB = bazi.monthPillar.branch
+            heJu.firstOrNull { (bs, el) -> rulerB in bs && el != rulerB.element }?.let { (bs, el) ->
+                fAdj[rulerB.element] = fAdj[rulerB.element]!! - 2; fAdj[el] = fAdj[el]!! + 2
+            }
+            val fcAdj = { el: Element -> fAdj[el]!! }
+            val maxOther = Element.entries.filter { it != dayEl }.maxOf { fAdj[it]!! }
             // 透干比劫/印：被克泄殆尽或坐下截脚者无力（假从之"虚助"）
             val helperStems = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
                 .filter { it.element == dayEl || it.element == yinEl }
             val weakHelpers = helperStems.filter { s ->
-                val self = f[s.element]!!
-                val foes = Element.entries.filter { e -> e.controls == s.element || s.element.controls == e }.sumOf { f[it]!! }
+                val self = fAdj[s.element]!!
+                val foes = Element.entries.filter { e -> e.controls == s.element || s.element.controls == e }.sumOf { fAdj[it]!! }
                 foes >= 2.5 * self
             }
             // 截脚按实际柱位（枚举同值防首配错柱）；湿土（丑辰）不截水根——藏水之根（A5 教材例）
@@ -108,14 +118,14 @@ object TeShuGeJuCalculator {
             val weakSet = (jieJiaoStems + weakHelpers).toSet() - heHuaRuShi.toSet()
             val fake = weakSet.isNotEmpty()
             // 日行有效力：透干虚助被殆尽/截脚者折尽
-            val effDayLine = (fc(dayEl) - weakSet.size).coerceAtLeast(0.0)
+            val effDayLine = (fcAdj(dayEl) - weakSet.size).coerceAtLeast(0.0)
             if (effDayLine <= 0.4 * maxOther) {
                 // 从势：有力诸行（≥2.5），相生连链；连接行力可低
                 val others = Element.entries.filter { it != dayEl }
-                val strong = others.filter { f[it]!! >= 2.5 }
+                val strong = others.filter { fAdj[it]!! >= 2.5 }
                 if (strong.isNotEmpty()) {
                     // 链组装：自最强行向前向后延（生我者/我生者中在 strong 或为连接行）
-                    val maxEl = strong.maxBy { f[it]!! }
+                    val maxEl = strong.maxBy { fAdj[it]!! }
                     val chain = linkedSetOf(maxEl)
                     var grew = true
                     while (grew) {
@@ -124,15 +134,17 @@ object TeShuGeJuCalculator {
                             if (e in chain) continue
                             // 强行直入；弱端只顺下游（链生它，势之所趋）——上游饲喂者被吸尽不入；印行不入从链
                             val downstream = chain.any { c -> c.generates == e }
-                            if (e in strong || (f[e]!! >= 1 && downstream && e != yinEl)) {
+                            if (e in strong || (fAdj[e]!! >= 1 && downstream && e != yinEl)) {
                                 chain += e; grew = true
                             }
                         }
                     }
-                    // 上游财入链：财透干或力≥2 且生链中某行（火生土式——杨先生例）
-                    val caiEl = dayEl.controls
-                    if (caiEl !in chain && (f[caiEl]!! >= 2 || bazi.stems.any { it.element == caiEl && it !== bazi.dayPillar.stem }) &&
-                        chain.any { c -> caiEl.generates == c }) chain += caiEl
+                    // 上游饲喂者入链：力≥2 且透干（火生土式——杨先生例；总表財金力1不入）
+                    for (e in others) {
+                        if (e in chain || e == yinEl) continue
+                        val tou = bazi.stems.any { it.element == e && it !== bazi.dayPillar.stem }
+                        if (fAdj[e]!! >= 2 && tou && chain.any { c -> e.generates == c }) chain += e
+                    }
                     // 相生拓扑序：先生它者为链首
                     val chainList = mutableListOf<Element>()
                     val rest = chain.toMutableSet()
@@ -141,15 +153,15 @@ object TeShuGeJuCalculator {
                         chainList += head; rest.remove(head)
                     }
                     // 战局：链内/力前两行相克力差小 → 通关
-                    val top2 = others.sortedByDescending { f[it]!! }.take(2)
+                    val top2 = others.sortedByDescending { fAdj[it]!! }.take(2)
                     if (top2.size == 2) {
                         val (a, b) = top2
                         val xKeY = a.controls == b; val yKeX = b.controls == a
-                        if ((xKeY || yKeX) && kotlin.math.abs(f[a]!! - f[b]!!) <= 1.5) {
+                        if ((xKeY || yKeX) && kotlin.math.abs(fAdj[a]!! - fAdj[b]!!) <= 1.5) {
                             val (winner, loser) = if (xKeY) a to b else b to a
                             val guan = tongGuan(winner, loser)
                             // 战局优先仅当：通关神即日主（弃命从战），或通关行全然无力（<1）
-                            val guanWeak = f[guan]!! < 1
+                            val guanWeak = fAdj[guan]!! < 1
                             if (guan != null && (guan == dayEl || guanWeak)) {
                                 // 岁运还原：日主得禄之支
                                 if (extraPillars.any { it.branch.element == dayEl }) return null
@@ -163,12 +175,21 @@ object TeShuGeJuCalculator {
                             }
                         }
                     }
+                    // 官杀双透且官力不足（非强势成员）→ 阻从（从财条件③——调候矛盾局壬癸双透例；单透虚官不阻——席女士辛/癸巳例戊）
+                    val guanEl0 = Element.entries.first { it.controls == dayEl }
+                    val guanTouCount = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+                        .count { it.element == guanEl0 }
+                    if (fAdj[guanEl0]!! < 2.5 && guanTouCount >= 2) {
+                        // 落入三气成象/正格
+                    } else {
                     // 岁运还原：日主得禄之支（如庚禄在申）或印得本气根（如壬通根子生日干——朱先生丙子年）→ 回正格身弱
                     if (extraPillars.any { it.branch.element == dayEl || it.branch.element == yinEl }) return null
                     val kind = if (chainList.size == 1) TeShuKind.JIA_CONG
                     else if (fake) TeShuKind.JIA_CONG else TeShuKind.DUO_CONG
                     val relName = when {
-                        dayEl.controls in chainList -> "从财" // 财在势内即为从财（财生官之势亦从财——杨先生/刘女士例）
+                        // 财在势且力≥2→从财（杨先生火2/刘女士水5）；財力1虚透不入（总表殺格金1——从杀）
+                        chainList.any { it == dayEl.controls && fAdj[it]!! >= 2 } -> "从财"
+                        chainList.any { it.controls == dayEl } -> "从杀"
                         chainList.first() == yinEl -> "从印"
                         chainList.first() == dayEl.generates -> "从儿"
                         else -> "从杀"
@@ -186,6 +207,7 @@ object TeShuGeJuCalculator {
                             (if (chainList.size >= 3) "连续相生" else "相生为势") +
                             "，取" + chainText + "为喜用，忌印比逆势。" + (if (fake) "逢流年亦可还原，切不可一味按从格断。" else ""),
                     )
+                    }
                 }
             }
         }

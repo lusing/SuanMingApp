@@ -30,13 +30,18 @@ object CongGeYunCalculator {
         val ps = p.stem.element
         val yinEl = Element.entries.first { it.generates == dayEl }
 
-        // 破格神集合：印、比劫、官杀（不在从势者）
-        fun poGeShen(el: Element): Boolean = el !in shi && (el == yinEl || el == dayEl || el.controls == dayEl)
+        // 破格神集合：印、比劫、官杀、克势之行（从杀之食伤——食伤克杀）之不在从势者
+        fun poGeShen(el: Element): Boolean = el !in shi &&
+            (el == yinEl || el == dayEl || el.controls == dayEl || shi.any { el.controls == it })
 
         val verdict: YunVerdict
         val newEl: Element?
         val basis: String
         when {
+            pb in shi && shi.any { ps.controls == it } -> {
+                verdict = YunVerdict.JI; newEl = null
+                basis = "岁运${p.fullName}：支${p.branch.chinese}虽在从势，而干${p.stem.chinese}（${ps.chinese}）克从势之行，逆乱格局气势——忌神"
+            }
             pb in shi -> {
                 verdict = YunVerdict.YONG; newEl = null
                 basis = "岁运${p.fullName}之支${p.branch.chinese}（${pb.chinese}）在从势内，助旺格局——用神到位"
