@@ -233,6 +233,26 @@ private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.
         }
         if (bazi.dayPillar == tianShe) out.add(ShenShaItem("天赦", "日柱", branch = tianShe.branch))
         // 魁罡（日柱四座神：壬辰庚戌庚辰戊戌——聪明机巧文章振发，临事果断有威杀之气）
+        // 天罗地网（戌亥互见为天罗、辰巳互见为地网——年支或日支查其余三支；辰戌巳亥全=齐见）
+        val luoWang = mapOf(
+            EarthlyBranch.XU to ("天罗" to EarthlyBranch.HAI), EarthlyBranch.HAI to ("天罗" to EarthlyBranch.XU),
+            EarthlyBranch.CHEN to ("地网" to EarthlyBranch.SI), EarthlyBranch.SI to ("地网" to EarthlyBranch.CHEN),
+        )
+        val bs = bazi.branches
+        val quan = setOf(EarthlyBranch.CHEN, EarthlyBranch.XU, EarthlyBranch.SI, EarthlyBranch.HAI)
+        if (quan.all { it in bs }) {
+            out.add(ShenShaItem("天罗地网", "辰戌巳亥全", branch = EarthlyBranch.XU))
+        } else {
+            for (qb in listOf(bazi.yearPillar.branch, dayBranch)) {
+                luoWang[qb]?.let { (nm, tgt) ->
+                    bazi.pillars.forEachIndexed { i, pl ->
+                        if ((i != 0 || qb != bazi.yearPillar.branch) && (i != 3 || qb != dayBranch) && pl.branch == tgt) {
+                            if (out.none { it.name == nm && it.branch == tgt }) out.add(ShenShaItem(nm, PillarBranchLabels[i], branch = tgt))
+                        }
+                    }
+                }
+            }
+        }
         if (bazi.dayPillar.fullName in listOf("壬辰", "庚戌", "庚辰", "戊戌")) {
             out.add(ShenShaItem("魁罡", "日柱", branch = bazi.dayPillar.branch))
         }
