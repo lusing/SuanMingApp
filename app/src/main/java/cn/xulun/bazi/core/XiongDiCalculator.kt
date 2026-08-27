@@ -119,12 +119,14 @@ object XiongDiCalculator {
                 }
                 else -> {}
             }
-            // 加倍：比劫旺相（当令或得月令之生）且透干（藏支之旺不加——例三水酉月相地全藏,4个不加倍）
+            // 加倍：比劫**相地**（月令生比劫）且透干——当令之比劫其数已实不加倍
+            // （例二庚戌丁亥癸丑癸亥亥水当令5数正好；对照丁火寅月相地3加倍6；藏支之旺亦不加——例三水酉月相地全藏4个）
             val monthEl = bazi.monthPillar.branch.element
-            val dangLing = monthEl == biEl || monthEl.generates == biEl
-            if (dangLing && biStems > 0) {
+            val xiangDi = monthEl.generates == biEl
+            val dangLing = monthEl == biEl || xiangDi
+            if (xiangDi && biStems > 0) {
                 n *= 2
-                basis.append("；比劫旺相（${monthEl.chinese}月${if (monthEl == biEl) "当令" else "相地"}）加倍→${n}")
+                basis.append("；比劫相地（${monthEl.chinese}月生${biEl.chinese}）而透干加倍→${n}")
             }
             // 减半：不当令+数众+克泄耗行力≥比劫行力
             if (!dangLing && n >= 5 && keXieHao >= biForce) {
