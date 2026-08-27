@@ -297,12 +297,13 @@ private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.
             bazi.pillars.drop(1).forEachIndexed { i, p ->
                 if (p.branch == jiangXing[yg]) out.add(ShenShaItem("将星", PillarBranchLabels[i + 1], branch = p.branch))
                 if (p.branch == zaiSha[yg]) out.add(ShenShaItem("灾煞", PillarBranchLabels[i + 1], branch = p.branch))
+                if (p.branch == jieSha[yg]) out.add(ShenShaItem("劫煞", PillarBranchLabels[i + 1], branch = p.branch))
             }
         }
         scanBranch(bazi, "将星", jiangXing[g], out)
         scanBranch(bazi, "灾煞", zaiSha[g], out)
-        scanBranch(bazi, "亡神", wangShen[g], out)
         scanBranch(bazi, "劫煞", jieSha[g], out)
+        scanBranch(bazi, "亡神", wangShen[g], out)
         // 月支起
         scanStem(bazi, "月德贵人", yueDe[mg], out)
         // 月德合：与月德贵人五合之干（寅午戌丙→辛、申子辰壬→丁、亥卯未甲→己、巳酉丑庚→乙）——命无月德有合亦可补
