@@ -89,6 +89,62 @@ object HangYeCalculator {
                 "甘愿奉献任劳任怨（乙卯己卯丙辰甲午式——教育工作者）")
         }
 
+        // ── 十神心性线（第六四节三：正官行政/七杀公安/财经商/伤官投机/食伤艺术/杀印技术/官重手艺）──
+        val touGan = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+        val dayGods = touGan.map { tenGodOfStem(dayMaster, it) }
+        val shenSha = ShenShaCalculator.analyze(bazi).items.map { it.name }.toSet()
+        // ①正官透+无伤克→行政（例一市长式）
+        if (dayGods.any { it == TenGod.ZHENG_GUAN } && dayGods.none { it == TenGod.SHANG_GUAN } && guanLi < 1.5 * biLi) {
+            items += HangYeResult.HangYeItem("心性正直甘于奉献（正官透干无伤克）", "行政工作（从政）",
+                "四柱组合得当天干露正官——为人正直贪欲不强，适宜行政管理工作（丙申庚寅丁未壬寅——某市市长式）")
+        }
+        // ②七杀双透→公安法制（例二法院科长式）
+        val shaCount = dayGods.count { it == TenGod.QI_SHA } + bazi.branches.count { it.element == guanEl && bazi.stems.count { st -> st.element == guanEl } >= 2 }
+        if (dayGods.count { it == TenGod.QI_SHA } >= 2) {
+            items += HangYeResult.HangYeItem("做事有威信攻击性强意志坚强（七杀双透）", "公安法制部门（从政）",
+                "双杀透天干——适合公安法制纪检军警（甲辰丁卯戊辰甲寅——法院科长式）")
+        }
+        // ③从财官+财官喜用→企业官员（例三银行厅级式）
+        if (ts != null && ts.yongShen.any { it == guanEl } && ts.yongShen.any { it == dayEl.controls }) {
+            items += HangYeResult.HangYeItem("财旺生官官能受益（从财官格）", "企业方面的官员",
+                "假从财官财官两旺——财官为喜用神（癸巳乙卯辛巳辛卯——银行厅级干部式）")
+        }
+        // ④身旺+财当令/偏财透→经商（例四五式）
+        val caiEl = dayEl.controls
+        val caiTou = dayGods.filter { it == TenGod.PIAN_CAI || it == TenGod.ZHENG_CAI }
+        if (biLi >= 2.0 && (f[caiEl]!! >= 3.0 || caiTou.isNotEmpty()) ) {
+            items += HangYeResult.HangYeItem("身旺能胜财（财当令或偏财透有力）", "经商",
+                "身旺财当令偏财透干有力——商人命造（丙午癸巳壬申辛亥式）" +
+                    (if (shangStems >= 1) "；食伤生财敢于冒险（丁未戊申丙寅乙未——餐饮女老板式）" else ""))
+        }
+        // ⑤伤官当令而旺+财贴→投机智慧行业（例五证券操盘手式）
+        val shangGan = tenGodOfStem(dayMaster, bazi.monthPillar.stem)
+        if (f[shangEl]!! >= 3.5 && (shangGan == TenGod.SHANG_GUAN || bazi.monthPillar.branch.element == shangEl)) {
+            items += HangYeResult.HangYeItem("有经济头脑富于开拓冒险（伤官当令而旺）", "投机性和需用智慧的行业",
+                "伤官当令而旺+财星紧贴日干，逢喜用神当旺之运能发财（甲寅丙寅癸未壬戌——证券操盘手式）；" +
+                    "伤官无制易走偏门有财难守，得制转向经商（乙巳庚辰甲午己巳式）")
+        }
+        // ⑥杀印相生→专业技术（例八外科医生式）
+        if (yinTou && (guanTou || bazi.branches.any { it.element == guanEl }) && f[guanEl]!! >= 2.0 && f[yinEl]!! >= 2.0) {
+            items += HangYeResult.HangYeItem("杀印相生格局清纯（名气远扬）", "专业技术职业",
+                "杀靠印化格局清纯名气远扬——技术方面职业（壬辰辛亥乙酉己卯——大医院知名外科医生式）")
+        }
+        // ⑦身旺食伤泄秀→演讲艺术（例九音乐教师式）
+        if (biLi >= 3.0 && f[shangEl]!! >= 2.5 && shangStems >= 1) {
+            items += HangYeResult.HangYeItem("食伤泄秀主艺术口才（身旺泄秀）", "演讲歌舞艺术/教育行业",
+                "身旺伤食泄秀——食神指艺术口才，宜演讲歌舞艺术行业（戊戌辛酉戊戌戊午——中学音乐教师式）")
+        }
+        // ⑧身弱官杀重+微根→手艺糊口（例十一铝厂工人式）
+        if (f[guanEl]!! >= 3.0 && guanLi >= 1.5 * biLi && bazi.branches.count { it.element == guanEl } >= 3) {
+            items += HangYeResult.HangYeItem("奔波操劳性格内向（身弱官杀制身过重）", "手艺技术糊口",
+                "身弱官杀制身过重奔波操劳性格内向懦弱，以手艺糊口（丁亥壬子丙子癸巳——铝制品厂工人式）")
+        }
+        // ⑨身弱官星清透无伤→清闲受人尊重（例十医生式）
+        if (biLi < 2.5 && dayGods.any { it == TenGod.ZHENG_GUAN } && dayGods.none { it == TenGod.SHANG_GUAN } && guanLi < 1.5 * biLi) {
+            items += HangYeResult.HangYeItem("做事循规蹈矩安于现状（身弱官星清透）", "清闲受人尊重的职业",
+                "身弱官星清透——做事循规蹈矩安于现状，宜清闲受人尊重的职业（癸卯辛酉甲申甲子——医生式）")
+        }
+
         // ── 用神线 ──
         val by = BingYaoCalculator.analyze(bazi)
         val yongEl = by.yongShenElement
