@@ -284,6 +284,94 @@ object HunYinCalculator {
         if (allYang) {
             unfav += LiuQinItem("四柱纯阳", "四柱纯阳——婚姻难如意，${if (male) "婚姻不称心" else "性刚而婚多磨"}。")
         }
+        // ── 早婚/晚婚倾向(第五节) ──
+        run {
+            // 早婚①:配偶星现于年月柱,不被合走克破,为喜用
+            val starNianYue = (starStems.contains(0) || starStems.contains(1) ||
+                (starHidden.any { it.index == 0 || it.index == 1 } && forces[spouseEl]!! >= 1.5))
+            val starChongPo = bazi.branches.any { ob ->
+                ob != dayBranch && EarthlyBranch.entries[(ob.ordinal + 6) % 12] == dayBranch
+            }
+            if (starNianYue && spouseCat in d.fav) {
+                fav += LiuQinItem(
+                    "配偶星得位于年月·早婚",
+                    "配偶星现于年/月柱而为喜用，不被合走克破——早婚之人（婚动早；财旺年月均有再逢日干与年干合者尤早——例十一式）。",
+                )
+            }
+            // 早婚④:日支与月支六合/三合
+            if (liuHePairs.any { bazi.branches[1] in it && dayBranch in it } ||
+                sanHeGroups.any { bazi.branches[1] in it && dayBranch in it }
+            ) {
+                fav += LiuQinItem("配偶宫与月支相合·早", "日支（配偶宫）与月支相合——结婚时间早。")
+            }
+            // 早婚⑦:配偶宫得月令相帮而旺
+            if (dayBranch.element == bazi.monthPillar.branch.element ||
+                bazi.monthPillar.branch.element.generates == dayBranch.element
+            ) {
+                fav += LiuQinItem("配偶宫得月令·早婚", "配偶宫得月令相帮而旺——当主早婚（例十四式）。")
+            }
+            // 早婚③:女命身旺杀在月
+            if (!male && BingYaoCalculator.analyze(bazi).strength == DayStrength.STRONG &&
+                (bazi.stems.getOrNull(1)?.let { tenGodOfStem(day, it) } == TenGod.QI_SHA ||
+                    branchHiddenStems.getValue(bazi.branches[1]).firstOrNull()
+                        ?.let { tenGodOfStem(day, it) } == TenGod.QI_SHA)
+            ) {
+                fav += LiuQinItem("身旺杀临月·早婚", "女命身旺而七杀在月上——结婚早或破身早。")
+            }
+            // 晚婚:星藏支被冲刑
+            val zhiChongXing = diZhi.chongList.isNotEmpty() || diZhi.xingList.isNotEmpty()
+            if (starStems.isEmpty() && zhiChongXing && starHidden.isNotEmpty()) {
+                unfav += LiuQinItem("星藏遭刑冲·晚婚", "配偶星不透干而藏于地支，又被冲刑克害——晚婚之人。")
+            }
+            // 晚婚:男命星在时柱他处无现
+            if (male && starStems.isEmpty() && starHidden.all { it.index == 3 } && starHidden.isNotEmpty()) {
+                unfav += LiuQinItem("星居时柱·晚婚", "男命财星仅在时柱，他处无透无藏——结婚时间晚。")
+            }
+            // 晚婚:男命财弱不从
+            if (male && forces[spouseEl]!! <= 1.0 && BingYaoCalculator.analyze(bazi).congGe == null) {
+                unfav += LiuQinItem(
+                    "财弱不从·妻迟子晚",
+                    "男命财弱而不从——晚婚；有食伤者妻迟子晚（例九式，食伤旺正财被合尤甚）。",
+                )
+            }
+            // 晚婚:四柱纯阴(女)
+            val allYin = bazi.stems.none { it.yang } && bazi.branches.all {
+                it !in listOf(EarthlyBranch.ZI, EarthlyBranch.YIN, EarthlyBranch.CHEN, EarthlyBranch.WU, EarthlyBranch.SHEN, EarthlyBranch.XU)
+            }
+            if (!male && allYin) {
+                unfav += LiuQinItem(
+                    "四柱纯阴·不利婚",
+                    "四柱纯阴——清灯自守之象，" +
+                        (if (TiaoHouCalculator.analyze(bazi).tiaoHouElement == null) "命局偏枯无火调候，" else "") +
+                        "不利婚姻，婚缘迟迟（例一式，多次恋爱而难成家）。",
+                )
+            }
+            // 晚婚:印旺身旺+财休囚+宫空亡(例二)
+            val yinWang = forces[elementOf(GodCategory.YIN, dayEl)]!! >= 2.0
+            // 宫空亡:日柱旬之空亡不可落日支自身,以年柱旬查(例二甲寅日——丁未年旬空寅卯)
+            val yearIdx = bazi.yearPillar.cycleIndex
+            val xunStart = yearIdx - (yearIdx % 10)
+            val nianXuKong = setOf(
+                EarthlyBranch.fromIndex((xunStart + 10) % 60 % 12),
+                EarthlyBranch.fromIndex((xunStart + 11) % 60 % 12),
+            )
+            val gongKong = nianXuKong.contains(dayBranch)
+            if (yinWang && forces[spouseEl]!! <= 2.0 && gongKong) {
+                unfav += LiuQinItem("印旺财囚宫空·难成婚", "印旺身旺而财星休囚，日支（配偶宫）又落空亡——婚姻难成，迟迟未婚（例二式）。")
+            }
+            // 晚婚:比劫重重+财星受制(例六七八 众劫夺财)
+            if (forces[dayEl]!! >= 3.0 && forces[spouseEl]!! <= 1.0) {
+                unfav += LiuQinItem(
+                    "比劫夺财·晚婚",
+                    "比劫重重而财星无力（四柱无财或财从）——青年行财运为众比所夺，财印相战，恋爱难成，晚婚为佳" +
+                        "（例六土金成势四柱无财反得财、例八假专旺式；比劫有伤食化泄者，逢财旺岁运婚姻方动——例七式）。",
+                )
+            }
+            // 晚婚:时支合配偶宫+印比旺(例七)
+            if ((liuHePairs.any { bazi.branches[3] in it && dayBranch in it }) && yinWang) {
+                unfav += LiuQinItem("妻宫时合印旺·晚婚", "配偶宫与时支相合而又印旺夺财——晚婚（例七式）。")
+            }
+        }
         // ── 离婚隐患:配偶宫被月/时支冲刑合害(第四节) ──
         run {
             val posLabels2 = listOf("年支", "月支", "日支", "时支")
