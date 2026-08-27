@@ -84,4 +84,50 @@ class ShiShenCalculatorTest {
         assertTrue("偏印坐支：${'$'}{items.map { it.label }}",
             items.any { it.label.contains("偏印坐") || it.meaning.contains("枭神") })
     }
+
+    @Test fun `年干正官透出（祖上显贵）`() {
+        // 庚寅 戊子 乙巳 丁丑? 庚对乙=正官（阳克阴）
+        val b = chartOf(
+            HeavenlyStem.GENG, EarthlyBranch.YIN, HeavenlyStem.WU, EarthlyBranch.ZI,
+            HeavenlyStem.YI, EarthlyBranch.SI, HeavenlyStem.DING, EarthlyBranch.CHOU)
+        val items = ShiShenCalculator.analyze(b).items
+        assertTrue("年干正官：${'$'}{items.map { it.label }}",
+            items.any { it.label.startsWith("年干正官") && it.meaning.contains("显贵") })
+    }
+
+    @Test fun `月干正官（身官两停大贵）`() {
+        // 戊子 乙卯 庚申 丁丑? 乙对庚=正财非官。丁对庚=正官——庚日正官=丁。
+        // 盘：丁卯 壬寅 庚申 丙子——月干壬=食神。用：戊辰 丁巳 庚申 丙子——月丁=正官
+        val b = chartOf(
+            HeavenlyStem.WU, EarthlyBranch.CHEN, HeavenlyStem.DING, EarthlyBranch.SI,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN, HeavenlyStem.BING, EarthlyBranch.ZI)
+        val items = ShiShenCalculator.analyze(b).items
+        assertTrue("月干正官：${'$'}{items.map { it.label }}",
+            items.any { it.label.startsWith("月干正官") && it.meaning.contains("大贵") })
+    }
+
+    @Test fun `日支本气正官（婚姻美满）`() {
+        // 甲子 丙寅 乙巳 戊寅——日支巳藏丙=伤官非官。乙日正官=庚。用：甲子 丙寅 乙酉 戊寅——酉藏辛=七杀。
+        // 用：壬子 壬寅 丁亥 庚子——日支亥藏壬=正官（壬对丁阳克阴）
+        val b = chartOf(
+            HeavenlyStem.REN, EarthlyBranch.ZI, HeavenlyStem.REN, EarthlyBranch.YIN,
+            HeavenlyStem.DING, EarthlyBranch.HAI, HeavenlyStem.GENG, EarthlyBranch.ZI)
+        val items = ShiShenCalculator.analyze(b).items
+        assertTrue("日支本气正官：${'$'}{items.map { it.label }}",
+            items.any { it.label.startsWith("日支本气正官") && it.meaning.contains("婚姻美满") })
+    }
+
+    @Test fun `正官坐支组合（坐正印功名显达）`() {
+        // 丁卯 壬寅 庚申 丙子? 月壬坐寅（甲=偏财）。正官坐正印：透干正官+支藏正印。
+        // 庚日正官=丁，正印=己。盘：丁巳 己酉 庚申 丙子——年干丁（正官）坐巳（丙=七杀）
+        // 盘：戊辰 乙卯 丁巳 庚子——月干乙（偏印）坐卯（乙=偏印）。
+        // 用：甲辰 己巳 庚申 丁丑——月干己（正印）坐巳（丙=七杀）。
+        // 正官坐正印需透干丁+支藏己：戊辰 丁未 庚申 己卯——月干丁（正官）坐未（己=正印）✓
+        val b = chartOf(
+            HeavenlyStem.REN, EarthlyBranch.CHEN, HeavenlyStem.DING, EarthlyBranch.WEI,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN, HeavenlyStem.JI, EarthlyBranch.MAO)
+        val items = ShiShenCalculator.analyze(b).items
+        assertTrue("正官坐正印：${'$'}{items.map { it.label }}",
+            items.any { it.meaning.contains("官印相生") })
+    }
 }
