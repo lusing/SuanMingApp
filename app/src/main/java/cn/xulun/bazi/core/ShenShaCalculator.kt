@@ -231,6 +231,14 @@ object ShenShaCalculator {
             else -> Pillar(HeavenlyStem.JIA, EarthlyBranch.ZI)
         }
         if (bazi.dayPillar == tianShe) out.add(ShenShaItem("天赦", "日柱", branch = tianShe.branch))
+        // 魁罡（日柱四座神：壬辰庚戌庚辰戊戌——聪明机巧文章振发，临事果断有威杀之气）
+        if (bazi.dayPillar.fullName in listOf("壬辰", "庚戌", "庚辰", "戊戌")) {
+            out.add(ShenShaItem("魁罡", "日柱", branch = bazi.dayPillar.branch))
+        }
+        // 金神（时柱三座：乙丑/己巳/癸酉——破财之神要制伏入火乡为胜；带七煞阳刃真贵人）
+        if (bazi.hourPillar.fullName in listOf("乙丑", "己巳", "癸酉")) {
+            out.add(ShenShaItem("金神", "时柱", branch = bazi.hourPillar.branch))
+        }
         // 阴注阳受（荫星，月支查表——寅子/卯亥/辰戌/巳酉/午戌/未亥/申子/酉丑/戌寅/亥卯/子寅/丑丑；查年日时支）
         val yinZhu = mapOf(
             EarthlyBranch.YIN to EarthlyBranch.ZI, EarthlyBranch.MAO to EarthlyBranch.HAI,
