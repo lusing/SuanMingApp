@@ -175,4 +175,19 @@ class HunYinCalculatorTest {
         assertTrue(n!!.triggers.any { it.contains("合动") && it.contains("配偶宫") })
         assertTrue(n.kind.chinese.contains("同居") || n.kind.chinese.contains("婚"))
     }
+
+    @Test
+    fun `例六 罗先生 1994甲戌 财透冲动配偶宫 红鸾同居`() {
+        val r = analyze(
+            HeavenlyStem.GENG, EarthlyBranch.XU,
+            HeavenlyStem.WU, EarthlyBranch.YIN,
+            HeavenlyStem.GENG, EarthlyBranch.CHEN,
+            HeavenlyStem.JI, EarthlyBranch.MAO,
+        )
+        val n = allYears(r).firstOrNull { it.year == 1994 }
+        assertNotNull(n)
+        assertTrue(n!!.triggers.any { it.contains("财星透") })
+        assertTrue(n.triggers.any { it.contains("冲配偶宫") })
+        assertTrue(n.kind.chinese.contains("婚"))
+    }
 }

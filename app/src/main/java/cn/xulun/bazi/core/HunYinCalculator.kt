@@ -180,6 +180,10 @@ object HunYinCalculator {
         // 财多身弱（男）依从妻言
         if (male && forces[spouseEl]!! >= 3.0 && spouseCat in d.unf) {
             unfav += LiuQinItem("财多身弱", "财多身弱——依从妻言，妻执家政；身弱财旺妻夺夫权。")
+            fav += LiuQinItem(
+                "身弱财旺待时而婚",
+                "身弱财旺——逢印比帮扶之年、财星透干之时方有红鸾之喜（例六庚金寅月三会财局式：身变旺能胜财，有妻来到）。",
+            )
         }
         // 一官清透（女）
         if (!male) {
