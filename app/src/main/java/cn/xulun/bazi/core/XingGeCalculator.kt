@@ -212,6 +212,42 @@ object XingGeCalculator {
                 )
             }
         }
+        // ── 多重线（第六五节五：透干十神间制衡——多重性格自我调控）──
+        run {
+            val dayMaster = bazi.dayPillar.stem
+            val tou = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+            val gods = tou.map { cn.xulun.bazi.model.tenGodOfStem(dayMaster, it) }
+            val guanE = Element.entries.first { it.controls == dayEl }
+            val shangE = dayEl.generates
+            val yinE = Element.entries.first { it.generates == dayEl }
+            // 官杀有力制比劫：比劫众透+官杀也透有力——比劫负面被制
+            val biCount = gods.count { it == cn.xulun.bazi.model.TenGod.BI_JIAN || it == cn.xulun.bazi.model.TenGod.JIE_CAI }
+            val guanCount = gods.count { it == cn.xulun.bazi.model.TenGod.ZHENG_GUAN || it == cn.xulun.bazi.model.TenGod.QI_SHA }
+            if (biCount >= 2 && guanCount >= 1 && f[guanE]!! >= 2.0) {
+                items += XingGeResult.XingGeItem("多重·官杀制比劫",
+                    "比劫众而官杀有力制其负面心性——既带比劫正面（豪迈义气积极上进有创造性），又具官杀心性（稳重踏实讲信用重名誉）：大胆开拓争得名利；比劫蛮横时官杀马上制止（要遵纪守法不可鲁莽）——多重性格促进向成功发展")
+            }
+            // 伤官见官幸有化泄（财通关）
+            if (gods.any { it == cn.xulun.bazi.model.TenGod.SHANG_GUAN } && gods.any { it == cn.xulun.bazi.model.TenGod.ZHENG_GUAN }) {
+                val caiE = dayEl.controls
+                val huaJie = f[caiE]!! >= 2.0
+                items += XingGeResult.XingGeItem("多重·伤官见官${if (huaJie) "幸有化泄" else "无化净"}",
+                    if (huaJie) "伤官见官原局幸有财化泄但难化净——倔强听不进意见压力山大时伤官解围提示换渠道；春风得意时伤官孤芳自赏目空一切，财官及时出面约束检点——性格在矛盾对立统一中不断纠正完善（湖南李先生式）"
+                    else "伤官见官无化泄——与官不合是非不断官司连连，不宜政界")
+            }
+            // 枭神夺食
+            if (gods.any { it == cn.xulun.bazi.model.TenGod.PIAN_YIN } && f[shangE]!! > 0 && f[shangE]!! < 1.5 && f[yinE]!! >= 3.0) {
+                items += XingGeResult.XingGeItem("多重·枭神夺食",
+                    "枭神旺而食伤弱被夺——胆小怕事优柔寡断，尖酸刻薄个性怪异性格内向与众不合，不善言词工作难就，有才无用有志难伸心情忧郁（广东柯先生式——金多水浊母慈灭子）")
+            }
+            // 羊刃护身
+            val ss0 = ShenShaCalculator.analyze(bazi).items.map { it.name }.toSet()
+            val rt = Element.entries.sumOf { f[it]!! }
+            if ("羊刃" in ss0 && f[dayEl]!! / rt < 0.28) {
+                items += XingGeResult.XingGeItem("多重·羊刃护身",
+                    "身弱逢刃护身——有朋友或骨肉相助，热诚坦直勇往直前")
+            }
+        }
         return XingGeResult(items)
     }
 }
