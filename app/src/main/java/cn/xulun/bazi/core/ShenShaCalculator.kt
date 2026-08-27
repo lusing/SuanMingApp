@@ -206,6 +206,12 @@ object ShenShaCalculator {
         scanBranch(bazi, "禄神", luShen.getValue(dayStem), out)
         // 日支起
         scanBranch(bazi, "桃花", taoHua[g], out)
+        // 驿马（三合长生冲位，年支或日支查其余各支——年支组扫月日时；日支组沿 xuanzong 全柱扫）
+        if (yg != g) {
+            bazi.pillars.drop(1).forEachIndexed { i, p ->
+                if (p.branch == yiMa[yg]) out.add(ShenShaItem("驿马", PillarBranchLabels[i + 1], branch = p.branch))
+            }
+        }
         scanBranch(bazi, "驿马", yiMa[g], out)
         // 华盖（三合墓库，年支或日支查**其余各支**——年支组扫月日时；日支组沿 xuanzong 全柱扫）
         if (yg != g) {
