@@ -27,11 +27,12 @@ object ShenShaCalculator {
         EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU -> 3
     }
 
-    // ── 日干 → 天乙贵人（双支）：甲戊庚→丑未 乙己→子申 丙丁→亥酉 壬癸→卯巳 辛→寅午 ──
+    // ── 天乙贵人（双支，神峰通考版——甲戊兼牛羊、庚辛逢虎马；年干日干均可查）：
+    // 甲戊→丑未 乙己→子申 丙丁→亥酉 庚辛→寅午 壬癸→卯巳（渊海"甲戊庚牛羊"经实践检验不及此版）
     private val tianYi: Map<HeavenlyStem, List<EarthlyBranch>> = mapOf(
         HeavenlyStem.JIA to listOf(EarthlyBranch.CHOU, EarthlyBranch.WEI),
         HeavenlyStem.WU to listOf(EarthlyBranch.CHOU, EarthlyBranch.WEI),
-        HeavenlyStem.GENG to listOf(EarthlyBranch.CHOU, EarthlyBranch.WEI),
+        HeavenlyStem.GENG to listOf(EarthlyBranch.YIN, EarthlyBranch.WU),
         HeavenlyStem.YI to listOf(EarthlyBranch.ZI, EarthlyBranch.SHEN),
         HeavenlyStem.JI to listOf(EarthlyBranch.ZI, EarthlyBranch.SHEN),
         HeavenlyStem.BING to listOf(EarthlyBranch.HAI, EarthlyBranch.YOU),
@@ -132,8 +133,8 @@ object ShenShaCalculator {
         val mg = groupOf(monthBranch)
         val out = mutableListOf<ShenShaItem>()
 
-        // 日干起
-        scanBranchAny(bazi, "天乙贵人", tianYi.getValue(dayStem), out)
+        // 日干起（天乙贵人年干、日干均可查——并集去重）
+        scanBranchAny(bazi, "天乙贵人", (tianYi.getValue(bazi.yearPillar.stem) + tianYi.getValue(dayStem)).distinct(), out)
         scanBranch(bazi, "文昌", wenChang.getValue(dayStem), out)
         scanBranch(bazi, "学堂", xueTang.getValue(dayStem), out)
         scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)
