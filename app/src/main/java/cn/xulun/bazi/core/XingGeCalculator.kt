@@ -34,6 +34,55 @@ object XingGeCalculator {
         Element.WATER to "癸水：聪明机灵斯文内象遇事冷静；心胸狭窄工于心计",
     )
 
+    /**
+     * 岁运版（第六五节四·五行变化断性格）：原局 vs 原局+岁运 双盘对比——
+     * 日干旺衰翻转 / 主导行易主 / 十神增减 / 新神煞，输出变化条目。
+     */
+    fun analyzeWithYun(bazi: BaziResult, yun: List<cn.xulun.bazi.model.Pillar>): List<XingGeResult.XingGeItem> {
+        if (yun.isEmpty()) return emptyList()
+        val before = analyze(bazi)
+        val f0 = BingYaoCalculator.forces(bazi)
+        val dayEl = bazi.dayPillar.stem.element
+        val t0 = Element.entries.sumOf { f0[it]!! }
+        val y = yun.last()
+        val yEl = y.branch.element
+        val yStemEl = y.stem.element
+        val f1 = f0.toMutableMap()
+        f1[yEl] = f1[yEl]!! + 1; f1[yStemEl] = f1[yStemEl]!! + 1
+        val t1 = t0 + 2
+        val ratio0 = f0[dayEl]!! / t0
+        val ratio1 = f1[dayEl]!! / t1
+        val out = mutableListOf<XingGeResult.XingGeItem>()
+        val ke = Element.entries.first { it.controls == dayEl }
+        // ① 旺衰翻转：日干份额跌破/升破 0.28（身旺↔身弱）
+        if (ratio0 >= 0.28 && ratio1 < 0.28) {
+            out += XingGeResult.XingGeItem("运变身弱（日干份额${"%.2f".format(ratio0)}→${"%.2f".format(ratio1)}）",
+                "身由旺变弱官杀制身——性格大变：行为疏于检点性情怪异烦闷异常不求上进，红杏出墙风流韵事迭出（重庆柯女士丁丑运式——伤官生财财生官，官杀旺身变弱）")
+        } else if (ratio0 < 0.28 && ratio1 >= 0.28) {
+            out += XingGeResult.XingGeItem("运变身旺（日干份额${"%.2f".format(ratio0)}→${"%.2f".format(ratio1)}）",
+                "身由弱变旺——性格转向开朗积极：富有追求精神严格要求自己勤俭持家（柯女士己卯戊寅运式）")
+        }
+        // ② 主导行易主
+        val dom0 = Element.entries.filter { it != dayEl }.maxBy { f0[it]!! }
+        val dom1 = Element.entries.filter { it != dayEl }.maxBy { f1[it]!! }
+        if (dom0 != dom1 && f1[dom1]!! > f1[dom0]!!) {
+            out += XingGeResult.XingGeItem("主导行易主（${dom0.chinese}→${dom1.chinese}）",
+                common[dom1]!! + "——五行气势转移，性情随之而变。")
+        }
+        // ③ 新增神煞
+        val s0 = ShenShaCalculator.analyze(bazi).items.map { it.name }.toSet()
+        val s1 = ShenShaCalculator.analyze(bazi).items.map { it.name }.toSet() + listOf(y.stem, y.branch).mapNotNull { st -> null } // 神煞以原局论（岁运神煞由岁运单独批）
+        val newSs = s1 - s0
+        if (newSs.isNotEmpty()) {
+            out += XingGeResult.XingGeItem("岁运新现神煞（${newSs.joinToString("、")}）",
+                "新出现的神煞为信息触发点——性格中加入新的性情色彩（力量增减须综合判断）。")
+        }
+        // ④ 大运柱名
+        out += XingGeResult.XingGeItem("岁运${y.fullName}（${yEl.chinese}${yStemEl.chinese}）",
+            "干支入局：${if (yEl == dayEl || yStemEl == dayEl) "帮身——日主增强" else if (yEl == ke || yStemEl == ke) "克身——官杀制身" else if (dayEl.controls == yEl || dayEl.controls == yStemEl) "耗身" else if (dayEl.generates == yEl || dayEl.generates == yStemEl) "泄身" else "生身或无直接作用"}。")
+        return out
+    }
+
     fun analyze(bazi: BaziResult): XingGeResult {
         val items = mutableListOf<XingGeResult.XingGeItem>()
         val dayEl = bazi.dayPillar.stem.element
