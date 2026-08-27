@@ -146,6 +146,29 @@ object HangYeCalculator {
                 "身弱官星清透——做事循规蹈矩安于现状，宜清闲受人尊重的职业（癸卯辛酉甲申甲子——医生式）")
         }
 
+        // ── 神煞线（第六四节四：玄学缘/军警/娱乐）──
+        run {
+            val ss = ShenShaCalculator.analyze(bazi).items.map { it.name }.toSet()
+            // 天门=戌亥；华盖太极已有——玄学缘（华盖+太极+天门+空亡 ≥2 项或伤官旺）
+            val tianMen = bazi.branches.count { it == cn.xulun.bazi.model.EarthlyBranch.XU || it == cn.xulun.bazi.model.EarthlyBranch.HAI }
+            val xuanMarks = listOf("华盖" in ss, "太极贵人" in ss, tianMen >= 1, "空亡" in ss).count { it }
+            if (xuanMarks >= 2 || ("太极贵人" in ss && tianMen >= 1)) {
+                items += HangYeResult.HangYeItem("对神秘事物有浓厚兴趣（华盖太极天门空亡——玄学缘）", "玄学预测/五术研究",
+                    if (tianMen >= 2) "带天门（亥戌）+太极贵人——第六感觉特别好（己亥丁卯庚戌甲申——看相为业式）"
+                    else "天门华盖太极俱临——迷恋周易预测拜师访友（庚戌丁亥戊戌丁巳——中学教师业余爱好式）")
+            }
+            // 将星+羊刃→军警
+            if ("将星" in ss && "羊刃" in ss) {
+                items += HangYeResult.HangYeItem("将星临刃（禄刃俱全）", "从军或公检法部门",
+                    "四柱带将星+羊刃为喜用——金旺禄刃俱全将星临刃，从军考取军校（乙巳甲申庚申乙酉——团长式）")
+            }
+            // 女命桃花+水旺→娱乐业
+            if ("桃花" in ss && f[Element.WATER]!! >= 2.0) {
+                items += HangYeResult.HangYeItem("桃花临身水旺为忌", "娱乐业",
+                    "身弱食伤泄身过重财旺耗身+日支坐桃花柱中水旺——从事娱乐业（辛亥辛卯庚子己卯式）")
+            }
+        }
+
         // ── 用神线 ──
         val by = BingYaoCalculator.analyze(bazi)
         val yongEl = by.yongShenElement
