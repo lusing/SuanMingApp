@@ -1,7 +1,9 @@
 package cn.xulun.bazi.core
 
 import cn.xulun.bazi.model.BaziResult
+import cn.xulun.bazi.model.BranchAnHe
 import cn.xulun.bazi.model.BranchChong
+import cn.xulun.bazi.model.BranchHai
 import cn.xulun.bazi.model.BranchSanHe
 import cn.xulun.bazi.model.BranchXing
 import cn.xulun.bazi.model.DiZhiRelationResult
@@ -11,11 +13,13 @@ import cn.xulun.bazi.model.PillarBranchLabels
 import cn.xulun.bazi.model.XingKind
 
 /**
- * 地支关系分析器 — 三合 · 六冲 · 相刑。
+ * 地支关系分析器 — 三合 · 六冲 · 相刑 · 六害 · 暗合。
  *
  * - 三合局：申子辰水、亥卯未木、寅午戌火、巳酉丑金（三支齐备则成局）
  * - 六冲：子午、丑未、寅申、卯酉、辰戌、巳亥（对宫相冲，两支 ordinal 差为 6）
- * - 相刑：寅巳申三刑、丑戌未三刑、子卯互刑、辰午酉亥自刑
+ * - 相刑：寅巳申三刑（恃势之刑）、丑戌未三刑（无恩之刑）、子卯互刑（无礼之刑）、辰午酉亥自刑
+ * - 六害：子未、丑午、寅巳、卯辰、申亥、酉戌
+ * - 暗合：卯申（教材第十六节用例；寅丑/午亥他派有说不取）
  *
  * 通过 [analyze] 的列表重载可分析任意地支组合（如原局四支 + 选定运岁支）。
  * 相刑取「齐备即论」，不细分方向；自刑取同支两见及以上。
@@ -53,9 +57,24 @@ object DiZhiRelationCalculator {
     )
 
     private val sanXingDefs = listOf(
-        SanXingDef(setOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN), "寅巳申三刑"),
-        SanXingDef(setOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI), "丑戌未三刑"),
+        SanXingDef(setOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN), "寅巳申三刑（恃势之刑）"),
+        SanXingDef(setOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI), "丑戌未三刑（无恩之刑）"),
     )
+
+    // ── 六害 ──
+    private val haiDesc: Map<Int, String> = listOf(
+        EarthlyBranch.ZI to EarthlyBranch.WEI,    // 子未
+        EarthlyBranch.CHOU to EarthlyBranch.WU,   // 丑午
+        EarthlyBranch.YIN to EarthlyBranch.SI,    // 寅巳
+        EarthlyBranch.MAO to EarthlyBranch.CHEN,  // 卯辰
+        EarthlyBranch.SHEN to EarthlyBranch.HAI,  // 申亥
+        EarthlyBranch.YOU to EarthlyBranch.XU,    // 酉戌
+    ).associate { (a, b) -> makeKey(a, b) to a.chinese + b.chinese + "相害" }
+
+    // ── 暗合（卯申）──
+    private val anHeDesc: Map<Int, String> = listOf(
+        EarthlyBranch.MAO to EarthlyBranch.SHEN,
+    ).associate { (a, b) -> makeKey(a, b) to a.chinese + b.chinese + "暗合" }
 
     // ── 自刑支 ──
     private val ziXingBranches = setOf(
@@ -75,6 +94,8 @@ object DiZhiRelationCalculator {
             sanHeList = findSanHe(branches, labels),
             chongList = findChong(branches, labels),
             xingList = findXing(branches, labels),
+            haiList = findHai(branches, labels),
+            anHeList = findAnHe(branches, labels),
         )
 
     // ── 三合检测 ──
@@ -155,7 +176,7 @@ object DiZhiRelationCalculator {
                             BranchXing(
                                 branches = listOf(a, b),
                                 kind = XingKind.HU_XING,
-                                description = "子卯相刑",
+                                description = "子卯相刑（无礼之刑）",
                                 location = "${labels[i]}+${labels[j]}",
                             ),
                         )
@@ -179,6 +200,46 @@ object DiZhiRelationCalculator {
             }
         }
 
+        return result
+    }
+
+    // ── 六害检测 ──
+    private fun findHai(branches: List<EarthlyBranch>, labels: List<String>): List<BranchHai> {
+        val result = mutableListOf<BranchHai>()
+        for (i in 0 until branches.size) {
+            for (j in i + 1 until branches.size) {
+                haiDesc[makeKey(branches[i], branches[j])]?.let { desc ->
+                    result.add(
+                        BranchHai(
+                            branch1 = branches[i],
+                            branch2 = branches[j],
+                            description = desc,
+                            location = labels[i] + "+" + labels[j],
+                        ),
+                    )
+                }
+            }
+        }
+        return result
+    }
+
+    // ── 暗合检测（卯申） ──
+    private fun findAnHe(branches: List<EarthlyBranch>, labels: List<String>): List<BranchAnHe> {
+        val result = mutableListOf<BranchAnHe>()
+        for (i in 0 until branches.size) {
+            for (j in i + 1 until branches.size) {
+                anHeDesc[makeKey(branches[i], branches[j])]?.let { desc ->
+                    result.add(
+                        BranchAnHe(
+                            branch1 = branches[i],
+                            branch2 = branches[j],
+                            description = desc,
+                            location = labels[i] + "+" + labels[j],
+                        ),
+                    )
+                }
+            }
+        }
         return result
     }
 

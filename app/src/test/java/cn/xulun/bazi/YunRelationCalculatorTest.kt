@@ -119,7 +119,7 @@ class YunRelationCalculatorTest {
             ),
         )
         // 寅(年支)+巳(大运)+申(流年) 跨三柱凑成寅巳申三刑
-        val xing = result.branchXingList.first { it.description == "寅巳申三刑" }
+        val xing = result.branchXingList.first { it.description.startsWith("寅巳申三刑") }
         assertEquals("年支+大运+流年", xing.location)
     }
 

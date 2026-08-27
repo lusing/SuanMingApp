@@ -1,6 +1,9 @@
 package cn.xulun.bazi.core
 
+import cn.xulun.bazi.model.BanHeKind
 import cn.xulun.bazi.model.BaziResult
+import cn.xulun.bazi.model.BranchBanHe
+import cn.xulun.bazi.model.BranchGong
 import cn.xulun.bazi.model.BranchLiuHe
 import cn.xulun.bazi.model.BranchSanHui
 import cn.xulun.bazi.model.EarthlyBranch
@@ -9,6 +12,7 @@ import cn.xulun.bazi.model.HeHuaResult
 import cn.xulun.bazi.model.HeavenlyStem
 import cn.xulun.bazi.model.PillarBranchLabels
 import cn.xulun.bazi.model.PillarStemLabels
+import cn.xulun.bazi.model.StemChong
 import cn.xulun.bazi.model.StemHeHua
 
 /**
@@ -16,8 +20,11 @@ import cn.xulun.bazi.model.StemHeHua
  *
  * 分析一组干支中的：
  * - 天干五合（甲己合土、乙庚合金、丙辛合水、丁壬合木、戊癸合火）
+ * - 天干相冲（甲庚、乙辛、丙壬、丁癸；戊己居中不冲——同性相斥方位对冲，冲比克的力大）
  * - 地支六合（子丑合土、寅亥合木、卯戌合火、辰酉合金、巳申合水、午未合土）
- * - 地支三会（寅卯辰木、巳午未火、申酉戌金、亥子丑水）
+ * - 地支三会（寅卯辰木、巳午未火、申酉戌金、亥子丑水、辰戌丑未会四方土局）
+ * - 地支半合（生地/墓地半合，残缺三合；全三合已成局时不报；金局酉丑墓地半合＞巳酉生地半合）
+ * - 地支拱局（三合生地+墓地齐而中神缺，如申辰拱子）
  *
  * 通过 [analyze] 的列表重载可分析任意干支组合（如原局四柱 + 选定运岁柱）。
  */
@@ -68,7 +75,34 @@ object HeHuaCalculator {
             setOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU),
             Element.WATER, "亥子丑三会水局",
         ),
+        SanHuiDef(
+            setOf(EarthlyBranch.CHEN, EarthlyBranch.XU, EarthlyBranch.CHOU, EarthlyBranch.WEI),
+            Element.EARTH, "辰戌丑未会四方土局",
+        ),
     )
+
+    // ── 三合局分组（供半合/拱局判定）：中神/生地/墓地 ──
+    private data class SanHeGroup(
+        val zhong: EarthlyBranch,
+        val shengDi: EarthlyBranch,
+        val muDi: EarthlyBranch,
+        val element: Element,
+    )
+
+    private val sanHeGroups = listOf(
+        SanHeGroup(EarthlyBranch.ZI, EarthlyBranch.SHEN, EarthlyBranch.CHEN, Element.WATER),
+        SanHeGroup(EarthlyBranch.MAO, EarthlyBranch.HAI, EarthlyBranch.WEI, Element.WOOD),
+        SanHeGroup(EarthlyBranch.WU, EarthlyBranch.YIN, EarthlyBranch.XU, Element.FIRE),
+        SanHeGroup(EarthlyBranch.YOU, EarthlyBranch.SI, EarthlyBranch.CHOU, Element.METAL),
+    )
+
+    // ── 天干相冲：同性方位对冲 ──
+    private val stemChongDesc: Map<Int, String> = listOf(
+        HeavenlyStem.JIA to HeavenlyStem.GENG,
+        HeavenlyStem.YI to HeavenlyStem.XIN,
+        HeavenlyStem.BING to HeavenlyStem.REN,
+        HeavenlyStem.DING to HeavenlyStem.GUI,
+    ).associate { (a, b) -> a.ordinal * 100 + b.ordinal to a.chinese + b.chinese + "相冲" }
 
     /** 分析八字原局四柱的合化关系 */
     fun analyze(bazi: BaziResult): HeHuaResult =
@@ -87,6 +121,9 @@ object HeHuaCalculator {
         stemHeHuaList = findStemHeHua(stems, stemLabels),
         branchLiuHeList = findBranchLiuHe(branches, branchLabels),
         branchSanHuiList = findBranchSanHui(branches, branchLabels),
+        stemChongList = findStemChong(stems, stemLabels),
+        branchBanHeList = findBranchBanHe(branches, branchLabels),
+        branchGongList = findBranchGong(branches, branchLabels),
     )
 
     // ── 天干五合检测 ──
@@ -168,6 +205,85 @@ object HeHuaCalculator {
             }
         }
         return result
+    }
+
+    // ── 天干相冲检测 ──
+    private fun findStemChong(stems: List<HeavenlyStem>, labels: List<String>): List<StemChong> {
+        val result = mutableListOf<StemChong>()
+        for (i in 0 until stems.size) {
+            for (j in i + 1 until stems.size) {
+                val desc = stemChongDesc[stems[i].ordinal * 100 + stems[j].ordinal]
+                    ?: stemChongDesc[stems[j].ordinal * 100 + stems[i].ordinal]
+                    ?: continue
+                val (first, second) = if (stems[i].ordinal < stems[j].ordinal) stems[i] to stems[j] else stems[j] to stems[i]
+                result.add(
+                    StemChong(
+                        stem1 = first,
+                        stem2 = second,
+                        description = desc,
+                        location = labels[i] + "+" + labels[j],
+                    ),
+                )
+            }
+        }
+        return result
+    }
+
+    // ── 半合检测（全三合已成局时不报） ──
+    private fun findBranchBanHe(branches: List<EarthlyBranch>, labels: List<String>): List<BranchBanHe> {
+        val present = branches.toSet()
+        val result = mutableListOf<BranchBanHe>()
+        for (g in sanHeGroups) {
+            if (present.containsAll(setOf(g.zhong, g.shengDi, g.muDi))) continue
+            for ((other, kind) in listOf(g.shengDi to BanHeKind.SHENG_DI, g.muDi to BanHeKind.MU_DI)) {
+                if (g.zhong in present && other in present) {
+                    val jinException = g.element == Element.METAL && kind == BanHeKind.MU_DI
+                    val note = if (jinException) "（金局例外：酉丑墓地半合＞巳酉生地半合）" else ""
+                    // 命名惯例：生地半合=生地+中神（巳酉），墓地半合=中神+墓地（酉丑）
+                    val (first, second) = if (kind == BanHeKind.SHENG_DI) other to g.zhong else g.zhong to other
+                    result.add(
+                        BranchBanHe(
+                            branch1 = first,
+                            branch2 = second,
+                            kind = kind,
+                            resultElement = g.element,
+                            description = first.chinese + second.chinese + kind.chinese + g.element.chinese + "局" + note,
+                            location = locationPairOf(branches, g.zhong, other, labels),
+                        ),
+                    )
+                }
+            }
+        }
+        return result
+    }
+
+    // ── 拱局检测（生地+墓地齐而中神缺） ──
+    private fun findBranchGong(branches: List<EarthlyBranch>, labels: List<String>): List<BranchGong> {
+        val present = branches.toSet()
+        val result = mutableListOf<BranchGong>()
+        for (g in sanHeGroups) {
+            if (g.zhong !in present && g.shengDi in present && g.muDi in present) {
+                // 命名惯例：拱局=生地+墓地（申辰拱子）
+                val (first, second) = g.shengDi to g.muDi
+                result.add(
+                    BranchGong(
+                        branch1 = first,
+                        branch2 = second,
+                        resultElement = g.element,
+                        description = first.chinese + second.chinese + "拱" + g.element.chinese + "局（待" + g.zhong.chinese + "）",
+                        location = locationPairOf(branches, g.shengDi, g.muDi, labels),
+                    ),
+                )
+            }
+        }
+        return result
+    }
+
+    /** 两支首次出现的柱位 */
+    private fun locationPairOf(branches: List<EarthlyBranch>, a: EarthlyBranch, b: EarthlyBranch, labels: List<String>): String {
+        val ia = branches.indexOf(a)
+        val ib = branches.indexOf(b)
+        return labels[minOf(ia, ib)] + "+" + labels[maxOf(ia, ib)]
     }
 
     /** 为两个地支生成无序的查找键 */

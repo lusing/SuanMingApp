@@ -51,7 +51,32 @@ data class BranchXing(
 )
 
 /**
- * 地支关系分析总结果（三合 · 六冲 · 相刑）。
+ * 地支六害结果（穿害）：子未、丑午、寅巳、卯辰、申亥、酉戌。
+ */
+data class BranchHai(
+    val branch1: EarthlyBranch,
+    val branch2: EarthlyBranch,
+    /** 描述，如 "子未相害" */
+    val description: String,
+    /** 出现柱位 */
+    val location: String,
+)
+
+/**
+ * 地支暗合结果（参考理论第十六节用例：卯申暗合，可化解冲财）。
+ * 寅丑/午亥暗合他派有说、教材未及，不取。
+ */
+data class BranchAnHe(
+    val branch1: EarthlyBranch,
+    val branch2: EarthlyBranch,
+    /** 描述，如 "卯申暗合" */
+    val description: String,
+    /** 出现柱位 */
+    val location: String,
+)
+
+/**
+ * 地支关系分析总结果（三合 · 六冲 · 相刑 · 六害 · 暗合）。
  */
 data class DiZhiRelationResult(
     /** 地支三合局 */
@@ -60,10 +85,16 @@ data class DiZhiRelationResult(
     val chongList: List<BranchChong>,
     /** 地支相刑 */
     val xingList: List<BranchXing>,
+    /** 地支六害 */
+    val haiList: List<BranchHai> = emptyList(),
+    /** 地支暗合（卯申） */
+    val anHeList: List<BranchAnHe> = emptyList(),
 ) {
     /** 是否存在任何地支关系 */
     val hasAny: Boolean
         get() = sanHeList.isNotEmpty() ||
                 chongList.isNotEmpty() ||
-                xingList.isNotEmpty()
+                xingList.isNotEmpty() ||
+                haiList.isNotEmpty() ||
+                anHeList.isNotEmpty()
 }

@@ -24,7 +24,7 @@ import cn.xulun.bazi.ui.theme.SeedRed
 import cn.xulun.bazi.ui.theme.XingColor
 import cn.xulun.bazi.ui.theme.elementColor
 
-/** 地支关系（三合 · 六冲 · 相刑）展示区域 */
+/** 地支关系（三合 · 六冲 · 相刑 · 六害 · 暗合）展示区域 */
 @Composable
 fun DiZhiRelationSection(result: DiZhiRelationResult, modifier: Modifier = Modifier) {
     Card(
@@ -75,6 +75,40 @@ fun DiZhiRelationSection(result: DiZhiRelationResult, modifier: Modifier = Modif
                             text = chong.description,
                             color = ChongColor,
                             subtitle = chong.location,
+                        )
+                    }
+                }
+            }
+
+            // 地支六害
+            if (result.haiList.isNotEmpty()) {
+                SectionLabel("地支六害", Modifier.padding(top = 12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    result.haiList.forEach { hai ->
+                        RelationChip(
+                            text = hai.description,
+                            color = SeedRed.copy(alpha = 0.75f),
+                            subtitle = hai.location,
+                        )
+                    }
+                }
+            }
+
+            // 地支暗合
+            if (result.anHeList.isNotEmpty()) {
+                SectionLabel("地支暗合", Modifier.padding(top = 12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    result.anHeList.forEach { an ->
+                        RelationChip(
+                            text = an.description,
+                            color = Color(0xFF7B1FA2),
+                            subtitle = an.location,
                         )
                     }
                 }

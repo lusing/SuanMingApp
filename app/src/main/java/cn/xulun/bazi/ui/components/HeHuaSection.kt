@@ -24,7 +24,7 @@ import cn.xulun.bazi.ui.theme.CreamSurface
 import cn.xulun.bazi.ui.theme.SeedRed
 import cn.xulun.bazi.ui.theme.elementColor
 
-/** 合化分析展示区域 */
+/** 干支关系（合化/冲/半合/拱局）展示区域 */
 @Composable
 fun HeHuaSection(result: HeHuaResult, modifier: Modifier = Modifier) {
     Card(
@@ -48,6 +48,23 @@ fun HeHuaSection(result: HeHuaResult, modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(top = 10.dp),
                 )
                 return@Column
+            }
+
+            // 天干相冲
+            if (result.stemChongList.isNotEmpty()) {
+                SectionLabel("天干相冲", Modifier.padding(top = 12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    result.stemChongList.forEach { chong ->
+                        HeHuaChip(
+                            text = chong.description,
+                            element = Element.METAL,
+                            subtitle = chong.location,
+                        )
+                    }
+                }
             }
 
             // 天干五合
@@ -94,6 +111,40 @@ fun HeHuaSection(result: HeHuaResult, modifier: Modifier = Modifier) {
                         subtitle = he.location,
                         modifier = Modifier.padding(bottom = 6.dp),
                     )
+                }
+            }
+
+            // 地支半合
+            if (result.branchBanHeList.isNotEmpty()) {
+                SectionLabel("地支半合", Modifier.padding(top = 12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    result.branchBanHeList.forEach { he ->
+                        HeHuaChip(
+                            text = he.description,
+                            element = he.resultElement,
+                            subtitle = he.location,
+                        )
+                    }
+                }
+            }
+
+            // 地支拱局
+            if (result.branchGongList.isNotEmpty()) {
+                SectionLabel("地支拱局", Modifier.padding(top = 12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    result.branchGongList.forEach { gong ->
+                        HeHuaChip(
+                            text = gong.description,
+                            element = gong.resultElement,
+                            subtitle = gong.location,
+                        )
+                    }
                 }
             }
         }

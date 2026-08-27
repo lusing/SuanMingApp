@@ -110,7 +110,7 @@ class DiZhiRelationCalculatorTest {
         assertEquals(1, result.xingList.size)
         val xing = result.xingList[0]
         assertEquals(XingKind.SAN_XING, xing.kind)
-        assertEquals("寅巳申三刑", xing.description)
+        assertEquals("寅巳申三刑（恃势之刑）", xing.description)
         assertEquals("年支+月支+日支", xing.location)
 
         // 寅申同在，故另成六冲
@@ -123,7 +123,7 @@ class DiZhiRelationCalculatorTest {
             baziOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI, EarthlyBranch.ZI),
         )
         assertEquals(1, result.xingList.size)
-        assertEquals("丑戌未三刑", result.xingList[0].description)
+        assertEquals("丑戌未三刑（无恩之刑）", result.xingList[0].description)
         assertEquals(XingKind.SAN_XING, result.xingList[0].kind)
         assertTrue(result.chongList.any { it.description == "丑未相冲" })
     }
@@ -136,7 +136,7 @@ class DiZhiRelationCalculatorTest {
         assertEquals(1, result.xingList.size)
         val xing = result.xingList[0]
         assertEquals(XingKind.HU_XING, xing.kind)
-        assertEquals("子卯相刑", xing.description)
+        assertEquals("子卯相刑（无礼之刑）", xing.description)
         assertEquals("年支+月支", xing.location)
 
         assertTrue(result.chongList.any { it.description == "子午相冲" })
