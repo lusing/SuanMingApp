@@ -194,9 +194,15 @@ object TeShuGeJuCalculator {
             val partner0 = listOf(yinEl, dayEl.generates).maxBy { fZhuan[it]!! }
             val divertTh = if (bazi.monthPillar.branch.element == dayEl) 0.4 else 0.8
             // 有财官隐患（假专旺）者不分流——戊申庚申庚戌丁丑之丁官无根仍留专旺档
-            if (!ruoGuanTou && fZhuan[partner0]!! >= divertTh * fZhuan[dayEl]!! && fZhuan[partner0]!! >= 2.0 &&
-                (fZhuan[dayEl]!! + fZhuan[partner0]!!) >= 0.8 * totalZhuan) {
-                return liangQiOf(bazi, dayEl, partner0, fZhuan)
+            // 三气让位：泄端透干且邻行力≥半日行（壬子壬寅甲寅丙寅丙透火、水3木6——归SAN_QI；
+            // 曲直例三水2.5木7丁虽透而印弱——仍曲直）
+            val xieTou = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+                .any { it.element == dayEl.generates && it.element != partner0 && it.element != dayEl }
+            if (!xieTou || fZhuan[partner0]!! < 0.5 * fZhuan[dayEl]!!) {
+                if (!ruoGuanTou && fZhuan[partner0]!! >= divertTh * fZhuan[dayEl]!! && fZhuan[partner0]!! >= 2.0 &&
+                    (fZhuan[dayEl]!! + fZhuan[partner0]!!) >= 0.8 * totalZhuan) {
+                    return liangQiOf(bazi, dayEl, partner0, fZhuan)
+                }
             }
             val yong = listOf(dayEl, yinEl, dayEl.generates) // 比印首选，有力食伤次之
             // 双档命名：全三合/三会成局且月令会宫（木：寅卯辰）或化气五合成格（乙庚合金于庚日）→
@@ -223,7 +229,8 @@ object TeShuGeJuCalculator {
                 val hs = (notAlly.map { it.element } + if (ruoGuanTou) listOf(Element.entries.first { it.controls == dayEl }) else emptyList()).distinct()
                 "局中${hs.joinToString("") { it.chinese }}极弱不能损伤日主而留**先天隐患**（假专旺）——岁运帮扶之便与旺势交战破格生灾，受抑去之则真。"
             } else ""
-            return TeShuGeJuResult(
+            val yieldSanQi = xieTou && fZhuan[partner0]!! >= 0.5 * fZhuan[dayEl]!! // 泄端透干让位三气（丙透火）
+            if (!yieldSanQi) return TeShuGeJuResult(
                 kind = TeShuKind.ZHUAN_WANG, name = geMing,
                 yongShen = yong, xi = listOf(dayEl.generates), ji = listOf(keEl, poEl),
                 fake = usedBianJie || jiaZhuan, restoreHint = "岁运${keEl.chinese}${poEl.chinese}破势则还原正格取用",
@@ -306,8 +313,11 @@ object TeShuGeJuCalculator {
             val ratio = minOf(fLQ[dayEl]!!, fLQ[partner]!!) / maxOf(fLQ[dayEl]!!, fLQ[partner]!!)
             // 三气领地：第三行有本气根且与两行成链（木生火生土——陈小姐戊午丙辰丙寅甲午三气成象非两气）——让位
             val sanQiLike = Element.entries.filter { it != dayEl && it != partner }.any { el ->
-                branches.any { it.element == el } &&
-                    (el.generates == dayEl || dayEl.generates == el || el.generates == partner || partner.generates == el)
+                val chains = el.generates == dayEl || dayEl.generates == el || el.generates == partner || partner.generates == el
+                // 透干让位仅限下游泄端（壬子壬寅甲寅丙寅之丙=木生火链尾）；上游生端（器皿例三甲印/池沼例一丙印）仍归两气
+                val downstream = dayEl.generates == el || partner.generates == el
+                (branches.any { it.element == el } && chains) ||
+                    (side.any { it.element == el && it.element !in neutralized } && downstream)
             }
             // 相克对结构守卫：双体柱（壬子丙午）或天干地支各尽两行（辛卯×4/乙未戊寅）或
             // 地支尽两行+他行总力≤1（器皿例三辛巳丁酉丙申甲午之甲印单透）；
@@ -372,7 +382,11 @@ object TeShuGeJuCalculator {
                 // 日干五合化为他行者（真化从格——丁卯壬寅两壬合两丁化木从印）优先化气格；
                 // 化神即日主行者化助自身仍三气（甲己化土于戊日——火土金例三）
                 val hua0 = huaShenElOf(bazi)
-                if (!(hua0 != null && hua0 != dayEl) && daySelfRoot && !yinGuoZhong && lines.all { f3t[it]!! >= 2 } &&
+                // 链尾（泄端）允许力1而透干（壬子壬寅甲寅丙寅火唯丙透"火最弱"）；中位弱行仍须≥2
+                val tailOk = f3t[lines[2]]!! >= 2 ||
+                    (f3t[lines[2]]!! >= 1 && bazi.stems.any { st -> st.element == lines[2] } && engine.verdict != DayStrength.WEAK &&
+                        lines[2] != dayEl && Element.entries.filter { it !in lines }.all { f3t[it]!! <= 0.5 })
+                if (!(hua0 != null && hua0 != dayEl) && daySelfRoot && !yinGuoZhong && tailOk && lines.dropLast(1).all { f3t[it]!! >= 2 } &&
                     Element.entries.filter { it !in lines }.all { f3t[it]!! <= 1.5 }) {
                     // 弱者在前（原始力），力平时链尾（泄端）优先为弱——己巳盘土3金3取金、辛丑戊戌壬子己酉金2水2取水
                     val sorted = lines.sortedWith(compareBy({ f3[it]!! }, { -lines.indexOf(it) }))
