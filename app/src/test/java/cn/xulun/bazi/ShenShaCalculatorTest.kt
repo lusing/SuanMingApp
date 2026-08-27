@@ -48,6 +48,7 @@ class ShenShaCalculatorTest {
                 item("禄神", "日支", EarthlyBranch.YOU),
                 item("驿马", "月支", EarthlyBranch.YIN),  // 年支辰组（申子辰→寅）查月支寅
                 item("将星", "日支", EarthlyBranch.YOU),
+                item("灾煞", "时支", EarthlyBranch.MAO),  // 日支酉组（巳酉丑→卯）查时支卯
                 item("劫煞", "月支", EarthlyBranch.YIN),
                 itemStem("月德合", "日干", HeavenlyStem.XIN),
                 itemStem("月德合", "时干", HeavenlyStem.XIN),

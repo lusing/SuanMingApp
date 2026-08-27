@@ -117,7 +117,8 @@ object ShenShaCalculator {
     private val yiMa = arrayOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN, EarthlyBranch.HAI)       // [2,5,8,11]
     private val huaGai = arrayOf(EarthlyBranch.CHEN, EarthlyBranch.WEI, EarthlyBranch.XU, EarthlyBranch.CHOU)    // [4,7,10,1]
     private val jiangXing = arrayOf(EarthlyBranch.ZI, EarthlyBranch.MAO, EarthlyBranch.WU, EarthlyBranch.YOU)    // [0,3,6,9]
-    private val wangShen = arrayOf(EarthlyBranch.HAI, EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN)   // [11,2,5,8]
+private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.ZI, EarthlyBranch.MAO)     // 灾煞=冲将星（白虎煞）
+        private val wangShen = arrayOf(EarthlyBranch.HAI, EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN)   // [11,2,5,8]
     private val jieSha = arrayOf(EarthlyBranch.SI, EarthlyBranch.SHEN, EarthlyBranch.HAI, EarthlyBranch.YIN)     // [5,8,11,2]
 
     // ── 月支三合局分组 → 月德贵人天干：申子辰→壬 亥卯未→甲 寅午戌→丙 巳酉丑→庚 ──
@@ -275,9 +276,11 @@ object ShenShaCalculator {
         if (yg != g) {
             bazi.pillars.drop(1).forEachIndexed { i, p ->
                 if (p.branch == jiangXing[yg]) out.add(ShenShaItem("将星", PillarBranchLabels[i + 1], branch = p.branch))
+                if (p.branch == zaiSha[yg]) out.add(ShenShaItem("灾煞", PillarBranchLabels[i + 1], branch = p.branch))
             }
         }
         scanBranch(bazi, "将星", jiangXing[g], out)
+        scanBranch(bazi, "灾煞", zaiSha[g], out)
         scanBranch(bazi, "亡神", wangShen[g], out)
         scanBranch(bazi, "劫煞", jieSha[g], out)
         // 月支起
