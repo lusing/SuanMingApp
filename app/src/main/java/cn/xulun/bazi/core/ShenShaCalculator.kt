@@ -42,6 +42,20 @@ object ShenShaCalculator {
         HeavenlyStem.XIN to listOf(EarthlyBranch.YIN, EarthlyBranch.WU),
     )
 
+    // ── 太极贵人（科名星，年日干查）：甲乙→子午 丙丁→卯酉 戊己→辰戌丑未(四库) 庚辛→寅亥 壬癸→巳申 ──
+    private val taiJi: Map<HeavenlyStem, List<EarthlyBranch>> = mapOf(
+        HeavenlyStem.JIA to listOf(EarthlyBranch.ZI, EarthlyBranch.WU),
+        HeavenlyStem.YI to listOf(EarthlyBranch.ZI, EarthlyBranch.WU),
+        HeavenlyStem.BING to listOf(EarthlyBranch.MAO, EarthlyBranch.YOU),
+        HeavenlyStem.DING to listOf(EarthlyBranch.MAO, EarthlyBranch.YOU),
+        HeavenlyStem.WU to listOf(EarthlyBranch.CHEN, EarthlyBranch.XU, EarthlyBranch.CHOU, EarthlyBranch.WEI),
+        HeavenlyStem.JI to listOf(EarthlyBranch.CHEN, EarthlyBranch.XU, EarthlyBranch.CHOU, EarthlyBranch.WEI),
+        HeavenlyStem.GENG to listOf(EarthlyBranch.YIN, EarthlyBranch.HAI),
+        HeavenlyStem.XIN to listOf(EarthlyBranch.YIN, EarthlyBranch.HAI),
+        HeavenlyStem.REN to listOf(EarthlyBranch.SI, EarthlyBranch.SHEN),
+        HeavenlyStem.GUI to listOf(EarthlyBranch.SI, EarthlyBranch.SHEN),
+    )
+
     // ── 日干 → 单支 ──
     // 文昌：甲巳 乙午 丙戊申 丁己酉 庚亥 辛子 壬寅 癸卯
     private val wenChang: Map<HeavenlyStem, EarthlyBranch> = mapOf(
@@ -133,8 +147,9 @@ object ShenShaCalculator {
         val mg = groupOf(monthBranch)
         val out = mutableListOf<ShenShaItem>()
 
-        // 日干起（天乙贵人年干、日干均可查——并集去重）
+        // 日干起（天乙贵人、太极贵人年干、日干均可查——并集去重）
         scanBranchAny(bazi, "天乙贵人", (tianYi.getValue(bazi.yearPillar.stem) + tianYi.getValue(dayStem)).distinct(), out)
+        scanBranchAny(bazi, "太极贵人", (taiJi.getValue(bazi.yearPillar.stem) + taiJi.getValue(dayStem)).distinct(), out)
         scanBranch(bazi, "文昌", wenChang.getValue(dayStem), out)
         scanBranch(bazi, "学堂", xueTang.getValue(dayStem), out)
         scanBranch(bazi, "羊刃", yangRen.getValue(dayStem), out)

@@ -22,6 +22,9 @@ class ShenShaCalculatorTest {
         assertEquals(
             listOf(
                 item("天乙贵人", "时支", EarthlyBranch.ZI),
+                item("太极贵人", "年支", EarthlyBranch.CHOU),
+                item("太极贵人", "日支", EarthlyBranch.WEI),
+                item("太极贵人", "时支", EarthlyBranch.ZI),
                 item("羊刃", "月支", EarthlyBranch.SI),
                 item("桃花", "时支", EarthlyBranch.ZI),
                 item("驿马", "月支", EarthlyBranch.SI),
@@ -38,6 +41,7 @@ class ShenShaCalculatorTest {
         assertEquals(
             listOf(
                 item("天乙贵人", "月支", EarthlyBranch.YIN),
+                item("太极贵人", "月支", EarthlyBranch.YIN),
                 item("禄神", "日支", EarthlyBranch.YOU),
                 item("将星", "日支", EarthlyBranch.YOU),
                 item("劫煞", "月支", EarthlyBranch.YIN),
