@@ -25,6 +25,14 @@ object TeShuGeJuCalculator {
         Element.WOOD to "曲直格", Element.EARTH to "稼穑格",
     )
 
+    /** 天干五合化神（甲己土、乙庚金、丙辛水、丁壬木、戊癸火）。 */
+    private fun huaShenOf(a: cn.xulun.bazi.model.HeavenlyStem, b: cn.xulun.bazi.model.HeavenlyStem): Element {
+        val lo = minOf(a.ordinal, b.ordinal)
+        return when (lo) {
+            0 -> Element.EARTH; 1 -> Element.METAL; 2 -> Element.WATER; 3 -> Element.WOOD; else -> Element.FIRE
+        }
+    }
+
     /** 五行相生序中 x 与 y 之间的通关神（x 生关，关生 y）。 */
     private fun tongGuan(x: Element, y: Element): Element? = Element.entries.firstOrNull { m ->
         x.generates == m && m.generates == y
@@ -99,10 +107,13 @@ object TeShuGeJuCalculator {
             val yinIsShi = fAdj[yinEl]!! >= 2.5 && fAdj[yinEl]!! >= maxOther
             val helperStems = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
                 .filter { it.element == dayEl || (it.element == yinEl && !yinIsShi) }
+            // 虚助判定：透干之印比被克泄殆尽（≥2.5×）且坐支不生扶（坐支本气生或同该干——壬坐申长生不算虚）
             val weakHelpers = helperStems.filter { s ->
                 val self = fAdj[s.element]!!
                 val foes = Element.entries.filter { e -> e.controls == s.element || s.element.controls == e }.sumOf { fAdj[it]!! }
-                foes >= 2.5 * self
+                val pl = listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).firstOrNull { it.stem === s }
+                val zuoSheng = pl?.let { it.branch.element.generates == s.element || it.branch.element == s.element } == true
+                foes >= 2.5 * self && !zuoSheng
             }
             // 截脚按实际柱位（枚举同值防首配错柱）；湿土（丑辰）不截水根——藏水之根（A5 教材例）
             val jieJiaoStems = helperStems.filter { s ->
@@ -113,10 +124,12 @@ object TeShuGeJuCalculator {
             }
             // 合化入势从真：透劫/印与另一透干五合且化神在从势内（癸合戊化火/乙合庚化金）——不以虚助论
             val heHuaRuShi = helperStems.filter { s ->
-                bazi.stems.any { o ->
+                val o = bazi.stems.firstOrNull { o ->
                     o !== bazi.dayPillar.stem && o !== s &&
                         (s.ordinal - o.ordinal + 10) % 5 == 0 && s.ordinal != o.ordinal
                 }
+                // 五合除名须化神行有力（≥2）：癸合戊化火(火4)从真；杨先生丁壬合化木(木1)不除仍假
+                o != null && fAdj[huaShenOf(s, o)]!! >= 2
             }
             val weakSet = (jieJiaoStems + weakHelpers).toSet() - heHuaRuShi.toSet()
             val fake = weakSet.isNotEmpty()
@@ -136,10 +149,11 @@ object TeShuGeJuCalculator {
                         for (e in others) {
                             if (e in chain) continue
                             val tou = bazi.stems.any { it.element == e && it !== bazi.dayPillar.stem }
+                            val benZhi = branches.any { it.element == e }
                             // 强行直入；弱端只顺下游（链生它，势之所趋）——上游饲喂者被吸尽不入；
-                            // 印行不入从链，唯力≥2 且透干者例外（火土金之印金——三气从格例二）
+                            // 印行不入从链，唯力≥2 且透干或本气支者例外（火土金之印金——三气从格例二）
                             val downstream = chain.any { c -> c.generates == e }
-                            val yinOk = e != yinEl || (fAdj[e]!! >= 2 && tou)
+                            val yinOk = e != yinEl || (fAdj[e]!! >= 2 && (tou || benZhi))
                             if (e in strong || (fAdj[e]!! >= 1 && downstream && yinOk)) {
                                 chain += e; grew = true
                             }
@@ -152,8 +166,12 @@ object TeShuGeJuCalculator {
                         for (e in others) {
                             if (e in chain) continue
                             val tou = bazi.stems.any { it.element == e && it !== bazi.dayPillar.stem }
-                            if (fAdj[e]!! >= 2 && tou && chain.any { c -> e.generates == c }) { chain += e; grew2 = true }
-                            else if (chain.size >= 2 && fAdj[e]!! >= 2 && tou && e != yinEl) { chain += e; grew2 = true }
+                            val benZhi = branches.any { it.element == e }
+                            val present = tou || benZhi
+                            if (fAdj[e]!! >= 2 && present && chain.any { c -> e.generates == c }) { chain += e; grew2 = true }
+                            else if (chain.size >= 2 && fAdj[e]!! >= 2 && present && e != yinEl) { chain += e; grew2 = true }
+                            // 链≥3行时门槛再降：力≥2，或月柱透该行（提纲司权——总表壬水1恃月令入；缪辰土1年支/李湘辛1时柱不入）
+                            else if (chain.size >= 3 && present && (fAdj[e]!! >= 2 || bazi.monthPillar.stem.element == e)) { chain += e; grew2 = true }
                         }
                     }
                     // 相生拓扑序：先生它者为链首

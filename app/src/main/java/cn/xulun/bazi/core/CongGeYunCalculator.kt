@@ -40,15 +40,24 @@ object CongGeYunCalculator {
         val strong = ps == pb || ps.generates == pb // 干支同心（干同支或干生支）
         when {
             // 支在从势而干克势 → 忌（戊子例：支子在杀而干戊克杀为逆）
-            pb in shi && ps !in shi && shi.any { ps.controls == it } -> {
+            pb in shi && ps !in shi && shi.any { ps.controls == it } && ps.controls == shi.first() -> {
                 verdict = YunVerdict.JI; newEl = null
                 basis = "岁运${p.fullName}：支${p.branch.chinese}虽在从势，而干${p.stem.chinese}（${ps.chinese}）克从势之行，逆乱格局气势——忌神"
             }
-            // 多行势且日主行不在势（纯两气/三气从）：补最弱行=纠偏用神，补其余行=失衡忌（"木土偏旺"皆忌）
+            // 多行势且日主行不在势（纯两气/三气/四气从）：补最弱行=纠偏用神，补其余行=失衡忌（"木土偏旺"皆忌）
+            // 弱行以去月令加成之力计（"旺而不强"——月令之力非党众之实），干支任一为弱行皆论补
             pb in shi && base.kind == cn.xulun.bazi.model.TeShuKind.DUO_CONG && shi.size >= 2 && dayEl !in shi -> {
-                val f0x = cn.xulun.bazi.core.BingYaoCalculator.forces(bazi)
+                val f0x = cn.xulun.bazi.core.BingYaoCalculator.forces(bazi).toMutableMap()
+                val yueEl = bazi.monthPillar.branch.element
+                f0x[yueEl] = (f0x[yueEl]!! - 2.0).coerceAtLeast(0.0)
+                // 结党加成：同行支对 C(n,2) + 干支同行柱——散布之力（庚+申）不如结党（两午/己未双体）
+                for (el in shi) {
+                    val n = bazi.branches.count { it.element == el }
+                    val st = bazi.pillars.count { it.stem.element == el && it.branch.element == el }
+                    f0x[el] = f0x[el]!! + n * (n - 1) / 2.0 + st
+                }
                 val ruo = shi.minBy { f0x[it]!! }
-                if (pb == ruo) {
+                if (pb == ruo || (ps == ruo && pb.generates == ps)) {
                     verdict = YunVerdict.YONG; newEl = null
                     basis = "岁运${p.fullName}：${pb.chinese}为从势中最弱之行，补之以纠原局之偏——用神到位（纠偏，平衡${shi.joinToString("") { it.chinese }}气势）"
                 } else {
