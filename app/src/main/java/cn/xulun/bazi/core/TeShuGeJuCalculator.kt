@@ -309,14 +309,18 @@ object TeShuGeJuCalculator {
                 branches.any { it.element == el } &&
                     (el.generates == dayEl || dayEl.generates == el || el.generates == partner || partner.generates == el)
             }
-            // 相克对结构守卫：两行须有双体柱（壬子壬子丁巳丙午之壬子丙午）或天干地支各尽两行
-            // （辛卯辛卯辛卯辛卯/乙未戊寅乙未戊寅）——癸丑丙辰癸未癸丑无此结构仍归病药
-            val structureOk = !isWarPair || bazi.pillars.any { it.stem.element == it.branch.element && (it.stem.element == dayEl || it.stem.element == partner) } ||
-                (bazi.stems.all { it.element == dayEl || it.element == partner } && branches.all { it.element == dayEl || it.element == partner })
+            // 相克对结构守卫：双体柱（壬子丙午）或天干地支各尽两行（辛卯×4/乙未戊寅）或
+            // 地支尽两行+他行总力≤1（器皿例三辛巳丁酉丙申甲午之甲印单透）；
+            // 另财行之神透干者不入（癸丑丙辰癸未癸丑之丙财——加重失衡，印透反可容——池沼例一）
+            val caiEl0 = dayEl.controls
+            val caiTou = isWarPair && side.any { it.element == caiEl0 && it.element !in neutralized && caiEl0 != dayEl && caiEl0 != partner }
+            val structureOk = !isWarPair || caiTou || bazi.pillars.any { it.stem.element == it.branch.element && (it.stem.element == dayEl || it.stem.element == partner) } ||
+                (bazi.stems.all { it.element == dayEl || it.element == partner } && branches.all { it.element == dayEl || it.element == partner }) ||
+                (branches.all { it.element == dayEl || it.element == partner } && thirdForce <= 1.0)
             // 自立条件：有效根或比劫两透（庚申己丑戊戌庚申之戌被丑刑——干戊己两透亦可自立）
             val selfStanding = hasBenQiRoot || bazi.stems.count { it.element == dayEl } >= 2
-            val ratioOk = if (isWarPair) ratio >= 0.6 else ratio >= 0.4
-            if (!tgTou && !sanQiLike && structureOk && selfStanding && fLQ[dayEl]!! >= 2.0 && fLQ[partner]!! >= 2.0 && ratioOk &&
+            val ratioOk = ratio >= 0.4
+            if (!tgTou && !caiTou && !sanQiLike && structureOk && selfStanding && fLQ[dayEl]!! >= 2.0 && fLQ[partner]!! >= 2.0 && ratioOk &&
                 (fLQ[dayEl]!! + fLQ[partner]!!) >= 0.8 * totalLQ && othersOk) {
                 return liangQiOf(bazi, dayEl, partner, fLQ)
             }
