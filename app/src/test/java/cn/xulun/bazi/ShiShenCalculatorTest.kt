@@ -60,4 +60,28 @@ class ShiShenCalculatorTest {
         val items = ShiShenCalculator.analyze(b).items
         assertTrue("每条寓意带喜忌注记", items.all { it.xiJi in listOf("喜用", "忌神", "中性") })
     }
+
+    @Test fun `年干偏印透出（月干非印与生母缘薄）`() {
+        // 壬子 壬寅 甲戌 乙亥? 年壬对甲=偏印（阳生阳）
+        val b = chartOf(
+            HeavenlyStem.REN, EarthlyBranch.ZI, HeavenlyStem.REN, EarthlyBranch.YIN,
+            HeavenlyStem.JIA, EarthlyBranch.XU, HeavenlyStem.YI, EarthlyBranch.HAI)
+        val items = ShiShenCalculator.analyze(b).items
+        assertTrue("年干偏印：${'$'}{items.map { it.label }}",
+            items.any { it.label.startsWith("年干偏印") && it.meaning.contains("继母") })
+    }
+
+    @Test fun `偏印坐支组合（枭神夺食）`() {
+        // 庚戌 戊子 甲申 丙寅——月干戊对甲=偏财；时丙=食神。
+        // 偏印坐食神盘：壬辰 壬子 庚戌 戊寅? 壬对庚=食神。
+        // 用：甲寅 丙寅 戊戌 甲寅? 丙对戊=偏印坐寅（甲=七杀）
+        // 偏印坐食神：透干偏印+支藏本气食神。戊日偏印=丙，食神=庚。
+        // 盘：丙辰 庚寅 戊申 庚申——年干丙（偏印）坐辰（戊=比肩）→偏印坐比肩
+        val b = chartOf(
+            HeavenlyStem.BING, EarthlyBranch.CHEN, HeavenlyStem.GENG, EarthlyBranch.YIN,
+            HeavenlyStem.WU, EarthlyBranch.SHEN, HeavenlyStem.GENG, EarthlyBranch.SHEN)
+        val items = ShiShenCalculator.analyze(b).items
+        assertTrue("偏印坐支：${'$'}{items.map { it.label }}",
+            items.any { it.label.contains("偏印坐") || it.meaning.contains("枭神") })
+    }
 }
