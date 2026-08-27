@@ -81,21 +81,40 @@ object TeShuGeJuCalculator {
         }
         val allAlly = branches.all { allyBranch(it) }
         // 专旺份额按变节力转移计（巳在巳酉丑金局内其火力归金——乙庚化金例二）。
-        // 力转移仅计三合/三会全局：六合/半合若也转移会把日主微根喂过 2.5 门槛——
-        // 丁未丙午戊午丁巳（午未合土）本为从印格，不可误判土专旺（合而不化，从旺不从我）
+        // 三合/三会全局直转；半合/六合须**合向强方**（化神行力≥被转行）方化——
+        // 两午夹戌半局成化（丙午戊戌丙午癸巳，火5≥土4）；午未合而火6强于土3则不化
+        // （丁未丙午戊午丁巳本为从印格——合而不化，从旺不从我）
         val fZhuan = f.toMutableMap()
         for ((bs, el) in (sanHe.map { it.branches.toSet() to it.resultElement } + sanHui.map { it.branches.toSet() to it.resultElement })) {
             for (b in bs) if (b.element != el && b in branches) { fZhuan[b.element] = fZhuan[b.element]!! - 1; fZhuan[el] = fZhuan[el]!! + 1 }
         }
+        for ((bs, el) in (heHuaR.branchBanHeList.map { setOf(it.branch1, it.branch2) to it.resultElement } +
+            heHuaR.branchLiuHeList.map { setOf(it.branch1, it.branch2) to it.resultElement }).distinctBy { it.first to it.second }) {
+            val srcs = bs.filter { it.element != el && it in branches }.map { it.element }.distinct()
+            if (srcs.isNotEmpty() && srcs.all { s -> f[s]!! <= f[el]!! }) {
+                for (b in bs) if (b.element != el && b in branches) { fZhuan[b.element] = fZhuan[b.element]!! - 1; fZhuan[el] = fZhuan[el]!! + 1 }
+                val ruler = bazi.monthPillar.branch
+                if (ruler in bs && ruler.element != el) { fZhuan[ruler.element] = fZhuan[ruler.element]!! - 2; fZhuan[el] = fZhuan[el]!! + 2 }
+            }
+        }
         val totalZhuan = Element.entries.sumOf { fZhuan[it]!! }.coerceAtLeast(0.001)
         // 克耗透干：与日干五合且化神即日主行（甲己合化土于己日）者不算克透——化气格（己未甲戌己丑戊辰例）；
+        // 与**任意透干**五合且化神即日主行乘旺（癸合戊化火于丙日——丙午戊戌丙午癸巳例三）亦不破格；
+        // 与日干五合而化神无力——合而不化贪合忘克（壬合丁于丁日——壬午丙午丁巳丙午例四）不破格；
         // 泄耗透干坐支截脚（支克干）力微不破格——乙卯癸未乙卯丁亥之丁坐亥
         val chouKeTou = bazi.stems.any {
             (it.element == dayEl.controls || it.element.controls == dayEl) && it !== bazi.dayPillar.stem &&
                 !(run {
                     val partner = bazi.dayPillar.stem
                     (it.ordinal - partner.ordinal + 10) % 5 == 0 && it.ordinal != partner.ordinal &&
-                        huaShenOf(it, partner) == dayEl
+                        (huaShenOf(it, partner) == dayEl || fZhuan[huaShenOf(it, partner)]!! < 2.5)
+                }) &&
+                !(run {
+                    val others = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+                        .filter { o -> o !== it }
+                    others.any { o ->
+                        (it.ordinal - o.ordinal + 10) % 5 == 0 && huaShenOf(it, o) == dayEl && fZhuan[dayEl]!! >= 2.5
+                    }
                 }) &&
                 !(run {
                     val pl = listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).firstOrNull { p -> p.stem === it }
