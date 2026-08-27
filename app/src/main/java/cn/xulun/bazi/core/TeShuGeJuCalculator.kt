@@ -223,9 +223,14 @@ object TeShuGeJuCalculator {
                     val guanEl0 = Element.entries.first { it.controls == dayEl }
                     val guanTouCount = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
                         .count { it.element == guanEl0 }
+                    // 化气格豁免：官干与日干五合且化神将入从势（丁壬合化木）——官即合伴非破格之神
+                    val huaQiExempt = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem).any { g ->
+                        g.element == guanEl0 && (g.ordinal - bazi.dayPillar.stem.ordinal + 10) % 5 == 0 && g.ordinal != bazi.dayPillar.stem.ordinal &&
+                            fAdj[huaShenOf(g, bazi.dayPillar.stem)]!! >= 2.5
+                    }
                     val zhiGuanEl = Element.entries.first { it.controls == guanEl0 }
                     val guanCrushed = fAdj[zhiGuanEl]!! >= 2.5 * fAdj[guanEl0]!!
-                    if (fAdj[guanEl0]!! < 2.5 && guanTouCount >= 2 && !guanCrushed) {
+                    if (fAdj[guanEl0]!! < 2.5 && guanTouCount >= 2 && !guanCrushed && !huaQiExempt) {
                         // 落入三气成象/正格
                     } else {
                     // 岁运还原：日主得禄之支（如庚禄在申）或印得本气根（如壬通根子生日干——朱先生丙子年）→ 回正格身弱
@@ -269,7 +274,9 @@ object TeShuGeJuCalculator {
                 if (start == end) continue
                 val lines = listOf(start, mid, end)
                 if (dayEl !in lines) continue
-                if (lines.all { f[it]!! >= 2 } && Element.entries.filter { it !in lines }.all { f[it]!! <= 1.5 }) {
+                // 印重身轻（印≥日×2.5，身弱不受生）→从印非三气（丁卯壬寅丁卯壬寅）；潮州李印:日=4:2 仍三气
+                val yinGuoZhong = f[yinEl]!! >= f[dayEl]!! * 2.5
+                if (!yinGuoZhong && lines.all { f[it]!! >= 2 } && Element.entries.filter { it !in lines }.all { f[it]!! <= 1.5 }) {
                     val sorted = lines.sortedBy { f[it]!! } // 弱者在前
                     // 破格之行值运有力 → 正格取用
                     val poLines = Element.entries.filter { it !in lines }

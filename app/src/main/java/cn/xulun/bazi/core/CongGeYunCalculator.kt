@@ -71,12 +71,13 @@ object CongGeYunCalculator {
                     f0x[el] = f0x[el]!! + n * (n - 1) / 2.0 + st
                 }
                 val ruo = shi.minBy { f0x[it]!! }
-                // 势首克日主（从杀式链含印行）→按单从论：势首=用、生势首=喜（乙庚化金例二：金用土喜）
+                // 势首克日主（从杀式）或势首生身（从印式）→按单从论：势首=用、生势首=喜
                 val shiShou = shi.maxBy { f0x[it]!! }
-                if (shiShou.controls == dayEl && pb == shiShou) {
+                val danCong = shiShou.controls == dayEl || shiShou.generates == dayEl
+                if (danCong && pb == shiShou) {
                     verdict = YunVerdict.YONG; newEl = null
                     basis = "岁运" + p.fullName + "：" + pb.chinese + "为从势之首（克身之神），助旺格局——用神到位"
-                } else if (shiShou.controls == dayEl && pb.generates == shiShou && pb != yinEl) {
+                } else if (danCong && pb.generates == shiShou && pb != yinEl) {
                     verdict = YunVerdict.XI; newEl = null
                     basis = "岁运" + p.fullName + "：" + pb.chinese + "生扶势首（" + godName(pb, dayEl) + "生官杀）——喜神到位"
                 } else if (pb == ruo || (ps == ruo && pb.generates == ps)) {
