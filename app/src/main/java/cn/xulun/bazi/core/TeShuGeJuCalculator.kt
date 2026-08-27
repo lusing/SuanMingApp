@@ -163,9 +163,9 @@ object TeShuGeJuCalculator {
                         if ((xKeY || yKeX) && kotlin.math.abs(fAdj[a]!! - fAdj[b]!!) <= 1.5) {
                             val (winner, loser) = if (xKeY) a to b else b to a
                             val guan = tongGuan(winner, loser)
-                            // 战局优先仅当：通关神即日主（弃命从战），或通关行全然无力（<1）
-                            val guanWeak = fAdj[guan]!! < 1
-                            if (guan != null && (guan == dayEl || guanWeak)) {
+                            // 战局仅当：通关神即日主（弃命取己通关——王先生式）；
+                            // 通关神非日主者（火金器皿相战式）入两气从格——多从格例三
+                            if (guan != null && guan == dayEl) {
                                 // 岁运还原：日主得禄之支
                                 if (extraPillars.any { it.branch.element == dayEl }) return null
                                 return TeShuGeJuResult(

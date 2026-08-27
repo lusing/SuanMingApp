@@ -44,13 +44,30 @@ object CongGeYunCalculator {
                 verdict = YunVerdict.JI; newEl = null
                 basis = "岁运${p.fullName}：支${p.branch.chinese}虽在从势，而干${p.stem.chinese}（${ps.chinese}）克从势之行，逆乱格局气势——忌神"
             }
-            // 支在从势 → 用神到位
+            // 多行势且日主行不在势（纯两气/三气从）：补弱行=纠偏用神，补最旺行=失衡忌（两气从格总表例）
+            pb in shi && shi.size >= 2 && dayEl !in shi -> {
+                val f0x = cn.xulun.bazi.core.BingYaoCalculator.forces(bazi)
+                val wang = shi.maxBy { f0x[it]!! }
+                if (pb == wang) {
+                    verdict = YunVerdict.JI; newEl = null
+                    basis = "岁运${p.fullName}：${pb.chinese}为从势中最旺之行，再补之使${shi.joinToString("") { it.chinese }}气势失衡——忌神（宜补弱行纠偏）"
+                } else {
+                    verdict = YunVerdict.YONG; newEl = null
+                    basis = "岁运${p.fullName}：${pb.chinese}为从势中偏弱之行，补之以纠原局之偏——用神到位（纠偏）"
+                }
+            }
+            // 支在从势 → 用神到位（助旺格局）
             pb in shi -> {
                 verdict = YunVerdict.YONG; newEl = null
                 basis = "岁运${p.fullName}之支${p.branch.chinese}（${pb.chinese}）在从势内，助旺格局——用神到位"
             }
-            // 支为日主本气行（比劫介入三档）：假从遇根/比劫力不足（含运柱）→还原正格（母慈灭子）；力足→两气转格
+            // 支为日主本气行：多行从且日主行不在势（两气从）→强比劫助身还原正格（总表例3）；
+            // 否则三档：假从遇根/力不足→还原（母慈灭子），力足→两气转格
             pb == dayEl -> {
+                if (shi.size >= 2 && dayEl !in shi) {
+                    verdict = YunVerdict.HUAN_YUAN; newEl = null
+                    basis = "岁运${p.fullName}：比劫（${dayEl.chinese}）强旺助日主抵抗${shi.joinToString("") { it.chinese }}之耗克——还原正格（身弱财官重，取印比为用）"
+                } else {
                 val f0 = cn.xulun.bazi.core.BingYaoCalculator.forces(bazi)
                 val yunTong = (if (ps == dayEl) 1 else 0) + (if (pb == dayEl) 1 else 0)
                 val biLi = f0[dayEl]!! + yunTong
@@ -63,6 +80,7 @@ object CongGeYunCalculator {
                 } else {
                     verdict = YunVerdict.ZHUAN_GE; newEl = dayEl
                     basis = "岁运${p.fullName}：比劫（${dayEl.chinese}）助日主力足（${biLi} 对 势${shiLi}），与势成两停——格局变身为势两气成象，取比劫平衡气势"
+                }
                 }
             }
             // 克势之行（壬寅例：官克财势/壬戌例：衰土克杀势）→强转两气/弱忌

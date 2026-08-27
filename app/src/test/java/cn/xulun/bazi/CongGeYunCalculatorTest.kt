@@ -493,4 +493,68 @@ class CongGeYunCalculatorTest {
             Pillar(HeavenlyStem.REN, EarthlyBranch.XU), Pillar(HeavenlyStem.XIN, EarthlyBranch.YOU)))
         assertTrue("辛酉年应还原或转格：${r2?.verdict}", r2?.verdict == YunVerdict.HUAN_YUAN || r2?.verdict == YunVerdict.ZHUAN_GE)
     }
+
+    // ════════ 多从格·两气从格 ════════
+
+    // ── 成格三例 + 壬子例 ──
+
+    @Test fun `两气成格一 丙寅甲午戊午乙卯 从木火`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.BING, EarthlyBranch.YIN, HeavenlyStem.JIA, EarthlyBranch.WU,
+            HeavenlyStem.WU, EarthlyBranch.WU, HeavenlyStem.YI, EarthlyBranch.MAO))
+        assertTrue("应判从（木火两气）：$r", r != null && r.kind != cn.xulun.bazi.model.TeShuKind.ZHAN_JU)
+    }
+
+    @Test fun `两气成格二 戊申辛酉甲辰戊辰 从土金`() {
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.WU, EarthlyBranch.SHEN, HeavenlyStem.XIN, EarthlyBranch.YOU,
+            HeavenlyStem.JIA, EarthlyBranch.CHEN, HeavenlyStem.WU, EarthlyBranch.CHEN))
+        assertTrue("应判从（土金两气）：$r", r != null)
+    }
+
+    @Test fun `两气成格三 丙午丁酉甲申庚午 火金器皿非战局`() {
+        // 火金相战式两气从（器皿之局）——通关神水弱且非日主，不入战局分支
+        val r = TeShuGeJuCalculator.analyze(chartOf(
+            HeavenlyStem.BING, EarthlyBranch.WU, HeavenlyStem.DING, EarthlyBranch.YOU,
+            HeavenlyStem.JIA, EarthlyBranch.SHEN, HeavenlyStem.GENG, EarthlyBranch.WU))
+        assertTrue("应判两气从而非战局：$r", r != null && r.kind == cn.xulun.bazi.model.TeShuKind.DUO_CONG)
+    }
+
+    // ── 岁运喜忌（壬子 壬子 戊子 甲寅，从水木） ──
+
+    private val liangQi = chartOf(
+        HeavenlyStem.REN, EarthlyBranch.ZI, HeavenlyStem.REN, EarthlyBranch.ZI,
+        HeavenlyStem.WU, EarthlyBranch.ZI, HeavenlyStem.JIA, EarthlyBranch.YIN)
+
+    private fun vl(p: Pillar): YunVerdict? = CongGeYunCalculator.analyze(liangQi, listOf(p))?.verdict
+
+    @Test fun `两气总表 纠偏旺木为用 旺水失衡为忌`() {
+        // (1) 甲寅乙卯旺木纠偏——用；壬子癸亥旺水——失衡忌
+        assertEquals(YunVerdict.YONG, vl(Pillar(HeavenlyStem.JIA, EarthlyBranch.YIN)))
+        assertEquals(YunVerdict.YONG, vl(Pillar(HeavenlyStem.YI, EarthlyBranch.MAO)))
+        assertEquals("旺水使水木失衡应为忌", YunVerdict.JI, vl(Pillar(HeavenlyStem.REN, EarthlyBranch.ZI)))
+        assertEquals(YunVerdict.JI, vl(Pillar(HeavenlyStem.GUI, EarthlyBranch.HAI)))
+    }
+
+    @Test fun `两气总表 旺金组三气转格 衰金忌`() {
+        // (2) 庚申辛酉旺金——金水木三气成象（转格）；衰金（壬申）——忌
+        val r = CongGeYunCalculator.analyze(liangQi, listOf(Pillar(HeavenlyStem.GENG, EarthlyBranch.SHEN)))!!
+        assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
+        assertEquals(Element.METAL, r.newYongShen)
+        assertEquals(YunVerdict.JI, vl(Pillar(HeavenlyStem.REN, EarthlyBranch.SHEN)))
+    }
+
+    @Test fun `两气总表 强土还原正格 衰土忌`() {
+        // (3) 戊戌己未强土——还原正格（身弱财官重）；衰土（丙戌干不生支）——忌
+        assertEquals(YunVerdict.HUAN_YUAN, vl(Pillar(HeavenlyStem.WU, EarthlyBranch.XU)))
+        assertEquals(YunVerdict.HUAN_YUAN, vl(Pillar(HeavenlyStem.JI, EarthlyBranch.WEI)))
+    }
+
+    @Test fun `两气总表 旺火引泄秀气转三气 衰火忌`() {
+        // (4) 丙午丁巳强火——水木火三气成象；衰火——忌
+        val r = CongGeYunCalculator.analyze(liangQi, listOf(Pillar(HeavenlyStem.BING, EarthlyBranch.WU)))!!
+        assertEquals(YunVerdict.ZHUAN_GE, r.verdict)
+        assertEquals(Element.FIRE, r.newYongShen)
+        assertEquals(YunVerdict.JI, vl(Pillar(HeavenlyStem.REN, EarthlyBranch.WU)))
+    }
 }
