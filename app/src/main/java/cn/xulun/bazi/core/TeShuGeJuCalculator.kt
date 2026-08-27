@@ -134,8 +134,11 @@ object TeShuGeJuCalculator {
             if (broken) return null
             val yong = listOf(dayEl, yinEl, dayEl.generates) // 比印首选，有力食伤次之
             // 双档命名：全三合/三会成局且月令会宫（木：寅卯辰）或化气五合成格（乙庚合金于庚日）→
-            // 曲直/炎上/稼穑/从革/润下（成格条件与层次更高）；否则"X专旺格"（普通档——亥卯未全合而月令未不在会宫亦普通）
-            val fullJu = sanHe.any { it.resultElement == dayEl } || sanHui.any { it.resultElement == dayEl }
+            // 曲直/炎上/稼穑/从革/润下（成格条件与层次更高）；否则"X专旺格"（普通档——亥卯未全合而月令未不在会宫亦普通）。
+            // 土之会局从严：辰戌丑未须四库全，或丑未戌三刑局——丑戌辰三支（缺未）只算普通档（己丑甲戌戊戌丙辰例三）
+            val fullJu = sanHe.any { it.resultElement == dayEl } ||
+                sanHui.any { it.resultElement == dayEl && (dayEl != Element.EARTH || it.branches.toSet().size >= 4) } ||
+                (dayEl == Element.EARTH && setOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI).all { it in branches })
             val gong = when (dayEl) {
                 Element.WOOD -> setOf(EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN)
                 Element.FIRE -> setOf(EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI)

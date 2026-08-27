@@ -202,6 +202,11 @@ object CongGeYunCalculator {
         else -> "官杀"
     }
 
+    /** 天干五合化神（lo=两干序号较小者：0甲己土/1乙庚金/2丙辛水/3丁壬木/4戊癸火）。 */
+    private fun heEl(lo: Int): Element = when (lo) {
+        0 -> Element.EARTH; 1 -> Element.METAL; 2 -> Element.WATER; 3 -> Element.WOOD; else -> Element.FIRE
+    }
+
     /**
      * 专旺格行运喜忌。理论见 `.shengke-reference.md` 第五四节(三)：
      * - 比劫（双体或干支覆载相生）→ 用神到位；
@@ -239,7 +244,7 @@ object CongGeYunCalculator {
             p.branch in g && el == dayEl && g.all { it in bazi.branches || it == p.branch } && !bazi.branches.toSet().containsAll(g)
         } || (dayEl == Element.WOOD && ((p.branch == EarthlyBranch.YIN && EarthlyBranch.HAI in bazi.branches) ||
             (p.branch == EarthlyBranch.HAI && EarthlyBranch.YIN in bazi.branches)))
-        // 岁运支被原局半合（中神在原局）/半会拉向专旺行——合化不完全
+        // 岁运支被原局半合（中神在原局）/半会/六合拉向专旺行——合化不完全或被合住
         val pulledPartial = run {
             if (pb == dayEl || pb == yinEl) return@run false
             val zhong = mapOf(
@@ -257,7 +262,42 @@ object CongGeYunCalculator {
                 else -> emptyList<Set<EarthlyBranch>>()
             }
             val banHui = gong.any { g -> p.branch in g && g.any { it in bazi.branches && it != p.branch } }
-            banHe || banHui
+            // 六合向专旺行（子丑合土——壬子庚子之水被原局丑合住，财星力减）
+            val liuMap = listOf(
+                (EarthlyBranch.ZI to EarthlyBranch.CHOU) to Element.EARTH,
+                (EarthlyBranch.YIN to EarthlyBranch.HAI) to Element.WOOD,
+                (EarthlyBranch.MAO to EarthlyBranch.XU) to Element.FIRE,
+                (EarthlyBranch.CHEN to EarthlyBranch.YOU) to Element.METAL,
+                (EarthlyBranch.SI to EarthlyBranch.SHEN) to Element.WATER,
+                (EarthlyBranch.WU to EarthlyBranch.WEI) to Element.EARTH,
+            )
+            val liuPull = liuMap.any { (pr, el) ->
+                el == dayEl && (p.branch == pr.first || p.branch == pr.second) &&
+                    (if (p.branch == pr.first) pr.second in bazi.branches else pr.first in bazi.branches)
+            }
+            banHe || banHui || liuPull
+        }
+        // 岁运干与原局透干（含日干）五合化神即日主行——贪合化势顺局：
+        // 甲子与日柱己丑天地合化土（格局未变仍取土为用）；甲辰甲戌甲合己化土而支归比劫——不以忌论
+        val heHuaShunJu = run {
+            val heOk = listOf(bazi.dayPillar.stem, bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+                .filter { it !== p.stem }
+                .any { o ->
+                    (p.stem.ordinal - o.ordinal + 10) % 5 == 0 && p.stem.ordinal != o.ordinal &&
+                        heEl(minOf(p.stem.ordinal, o.ordinal)) == dayEl
+                }
+            val zhiHe = listOf(
+                (EarthlyBranch.ZI to EarthlyBranch.CHOU) to Element.EARTH,
+                (EarthlyBranch.YIN to EarthlyBranch.HAI) to Element.WOOD,
+                (EarthlyBranch.MAO to EarthlyBranch.XU) to Element.FIRE,
+                (EarthlyBranch.CHEN to EarthlyBranch.YOU) to Element.METAL,
+                (EarthlyBranch.SI to EarthlyBranch.SHEN) to Element.WATER,
+                (EarthlyBranch.WU to EarthlyBranch.WEI) to Element.EARTH,
+            ).any { (pr, el) ->
+                el == dayEl && (p.branch == pr.first || p.branch == pr.second) &&
+                    (if (p.branch == pr.first) pr.second in bazi.branches else pr.first in bazi.branches)
+            }
+            heOk && (pb == dayEl || pb == yinEl || zhiHe)
         }
 
         val verdict: YunVerdict
@@ -268,6 +308,11 @@ object CongGeYunCalculator {
             (pb == dayEl && (ps == dayEl || ps == yinEl)) || (ps == dayEl && (pb == dayEl || pb == yinEl)) -> {
                 verdict = YunVerdict.YONG; newEl = null
                 basis = "岁运${p.fullName}：干支比劫覆载相生，强盛${dayEl.chinese}气加旺格局气势——用神到位"
+            }
+            // 五合化势顺局（化神即日主行）：天地合化或支归比印——格局未变仍取日主为用
+            heHuaShunJu -> {
+                verdict = YunVerdict.YONG; newEl = null
+                basis = "岁运${p.fullName}：干${p.stem.chinese}与原局相合化${dayEl.chinese}（贪合化势，支亦归局），格局未变仍取${dayEl.chinese}为用神——不以忌论"
             }
             // 支合入本局成全三合/三会/六合而干为破格之神衰微（支归局+干顺从）→ 喜用（己亥例）
             joinsFull && pb != dayEl && pb != yinEl && ps != dayEl && ps != yinEl -> {
