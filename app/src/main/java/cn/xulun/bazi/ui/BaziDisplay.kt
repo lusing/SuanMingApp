@@ -45,6 +45,7 @@ import cn.xulun.bazi.ui.components.GeJuBanner
 import cn.xulun.bazi.ui.components.HeHuaSection
 import cn.xulun.bazi.ui.components.JieChongSection
 import cn.xulun.bazi.ui.components.LiuQinSection
+import cn.xulun.bazi.ui.components.HunYinSection
 import cn.xulun.bazi.ui.components.MarriageSection
 import cn.xulun.bazi.ui.components.PillarCard
 import cn.xulun.bazi.ui.components.QuYunSection
@@ -167,6 +168,9 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
             CaiYunSection(result = cn.xulun.bazi.core.CaiYunCalculator.analyze(result, gender, dy))
         }
         MarriageSection(result = MarriageCalculator.analyze(result, gender))
+        daYun?.let { dy ->
+            HunYinSection(result = cn.xulun.bazi.core.HunYinCalculator.analyze(result, gender, dy))
+        }
         LiuQinSection(result = cn.xulun.bazi.core.LiuQinCalculator.analyze(result, gender))
         StudySection(result = StudyCalculator.analyze(result, daYun))
         selection?.let { sel ->
