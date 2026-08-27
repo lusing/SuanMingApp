@@ -67,27 +67,40 @@ object TeShuGeJuCalculator {
 
         // ── 1. 专旺：四支皆同我/生我（含变节），干无克耗 ──
         val sanHe = DiZhiRelationCalculator.analyze(bazi).sanHeList
-        val sanHui = HeHuaCalculator.analyze(bazi).branchSanHuiList
+        val heHuaR = HeHuaCalculator.analyze(bazi)
+        val sanHui = heHuaR.branchSanHuiList
+        // 变节向导全集：三合/三会/半合(需中神)/六合（卯未半合木、寅亥六合木式——专旺格成格条件二）
+        val heJuAll = sanHe.map { it.branches.toSet() to it.resultElement } +
+            sanHui.map { it.branches.toSet() to it.resultElement } +
+            heHuaR.branchBanHeList.map { setOf(it.branch1, it.branch2) to it.resultElement } +
+            heHuaR.branchLiuHeList.map { setOf(it.branch1, it.branch2) to it.resultElement }
         fun allyBranch(b: EarthlyBranch): Boolean {
             if (b.element == dayEl || b.element == yinEl) return true
             // 变节向同我/生我之合局成员
-            val heJu = sanHe.map { it.branches to it.resultElement } + sanHui.map { it.branches to it.resultElement }
-            return heJu.any { (bs, el) -> b in bs && (el == dayEl || el == yinEl) }
+            return heJuAll.any { (bs, el) -> b in bs && (el == dayEl || el == yinEl) }
         }
         val allAlly = branches.all { allyBranch(it) }
-        // 专旺份额亦按变节力转移计（巳在巳酉丑金局内其火力归金——乙庚化金例二）
+        // 专旺份额按变节力转移计（巳在巳酉丑金局内其火力归金——乙庚化金例二）。
+        // 力转移仅计三合/三会全局：六合/半合若也转移会把日主微根喂过 2.5 门槛——
+        // 丁未丙午戊午丁巳（午未合土）本为从印格，不可误判土专旺（合而不化，从旺不从我）
         val fZhuan = f.toMutableMap()
-        for ((bs, el) in (sanHe.map { it.branches to it.resultElement } + sanHui.map { it.branches to it.resultElement })) {
+        for ((bs, el) in (sanHe.map { it.branches.toSet() to it.resultElement } + sanHui.map { it.branches.toSet() to it.resultElement })) {
             for (b in bs) if (b.element != el && b in branches) { fZhuan[b.element] = fZhuan[b.element]!! - 1; fZhuan[el] = fZhuan[el]!! + 1 }
         }
         val totalZhuan = Element.entries.sumOf { fZhuan[it]!! }.coerceAtLeast(0.001)
-        // 克耗透干：与日干五合且化神即日主行（甲己合化土于己日）者不算克透——化气格（己未甲戌己丑戊辰例）
+        // 克耗透干：与日干五合且化神即日主行（甲己合化土于己日）者不算克透——化气格（己未甲戌己丑戊辰例）；
+        // 泄耗透干坐支截脚（支克干）力微不破格——乙卯癸未乙卯丁亥之丁坐亥
         val chouKeTou = bazi.stems.any {
             (it.element == dayEl.controls || it.element.controls == dayEl) && it !== bazi.dayPillar.stem &&
                 !(run {
                     val partner = bazi.dayPillar.stem
                     (it.ordinal - partner.ordinal + 10) % 5 == 0 && it.ordinal != partner.ordinal &&
                         huaShenOf(it, partner) == dayEl
+                }) &&
+                !(run {
+                    val pl = listOf(bazi.yearPillar, bazi.monthPillar, bazi.hourPillar).firstOrNull { p -> p.stem === it }
+                    val jieJiao = pl != null && pl.branch.element.controls == it.element
+                    jieJiao && (it.element == dayEl.controls || it.element == dayEl.generates)
                 })
         }
         // 专旺须日主自身有力（≥2.5）——日主力微而印众者为从印非专旺（张先生/印总表例）
@@ -101,8 +114,23 @@ object TeShuGeJuCalculator {
             }
             if (broken) return null
             val yong = listOf(dayEl, yinEl, dayEl.generates) // 比印首选，有力食伤次之
+            // 双档命名：全三合/三会成局且月令会宫（木：寅卯辰）或化气五合成格（乙庚合金于庚日）→
+            // 曲直/炎上/稼穑/从革/润下（成格条件与层次更高）；否则"X专旺格"（普通档——亥卯未全合而月令未不在会宫亦普通）
+            val fullJu = sanHe.any { it.resultElement == dayEl } || sanHui.any { it.resultElement == dayEl }
+            val gong = when (dayEl) {
+                Element.WOOD -> setOf(EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN)
+                Element.FIRE -> setOf(EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI)
+                Element.METAL -> setOf(EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU)
+                Element.WATER -> setOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU)
+                else -> setOf(EarthlyBranch.CHEN, EarthlyBranch.XU, EarthlyBranch.CHOU, EarthlyBranch.WEI)
+            }
+            val huaQiCheng = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem).any { g ->
+                (g.ordinal - bazi.dayPillar.stem.ordinal + 10) % 5 == 0 && g.ordinal != bazi.dayPillar.stem.ordinal &&
+                    huaShenOf(g, bazi.dayPillar.stem) == dayEl && fZhuan[dayEl]!! >= 2.5
+            }
+            val geMing = if ((fullJu && bazi.monthPillar.branch in gong) || huaQiCheng) GRID_NAME[dayEl]!! else "${dayEl.chinese}专旺格"
             return TeShuGeJuResult(
-                kind = TeShuKind.ZHUAN_WANG, name = GRID_NAME[dayEl]!!,
+                kind = TeShuKind.ZHUAN_WANG, name = geMing,
                 yongShen = yong, xi = listOf(dayEl.generates), ji = listOf(keEl, poEl),
                 fake = usedBianJie, restoreHint = "岁运${keEl.chinese}${poEl.chinese}破势则还原正格取用",
                 basis = "四柱干支与日主一气${if (usedBianJie) "（有变节支，格不太标准）" else ""}，" +

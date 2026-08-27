@@ -31,6 +31,9 @@ object CongGeYunCalculator {
         val ps = p.stem.element
         val yinEl = Element.entries.first { it.generates == dayEl }
 
+        // 专旺格行运另有专梯（比劫=用/印=喜/官财食强则两停转格弱则忌——第五四节(三)）
+        if (base.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG) return zhuanWangYun(bazi, base, p)
+
         val strong = ps == pb || ps.generates == pb // 干支同心（干同支或干生支）
         // 坐支被原局半合/六合拉向从势（化神在势）——岁干之根随支被拉走（姚先生辛亥：亥卯半合木）
         val banHeLaZou = run {
@@ -197,5 +200,124 @@ object CongGeYunCalculator {
         dayEl.generates == el -> "食伤"
         dayEl.controls == el -> "财星"
         else -> "官杀"
+    }
+
+    /**
+     * 专旺格行运喜忌。理论见 `.shengke-reference.md` 第五四节(三)：
+     * - 比劫（双体或干支覆载相生）→ 用神到位；
+     * - 印绶 → 喜神到位（喜用常通称）；
+     * - 官杀/财星/食伤：干支双体或覆载相生（财生官/食伤生财/比生食伤）→ 强旺扭转格局——
+     *   转身官两停/身财两停/食伤泄秀（转格取用）；
+     * - 盖头截脚（干支相克）或**支被原局半合半会拉向专旺行**（辰被三卯半会、未被三卯半合——
+     *   失去生辅且合化不完全破坏清纯）→ 激犯旺气——忌神；
+     * - 支与原局**合成全三合/三会/六合**归本局（亥补亥卯未——弥补合局不全反加格局气势），
+     *   干头破格之神衰微只能顺从 → 喜用（己亥例）。
+     */
+    private fun zhuanWangYun(bazi: BaziResult, base: cn.xulun.bazi.model.TeShuGeJuResult, p: Pillar): CongGeYunResult {
+        val dayEl = bazi.dayPillar.stem.element
+        val yinEl = Element.entries.first { it.generates == dayEl }
+        val ps = p.stem.element
+        val pb = p.branch.element
+        val guanEl = Element.entries.first { it.controls == dayEl }
+        val caiEl = dayEl.controls
+        val shangEl = dayEl.generates
+
+        val triAll = listOf(
+            setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+            setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+            setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+            setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+        )
+        val huiAll = listOf(
+            setOf(EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN) to Element.WOOD,
+            setOf(EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI) to Element.FIRE,
+            setOf(EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU) to Element.METAL,
+            setOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU) to Element.WATER,
+        )
+        // 岁运支补成全三合/三会归专旺行（原局缺此支）
+        val joinsFull = (triAll + huiAll).any { (g, el) ->
+            p.branch in g && el == dayEl && g.all { it in bazi.branches || it == p.branch } && !bazi.branches.toSet().containsAll(g)
+        } || (dayEl == Element.WOOD && ((p.branch == EarthlyBranch.YIN && EarthlyBranch.HAI in bazi.branches) ||
+            (p.branch == EarthlyBranch.HAI && EarthlyBranch.YIN in bazi.branches)))
+        // 岁运支被原局半合（中神在原局）/半会拉向专旺行——合化不完全
+        val pulledPartial = run {
+            if (pb == dayEl || pb == yinEl) return@run false
+            val zhong = mapOf(
+                Element.WOOD to EarthlyBranch.MAO, Element.FIRE to EarthlyBranch.WU,
+                Element.METAL to EarthlyBranch.YOU, Element.WATER to EarthlyBranch.ZI,
+            )
+            val banHe = zhong[dayEl]?.let { z ->
+                triAll.any { (g, _) -> z in g && p.branch in g && p.branch != z && z in bazi.branches }
+            } == true
+            val gong = when (dayEl) {
+                Element.WOOD -> listOf(setOf(EarthlyBranch.YIN, EarthlyBranch.MAO), setOf(EarthlyBranch.MAO, EarthlyBranch.CHEN))
+                Element.FIRE -> listOf(setOf(EarthlyBranch.SI, EarthlyBranch.WU), setOf(EarthlyBranch.WU, EarthlyBranch.WEI))
+                Element.METAL -> listOf(setOf(EarthlyBranch.SHEN, EarthlyBranch.YOU), setOf(EarthlyBranch.YOU, EarthlyBranch.XU))
+                Element.WATER -> listOf(setOf(EarthlyBranch.HAI, EarthlyBranch.ZI), setOf(EarthlyBranch.ZI, EarthlyBranch.CHOU))
+                else -> emptyList<Set<EarthlyBranch>>()
+            }
+            val banHui = gong.any { g -> p.branch in g && g.any { it in bazi.branches && it != p.branch } }
+            banHe || banHui
+        }
+
+        val verdict: YunVerdict
+        val newEl: Element?
+        val basis: String
+        when {
+            // 比劫：双体或覆载相生（干比坐印支、印坐比支）→ 用神到位
+            (pb == dayEl && (ps == dayEl || ps == yinEl)) || (ps == dayEl && (pb == dayEl || pb == yinEl)) -> {
+                verdict = YunVerdict.YONG; newEl = null
+                basis = "岁运${p.fullName}：干支比劫覆载相生，强盛${dayEl.chinese}气加旺格局气势——用神到位"
+            }
+            // 支合入本局成全三合/三会/六合而干为破格之神衰微（支归局+干顺从）→ 喜用（己亥例）
+            joinsFull && pb != dayEl && pb != yinEl && ps != dayEl && ps != yinEl -> {
+                verdict = YunVerdict.XI; newEl = null
+                basis = "岁运${p.fullName}：支${p.branch.chinese}与原局合入本局（弥补合局不全、反加大格局气势），" +
+                    "干头${p.stem.chinese}（${ps.chinese}）衰微只能顺从旺${dayEl.chinese}，利大于弊——喜用神"
+            }
+            // 印绶 → 喜神到位
+            pb == yinEl -> {
+                verdict = YunVerdict.XI; newEl = null
+                basis = "岁运${p.fullName}：印绶（${yinEl.chinese}）扶旺格局气势——喜神到位" +
+                    (if (joinsFull) "（支${p.branch.chinese}并补全本局合局）" else "")
+            }
+            else -> {
+                val po3 = setOf(guanEl, caiEl, shangEl) // 官杀/财/食伤——可扭转格局之三线
+                if (ps !in po3 && pb !in po3) {
+                    verdict = YunVerdict.JI; newEl = null
+                    basis = "岁运${p.fullName}与专旺气势关联不紧——以平淡偏忌论"
+                } else {
+                    // 强旺：双体或覆载相生（受生者须为转格线——财生官/食伤生财/比生食伤/印生干）
+                    val newE = when {
+                        ps == pb -> ps
+                        pb.generates == ps && ps in po3 -> ps
+                        ps.generates == pb && pb in po3 -> pb
+                        else -> null
+                    }
+                    if (newE != null && !pulledPartial) {
+                        verdict = YunVerdict.ZHUAN_GE; newEl = newE
+                        basis = "岁运${p.fullName}：" + when (newE) {
+                            guanEl -> "官杀（${newE.chinese}）干支强旺克住日主，与旺${dayEl.chinese}成身杀两停——转格取官杀为用，财滋杀为喜"
+                            caiEl -> "财星（${newE.chinese}）干支强旺耗住日主，成身财两停——转格取财为用，食伤生财为喜"
+                            else -> "食伤（${newE.chinese}）干支强旺化泄日主，成食伤泄秀（身伤两停）——转格取食伤为用，并取财星"
+                        }
+                    } else {
+                        verdict = YunVerdict.JI; newEl = null
+                        basis = "岁运${p.fullName}：${godName(if (ps in po3) ps else pb, dayEl)}力弱" +
+                            (if (pulledPartial) "（支${p.branch.chinese}被原局半会半合拉向旺${dayEl.chinese}，干失生辅且合化不完全破坏清纯）"
+                             else "（干支盖头截脚互不相生）") +
+                            "，不足以扭转格局，反激犯日主旺气、逆乱专旺之势——忌神"
+                    }
+                }
+            }
+        }
+
+        return CongGeYunResult(
+            geName = base.name,
+            shi = base.yongShen,
+            verdict = verdict,
+            newYongShen = newEl,
+            basis = "【${base.name}】$basis",
+        )
     }
 }
