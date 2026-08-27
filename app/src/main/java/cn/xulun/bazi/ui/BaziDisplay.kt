@@ -51,6 +51,7 @@ import cn.xulun.bazi.ui.components.ShenShaSection
 import cn.xulun.bazi.ui.components.StudySection
 import cn.xulun.bazi.ui.components.TiaoHouSection
 import cn.xulun.bazi.ui.components.WealthSection
+import cn.xulun.bazi.ui.components.BingYaoSection
 import cn.xulun.bazi.ui.components.WuXingFlowSection
 import cn.xulun.bazi.ui.components.YongShenSection
 import cn.xulun.bazi.ui.components.YunRelationSection
@@ -170,6 +171,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
             null -> emptyList()
         }
         WuXingFlowSection(result = WuXingFlowCalculator.analyze(result, flowPillars))
+        BingYaoSection(result = cn.xulun.bazi.core.BingYaoCalculator.analyze(result))
     }
 }
 
