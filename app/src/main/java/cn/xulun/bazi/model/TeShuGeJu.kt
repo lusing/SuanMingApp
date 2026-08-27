@@ -6,6 +6,7 @@ enum class TeShuKind(val chinese: String) {
     DUO_CONG("多从"),
     ZHAN_JU("战局"),
     ZHUAN_WANG("专旺"),
+    LIANG_QI("两气成象"),
     SAN_QI("三气成象"),
 }
 

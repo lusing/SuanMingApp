@@ -33,6 +33,8 @@ object CongGeYunCalculator {
 
         // 专旺格行运另有专梯（比劫=用/印=喜/官财食强则两停转格弱则忌——第五四节(三)）
         if (base.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG) return zhuanWangYun(bazi, base, p)
+        // 两气成象行运专梯（补弱=用/补旺=忌/强第三行相生转三气相战转正格/弱第三行忌——第五五节一(二)）
+        if (base.kind == cn.xulun.bazi.model.TeShuKind.LIANG_QI) return liangQiYun(bazi, base, p)
 
         val strong = ps == pb || ps.generates == pb // 干支同心（干同支或干生支）
         // 坐支被原局半合/六合拉向从势（化神在势）——岁干之根随支被拉走（姚先生辛亥：亥卯半合木）
@@ -205,6 +207,81 @@ object CongGeYunCalculator {
     /** 天干五合化神（lo=两干序号较小者：0甲己土/1乙庚金/2丙辛水/3丁壬木/4戊癸火）。 */
     private fun heEl(lo: Int): Element = when (lo) {
         0 -> Element.EARTH; 1 -> Element.METAL; 2 -> Element.WATER; 3 -> Element.WOOD; else -> Element.FIRE
+    }
+
+    /**
+     * 两气成象格行运喜忌。理论见 `.shengke-reference.md` 第五五节一(二)：
+     * - 补**弱行**（含支被原局六合化向弱行——丁亥之亥合寅化木）→ 用神；补旺行（含干被合化归旺行——壬午）→ 失衡忌；
+     * - 强旺第三行与两行**相生相合**（水生木/火生土）→ 转三气成象，仍取原局弱行为用（三行中谁弱取谁）；
+     * - 强旺第三行与两行**相战**（金克木而火克金）→ 转身弱正格，取比劫印绶；
+     * - 衰弱第三行 → 不能化泄/不能改变格局，反逆乱气势 → 忌。
+     */
+    private fun liangQiYun(bazi: BaziResult, base: cn.xulun.bazi.model.TeShuGeJuResult, p: Pillar): CongGeYunResult {
+        val dayEl = bazi.dayPillar.stem.element
+        val ps = p.stem.element
+        val pb = p.branch.element
+        val shiL = base.yongShen // [弱行, 旺行]
+        val ruo = shiL.first()
+        val wang = shiL.last()
+
+        // 归行：支被原局六合化向两行（亥合寅化木——丁亥干火支合木为用）；
+        // 干支双体属第三行者不归（癸亥双体水仍为强水——转三气）
+        val liuGuiEl = if (ps == pb) null else listOf(
+            (EarthlyBranch.ZI to EarthlyBranch.CHOU) to Element.EARTH,
+            (EarthlyBranch.YIN to EarthlyBranch.HAI) to Element.WOOD,
+            (EarthlyBranch.MAO to EarthlyBranch.XU) to Element.FIRE,
+            (EarthlyBranch.CHEN to EarthlyBranch.YOU) to Element.METAL,
+            (EarthlyBranch.SI to EarthlyBranch.SHEN) to Element.WATER,
+            (EarthlyBranch.WU to EarthlyBranch.WEI) to Element.EARTH,
+        ).firstOrNull { (pr, el) ->
+            el in shiL && (p.branch == pr.first || p.branch == pr.second) &&
+                (if (p.branch == pr.first) pr.second in bazi.branches else pr.first in bazi.branches)
+        }?.second
+        val pbEff = liuGuiEl ?: pb
+
+        val verdict: YunVerdict
+        val newEl: Element?
+        val basis: String
+        when {
+            pbEff == ruo -> {
+                verdict = YunVerdict.YONG; newEl = null
+                basis = "岁运${p.fullName}：${pbEff.chinese}为两气中之弱行，补之以平衡${ruo.chinese}${wang.chinese}气势——用神到位" +
+                    (if (liuGuiEl != null) "（支${p.branch.chinese}与原局合化${liuGuiEl.chinese}归行）" else "")
+            }
+            pbEff == wang -> {
+                verdict = YunVerdict.JI; newEl = null
+                basis = "岁运${p.fullName}：${pbEff.chinese}为两气中之偏旺行，再补之使${ruo.chinese}${wang.chinese}失衡" +
+                    (if (pbEff == Element.FIRE) "（焚弱${ruo.chinese}）" else "") + "——忌神"
+            }
+            else -> {
+                val x = pb
+                val strong = ps == pb || ps.generates == pb || pb.generates == ps // 双体/覆载相生
+                val compat = shiL.any { it.generates == x || x.generates == it }
+                val war = shiL.any { it.controls == x || x.controls == it }
+                when {
+                    strong && compat -> {
+                        verdict = YunVerdict.ZHUAN_GE; newEl = ruo
+                        basis = "岁运${p.fullName}：${x.chinese}强旺与两行相生化合，格局转为${shiL.joinToString("") { it.chinese }}${x.chinese}三气成象——三行中仍以弱者${ruo.chinese}为用（谁弱取谁）"
+                    }
+                    strong && war -> {
+                        verdict = YunVerdict.HUAN_YUAN; newEl = null
+                        basis = "岁运${p.fullName}：${x.chinese}强旺与两行交战（${x.chinese}与${shiL.joinToString("") { it.chinese }}相克），强扭格局气势——转为身弱正格论，用神取强旺之比劫印绶（${dayEl.chinese}及其印）"
+                    }
+                    else -> {
+                        verdict = YunVerdict.JI; newEl = null
+                        basis = "岁运${p.fullName}：${x.chinese}衰弱，既不能化泄两气改变格局，反逆乱${shiL.joinToString("") { it.chinese }}纯势——忌神"
+                    }
+                }
+            }
+        }
+
+        return CongGeYunResult(
+            geName = base.name,
+            shi = shiL,
+            verdict = verdict,
+            newYongShen = newEl,
+            basis = "【${base.name}】$basis",
+        )
     }
 
     /**

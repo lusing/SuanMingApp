@@ -38,6 +38,38 @@ object TeShuGeJuCalculator {
         x.generates == m && m.generates == y
     }
 
+    /** 两气成象格名（相生五格+相克五格）。 */
+    private val PAIR_NAME = mapOf(
+        setOf(Element.WOOD, Element.FIRE) to "木火通明",
+        setOf(Element.FIRE, Element.EARTH) to "火土成慈",
+        setOf(Element.EARTH, Element.METAL) to "土金毓秀",
+        setOf(Element.METAL, Element.WATER) to "金白水清",
+        setOf(Element.WATER, Element.WOOD) to "水灵木秀",
+        setOf(Element.METAL, Element.WOOD) to "金木栋梁",
+        setOf(Element.WOOD, Element.EARTH) to "木土疏通",
+        setOf(Element.EARTH, Element.WATER) to "土水池沼",
+        setOf(Element.WATER, Element.FIRE) to "水火既济",
+        setOf(Element.FIRE, Element.METAL) to "火金器皿",
+    )
+
+    /** 两气成象：日主行与相生邻行（印/食伤）双强均衡成象——弱者补之为首用（木旺火弱宜火运）。 */
+    private fun liangQiOf(bazi: BaziResult, dayEl: Element, partner: Element, f: Map<Element, Double>): TeShuGeJuResult {
+        val ruo = if (f[dayEl]!! <= f[partner]!!) dayEl else partner
+        val wang = if (ruo == dayEl) partner else dayEl
+        val name = (PAIR_NAME[setOf(dayEl, partner)] ?: "两气成象") + "格"
+        val ji = Element.entries.filter { it != dayEl && it != partner }
+        return TeShuGeJuResult(
+            kind = TeShuKind.LIANG_QI, name = name,
+            yongShen = listOf(ruo, wang), xi = listOf(wang),
+            ji = ji, fake = false,
+            restoreHint = "岁运强旺第三行则转三气成象（相生者）或正格（相战者）；衰弱第三行逆乱气势为忌",
+            basis = "日主${dayEl.chinese}与${partner.chinese}两行气势强旺均衡、相互化生，" +
+                "他行${ji.joinToString("") { it.chinese }}微弱不能克破——${name}（两气成象）。" +
+                "${wang.chinese}偏旺${ruo.chinese}偏弱，宜行${ruo.chinese}运补弱为用（木旺火弱宜火、火旺木弱宜木）；" +
+                "忌逆乱格局气势之衰弱第三行。",
+        )
+    }
+
     /** 化气格化神行：日干与年/月/时干五合且化神有力（≥2.5，变节力转移后）——乙庚化金式。 */
     fun huaShenElOf(bazi: BaziResult): Element? {
         val partner = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem).firstOrNull { g ->
@@ -155,6 +187,14 @@ object TeShuGeJuCalculator {
                 (p.stem.element == keEl && p.branch.element == keEl) || (p.stem.element == poEl && p.branch.element == poEl)
             }
             if (broken) return null
+            // 两气成象分流：印/食伤之相生邻行力≥八成日行且两行份额≥八成——
+            // 日主与邻行均衡成象非独旺（甲午丙寅丙寅甲午木6火4——通明非炎上；
+            // 庚申庚辰庚申庚辰土4金6仅0.67仍专旺——金众土寡）
+            val partner0 = listOf(yinEl, dayEl.generates).maxBy { fZhuan[it]!! }
+            if (fZhuan[partner0]!! >= 0.8 * fZhuan[dayEl]!! && fZhuan[partner0]!! >= 2.0 &&
+                (fZhuan[dayEl]!! + fZhuan[partner0]!!) >= 0.8 * totalZhuan) {
+                return liangQiOf(bazi, dayEl, partner0, fZhuan)
+            }
             val yong = listOf(dayEl, yinEl, dayEl.generates) // 比印首选，有力食伤次之
             // 双档命名：全三合/三会成局且月令会宫（木：寅卯辰）或化气五合成格（乙庚合金于庚日）→
             // 曲直/炎上/稼穑/从革/润下（成格条件与层次更高）；否则"X专旺格"（普通档——亥卯未全合而月令未不在会宫亦普通）。
@@ -203,6 +243,30 @@ object TeShuGeJuCalculator {
         val bianJieBranches = heJu.flatMap { (bs, _) -> bs }
         val hasBenQiRoot = branches.any { it.element == dayEl && it !in xingBranches &&
             (it !in bianJieBranches || heJu.any { (bs, el) -> it in bs && el == dayEl }) }
+
+        // ── 1b. 两气成象（日主行+相生邻行双强均衡，他行纯净微弱） ──
+        // 甲寅丙寅丙寅甲午（午非印比不入专旺）/癸卯戊午甲寅丙寅（戊癸合化去土水）式；
+        // 三守卫：日主有效根+比例≥0.4（防从儿从印——2:6、2:8）+五合化解后他行各≤0.5（防癸丑甲子癸卯癸亥之丑官）
+        run {
+            val partner = listOf(yinEl, dayEl.generates).maxBy { f[it]!! }
+            val side = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem)
+            val neutralized = mutableSetOf<Element>()
+            for (i in side.indices) for (j in i + 1 until side.size) {
+                val a = side[i]; val b2 = side[j]
+                if ((a.ordinal - b2.ordinal + 10) % 5 == 0 && a.ordinal != b2.ordinal) {
+                    val hs = huaShenOf(a, b2)
+                    if ((hs == dayEl || hs == partner) && f[hs]!! >= 2.5) { neutralized += a.element; neutralized += b2.element }
+                }
+            }
+            val othersOk = Element.entries.filter { it != dayEl && it != partner }
+                .all { f[it]!! - (if (it in neutralized) 1.0 else 0.0) <= 0.5 }
+            val ratio = minOf(f[dayEl]!!, f[partner]!!) / maxOf(f[dayEl]!!, f[partner]!!)
+            if (hasBenQiRoot && f[dayEl]!! >= 2.0 && f[partner]!! >= 2.0 && ratio >= 0.4 &&
+                (f[dayEl]!! + f[partner]!!) >= 0.8 * total && othersOk) {
+                return liangQiOf(bazi, dayEl, partner, f)
+            }
+        }
+
         if (!hasBenQiRoot) {
             // 变节力转移：合局成员本气之力与月令加成随化神计（丑在亥子丑水局内之力归水）
             val fAdj = f.toMutableMap()

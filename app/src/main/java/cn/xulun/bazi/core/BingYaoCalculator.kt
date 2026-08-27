@@ -77,9 +77,9 @@ object BingYaoCalculator {
         val teShu = TeShuGeJuCalculator.analyze(bazi)
         if (teShu != null) {
             return BingYaoResult(
-                strength = if (teShu.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG || teShu.kind == cn.xulun.bazi.model.TeShuKind.SAN_QI) DayStrength.STRONG else DayStrength.WEAK,
+                strength = if (teShu.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG || teShu.kind == cn.xulun.bazi.model.TeShuKind.LIANG_QI || teShu.kind == cn.xulun.bazi.model.TeShuKind.SAN_QI) DayStrength.STRONG else DayStrength.WEAK,
                 congGe = cn.xulun.bazi.model.CongGeResult(
-                    if (teShu.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG || teShu.kind == cn.xulun.bazi.model.TeShuKind.SAN_QI) CongGeKind.CONG_STRONG else CongGeKind.CONG_WEAK,
+                    if (teShu.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG || teShu.kind == cn.xulun.bazi.model.TeShuKind.LIANG_QI || teShu.kind == cn.xulun.bazi.model.TeShuKind.SAN_QI) CongGeKind.CONG_STRONG else CongGeKind.CONG_WEAK,
                     teShu.name),
                 bing = null,
                 yongShen = catOf(teShu.yongShen.first(), dayEl),
