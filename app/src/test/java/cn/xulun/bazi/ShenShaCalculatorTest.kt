@@ -29,6 +29,7 @@ class ShenShaCalculatorTest {
                 item("桃花", "时支", EarthlyBranch.ZI),
                 item("驿马", "月支", EarthlyBranch.SI),
                 item("华盖", "日支", EarthlyBranch.WEI),
+                itemStem("月德合", "年干", HeavenlyStem.YI),
                 itemStem("天德贵人", "月干", HeavenlyStem.XIN),
             ),
             r.items,
@@ -45,6 +46,8 @@ class ShenShaCalculatorTest {
                 item("禄神", "日支", EarthlyBranch.YOU),
                 item("将星", "日支", EarthlyBranch.YOU),
                 item("劫煞", "月支", EarthlyBranch.YIN),
+                itemStem("月德合", "日干", HeavenlyStem.XIN),
+                itemStem("月德合", "时干", HeavenlyStem.XIN),
             ),
             r.items,
         )

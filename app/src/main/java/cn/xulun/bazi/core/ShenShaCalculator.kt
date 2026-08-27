@@ -121,6 +121,9 @@ object ShenShaCalculator {
     // ── 月支三合局分组 → 月德贵人天干：申子辰→壬 亥卯未→甲 寅午戌→丙 巳酉丑→庚 ──
     private val yueDe = arrayOf(HeavenlyStem.REN, HeavenlyStem.JIA, HeavenlyStem.BING, HeavenlyStem.GENG)       // [8,0,2,6]
 
+    // ── 月支 → 月德合（干五合）：子辰申丁 / 丑巳酉乙 / 寅午戌辛 / 卯未亥己 ──
+    private val yueDeHe = arrayOf(HeavenlyStem.DING, HeavenlyStem.JI, HeavenlyStem.XIN, HeavenlyStem.YI)        // [3,5,7,1]
+
     // ── 月支 → 天德贵人（干或支）：寅丁 卯申 辰壬 巳辛 午亥 未甲 申癸 酉寅 戌丙 亥乙 子巳 丑庚 ──
     private data class TianDe(val isStem: Boolean, val stem: HeavenlyStem? = null, val branch: EarthlyBranch? = null)
     private val tianDe: Map<EarthlyBranch, TianDe> = mapOf(
@@ -189,6 +192,8 @@ object ShenShaCalculator {
         scanBranch(bazi, "劫煞", jieSha[g], out)
         // 月支起
         scanStem(bazi, "月德贵人", yueDe[mg], out)
+        // 月德合：与月德贵人五合之干（寅午戌丙→辛、申子辰壬→丁、亥卯未甲→己、巳酉丑庚→乙）——命无月德有合亦可补
+        scanStem(bazi, "月德合", yueDeHe[mg], out)
         tianDe[monthBranch]?.let { td ->
             if (td.isStem) scanStem(bazi, "天德贵人", td.stem!!, out)
             else scanBranch(bazi, "天德贵人", td.branch!!, out)
