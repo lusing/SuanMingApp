@@ -51,6 +51,8 @@ data class BingYaoResult(
     val basis: String,
     /** 干支强弱排序（八步法引擎产出），如"亥子甲未己丑辛丁" */
     val strengthRanking: String = "",
+    /** 用神五行链（特殊格局多从/成象时多行并用；空=单用神） */
+    val yongShenChain: List<Element> = emptyList(),
 ) {
     override fun toString(): String =
         "${method.chinese}取${yongShen.chinese}（${yongShenElement.chinese}），病${bing?.chinese ?: "无"}，${strength.chinese}"

@@ -36,6 +36,7 @@ fun BingYaoSection(result: BingYaoResult, modifier: Modifier = Modifier) {
             Text(
                 text = "日主${result.strength.chinese}　法：${result.method.chinese}　" +
                     "用神：${result.yongShen.chinese}（${result.yongShenElement.chinese}）" +
+                    (result.yongShenChain.takeIf { it.size >= 2 }?.let { "　链：${it.joinToString("→") { e -> e.chinese }}" } ?: "") +
                     (result.bing?.let { "　病：${it.chinese}" } ?: "　中和无病"),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,

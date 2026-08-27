@@ -229,11 +229,26 @@ object StrengthEngine {
         }
         // 三会拖走的支，其藏根亦不可倚（根被拉走）
         branchUnits.forEach { if (it.notes.any { n -> n.startsWith("三会拖向") }) draggedBranches += it.branch!! }
+        // 刑损根：刑而非冲之对（丑戌/戌未/寅巳/巳申）两见即犯，日主藏根被刑去不可倚（丑戌刑刑去丑中癸水）；冲对另有冲罚不重复
+        val xingBranches = mutableSetOf<EarthlyBranch>()
+        for ((a, b) in listOf(
+            EarthlyBranch.CHOU to EarthlyBranch.XU, EarthlyBranch.XU to EarthlyBranch.WEI,
+            EarthlyBranch.YIN to EarthlyBranch.SI, EarthlyBranch.SI to EarthlyBranch.SHEN,
+        )) {
+            if (a in bazi.branches && b in bazi.branches) { xingBranches += a; xingBranches += b }
+        }
+        // 水浊：金众而水无本气支亦无同党透干——不受金生（金多水浊），申藏壬根亦浊
+        val shuiZhuo = bazi.dayPillar.stem.element == Element.WATER &&
+            bazi.branches.none { it == EarthlyBranch.ZI || it == EarthlyBranch.HAI } &&
+            bazi.stems.none { it.element == Element.WATER && it !== bazi.dayPillar.stem } &&
+            units.count { it.element == Element.METAL } >= 3
         // 藏根复盘（合化判定后）：拖走支不喂根；所投合局化神同我行之支不喂根（力已付与局）
         fun rootGiver(other: Unit, el: Element): Boolean =
             other.branch != null && other.element != el && other.branch !in draggedBranches &&
                 committed[other.branch] != el &&
-                branchHiddenStems[other.branch]!!.any { it.element == el }
+                branchHiddenStems[other.branch]!!.any { h ->
+                    h.element == el && !(other.branch!!.element.controls == el) // 根被本气克=无效根（巳中庚遭火克）
+                }
         units.forEach { u ->
             val roots = units.count { it !== u && rootGiver(it, u.element) }
             if (roots > 0) { u.score += roots * ROOT_BONUS; u.notes += "藏根×$roots" }
@@ -307,7 +322,8 @@ object StrengthEngine {
 
         // ── 第1/6/8步 聚合终判 ──
         val dayEl = bazi.dayPillar.stem.element
-        val dayRooted = units.any { it.branch != null && branchHiddenStems[it.branch]!!.any { h -> h.element == dayEl } }
+        val dayRooted = !shuiZhuo && units.any { it.branch != null && it.branch !in xingBranches &&
+            branchHiddenStems[it.branch]!!.any { h -> h.element == dayEl } }
         var a = 0.0; var b = 0.0
         val yinUnits = mutableListOf<Unit>(); val guanUnits = mutableListOf<Unit>()
         // 预计算（避免遍历顺序依赖）
@@ -335,6 +351,8 @@ object StrengthEngine {
                 else -> REL_HAO
             }
             var eff = u.score * proximity(u.pillar, u.isStem) * rel
+            // 水浊：金多水浊不受生——印径计克方（王先生例）
+            if (rel == REL_SHENG && shuiZhuo) { b += eff * 0.8; u.notes.add("金多水浊不受生"); return@forEach }
             // 金命午未合燥：未土脆金其印如杀。未月合燥且无水润——印如杀，径计入克方；余者×0.6
             val wuWeiZao = dayEl == Element.METAL &&
                 EarthlyBranch.WU in bazi.branches && EarthlyBranch.WEI in bazi.branches

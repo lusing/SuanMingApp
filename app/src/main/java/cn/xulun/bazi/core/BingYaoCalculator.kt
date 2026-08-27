@@ -30,6 +30,24 @@ object BingYaoCalculator {
         GodCategory.GUAN -> Element.entries.first { it.controls == dayEl }
     }
 
+    /** 五行→十神大类（elementOf 之逆）。 */
+    private fun catOf(el: Element, dayEl: Element): GodCategory = when {
+        el == dayEl -> GodCategory.BI
+        el.generates == dayEl -> GodCategory.YIN
+        dayEl.generates == el -> GodCategory.SHI
+        dayEl.controls == el -> GodCategory.CAI
+        else -> GodCategory.GUAN
+    }
+
+    /** 保留原签名结构（旧引用兼容）。 */
+    private fun elementOfOld(category: GodCategory, dayEl: Element): Element = when (category) {
+        GodCategory.BI -> dayEl
+        GodCategory.YIN -> Element.entries.first { it.generates == dayEl }
+        GodCategory.SHI -> dayEl.generates
+        GodCategory.CAI -> dayEl.controls
+        GodCategory.GUAN -> Element.entries.first { it.controls == dayEl }
+    }
+
     /** 五行之力：干 1、支本气 1、月令本气再 +2。 */
     fun forces(bazi: BaziResult): Map<Element, Double> {
         val f = Element.entries.associateWith { 0.0 }.toMutableMap()
@@ -55,7 +73,27 @@ object BingYaoCalculator {
         val el = { c: GodCategory -> elementOf(c, dayEl) }
         val fc = { c: GodCategory -> f[el(c)]!! }
 
-        // ── 1. 从格 → 顺势 ──
+        // ── 1. 特殊格局取用（专旺/假从/多从/战局/成象，第四九节）→ 委托 TeShuGeJu ──
+        val teShu = TeShuGeJuCalculator.analyze(bazi)
+        if (teShu != null) {
+            return BingYaoResult(
+                strength = if (teShu.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG || teShu.kind == cn.xulun.bazi.model.TeShuKind.SAN_QI) DayStrength.STRONG else DayStrength.WEAK,
+                congGe = cn.xulun.bazi.model.CongGeResult(
+                    if (teShu.kind == cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG || teShu.kind == cn.xulun.bazi.model.TeShuKind.SAN_QI) CongGeKind.CONG_STRONG else CongGeKind.CONG_WEAK,
+                    teShu.name),
+                bing = null,
+                yongShen = catOf(teShu.yongShen.first(), dayEl),
+                yongShenElement = teShu.yongShen.first(),
+                method = if (teShu.kind == cn.xulun.bazi.model.TeShuKind.ZHAN_JU) YongShenMethod.TONG_GUAN else YongShenMethod.SHUN_SHI,
+                xiShen = teShu.xi.firstOrNull()?.let { catOf(it, dayEl) },
+                jiShen = teShu.ji.map { catOf(it, dayEl) },
+                tiaoHou = tiaoHouState(bazi, teShu.yongShen.first()),
+                basis = "【${teShu.name}】${teShu.basis}${teShu.restoreHint}",
+                strengthRanking = StrengthEngine.analyze(bazi).ranking,
+                yongShenChain = teShu.yongShen,
+            )
+        }
+        // ── 1b. 从格（xuanzong 粗判兜底） → 顺势 ──
         val congGe = GeJuCalculator.detectCongGe(bazi)
         if (congGe != null) {
             return shunShi(bazi, congGe.kind, congGe.basis, f, dayEl)
