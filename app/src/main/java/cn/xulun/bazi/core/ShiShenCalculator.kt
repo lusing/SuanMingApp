@@ -181,6 +181,33 @@ object ShiShenCalculator {
         TenGod.JIE_CAI to "易散财财产分配兄弟纠纷为女人情海风波；父烦恼多病（透劫尤甚）",
     )
 
+    // ── 伤官透干寓意（第六三节七）──
+    private val shangGuanTou: Map<Int, String> = mapOf(
+        0 to "难承祖业与父母缘薄为生计劳累奔波；旺而无制父脾气暴躁；身强喜幼时家境富裕（身弱忌贫苦）；" +
+            "身弱忌因痼疾不治而折寿（印制可解）；年时伤官出干难养儿子",
+        1 to "手足失和不利婚姻；女命月干支皆伤官夫缘极差；强旺易被人攻击帮人反遭恩将仇报；" +
+            "性高傲过旺个性太强言语偏激树敌；得令温柔不足（透正印口恶心善）；喜标新立异否定别人" +
+            "逞强好胜心服口不服；泄身太过反主贫困自作聪明；坐日刃年轻时多为别人办事不能独立创业",
+        2 to "清高性急机敏官场失利无远虑有近忧；女命伤官旺不屈服于丈夫克夫（制化无妨）；" +
+            "太旺男娶美貌妻高才女难长相厮守终必离婚；有印制贵命；他柱劫财太重贫困",
+        3 to "旺而无制子女不服管教惹是生非连累父母；男命伤官旺妻子头胎多为女儿；喜用晚年享子女福；" +
+            "居子女宫受克太过恐子女夭折；时透伤官时支劫财晚年财缘不佳多有损耗",
+    )
+
+    // ── 伤官坐支寓意 ──
+    private val shangGuanZuo: Map<TenGod, String> = mapOf(
+        TenGod.ZHENG_YIN to "有名望易显达",
+        TenGod.PIAN_YIN to "不宜同时经营几种行业否则其中恐有失败",
+        TenGod.ZHENG_GUAN to "爱出风头喜骂人易失权柄无视规矩夫妻离别",
+        TenGod.QI_SHA to "易惹麻烦难获佳遇得不偿失劳而无功，遭人污陷蒙不白之冤",
+        TenGod.ZHENG_CAI to "身强利求财与人合作别人吃亏自己得利，得妻助锦上添花",
+        TenGod.PIAN_CAI to "颇具经济头脑善于经营手段高明财利丰盈（日强保财弱易失财）；贪恋色欲谨防致祸",
+        TenGod.SHANG_GUAN to "出言不逊无视法纪具侵犯破坏性行为偏激六亲有损（日干弱多病多灾）",
+        TenGod.SHI_SHEN to "喜欢自由易与人冲突",
+        TenGod.BI_JIAN to "手足失和夫妻口角",
+        TenGod.JIE_CAI to "蛮横偏激为财淡泊亲情常失财；不宜合伙求财婚姻不顺",
+    )
+
     fun analyze(bazi: BaziResult): ShiShenResult {
         val dayMaster = bazi.dayPillar.stem
         val items = mutableListOf<ShiShenResult.ShiShenItem>()
@@ -220,6 +247,7 @@ object ShiShenCalculator {
         TenGod.QI_SHA -> pianGuanTou[pillar]
         TenGod.ZHENG_CAI -> zhengCaiTou[pillar]
         TenGod.PIAN_CAI -> pianCaiTou[pillar]
+        TenGod.SHANG_GUAN -> shangGuanTou[pillar]
         else -> null
     }
 
@@ -231,6 +259,7 @@ object ShiShenCalculator {
         TenGod.QI_SHA -> pianGuanZuo[zuo]
         TenGod.ZHENG_CAI -> zhengCaiZuo[zuo]
         TenGod.PIAN_CAI -> pianCaiZuo[zuo]
+        TenGod.SHANG_GUAN -> shangGuanZuo[zuo]
         else -> null
     }
 
