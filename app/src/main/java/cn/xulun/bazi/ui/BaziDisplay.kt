@@ -44,6 +44,7 @@ import cn.xulun.bazi.ui.components.DiZhiRelationSection
 import cn.xulun.bazi.ui.components.GeJuBanner
 import cn.xulun.bazi.ui.components.HeHuaSection
 import cn.xulun.bazi.ui.components.JieChongSection
+import cn.xulun.bazi.ui.components.LiuQinSection
 import cn.xulun.bazi.ui.components.MarriageSection
 import cn.xulun.bazi.ui.components.PillarCard
 import cn.xulun.bazi.ui.components.QuYunSection
@@ -162,6 +163,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         )
         WealthSection(result = wealth)
         MarriageSection(result = MarriageCalculator.analyze(result, gender))
+        LiuQinSection(zuYe = cn.xulun.bazi.core.LiuQinCalculator.analyze(result, gender).zuYe)
         StudySection(result = StudyCalculator.analyze(result, daYun))
         selection?.let { sel ->
             val extras: List<Pair<cn.xulun.bazi.model.Pillar, String>> = when (sel) {

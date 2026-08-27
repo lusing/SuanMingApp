@@ -1,0 +1,14 @@
+package cn.xulun.bazi.core
+
+import cn.xulun.bazi.model.BaziResult
+import cn.xulun.bazi.model.Gender
+import cn.xulun.bazi.model.LiuQinResult
+
+/**
+ * 六亲分析入口（容器）。各亲属块独立计算，后续章节在此聚合。
+ */
+object LiuQinCalculator {
+
+    fun analyze(bazi: BaziResult, @Suppress("UNUSED_PARAMETER") gender: Gender): LiuQinResult =
+        LiuQinResult(zuYe = ZuYeCalculator.analyze(bazi))
+}
