@@ -164,7 +164,10 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         )
         WealthSection(result = wealth)
         daYun?.let { dy ->
-            CaiYunSection(result = cn.xulun.bazi.core.CaiYunCalculator.analyze(result, gender, dy))
+            CaiYunSection(
+                result = cn.xulun.bazi.core.CaiYunCalculator.analyze(result, gender, dy),
+                selection = selection,
+            )
         }
         MarriageSection(result = MarriageCalculator.analyze(result, gender))
         LiuQinSection(result = cn.xulun.bazi.core.LiuQinCalculator.analyze(result, gender))
