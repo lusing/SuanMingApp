@@ -208,6 +208,29 @@ object ShiShenCalculator {
         TenGod.JIE_CAI to "蛮横偏激为财淡泊亲情常失财；不宜合伙求财婚姻不顺",
     )
 
+    // ── 食神透干寓意（第六三节八）──
+    private val shiShenTou: Map<Int, String> = mapOf(
+        0 to "旺透父身体肥胖（年支本气食神旺母身体好）；喜用能得祖业；坐衰绝祖业无靠幼时家困",
+        1 to "与人为善勤俭乐观喜自由自食其力节俭济人；月干支皆食神身弱忌行运不佳早年家贫；" +
+            "月干透食日主有根不太弱有口福喜音乐；为用心宽体胖；喜用得父母兄弟帮助",
+        2 to "配偶心地善良度量大；喜歌舞好自由赶时髦；女子太旺无制贪淫好色易沦为娼妓",
+        3 to "旺相子女体胖；喜用子女贤孝且财丰；女命时干食神坐偏印不利子女或有产厄",
+    )
+
+    // ── 食神坐支寓意 ──
+    private val shiShenZuo: Map<TenGod, String> = mapOf(
+        TenGod.ZHENG_YIN to "诚实守信贵人支持事业顺遂",
+        TenGod.PIAN_YIN to "身受约束不够自由灾病多，事业多败少成烦恼忧愁",
+        TenGod.ZHENG_GUAN to "正直负责安分守己信用诚实；女得佳偶",
+        TenGod.QI_SHA to "易生灾祸事多阻碍受人管束忧怨易怒",
+        TenGod.ZHENG_CAI to "得长辈或妻子之助财缘佳",
+        TenGod.PIAN_CAI to "财运颇佳女人缘好积极进取事多顺遂",
+        TenGod.SHANG_GUAN to "事多阻碍有始无终子女缘薄婚姻欠佳",
+        TenGod.SHI_SHEN to "活泼自由人缘颇佳财利丰盈爱好歌舞体态丰满",
+        TenGod.BI_JIAN to "得贵人或朋友之助重情义丰衣足食乐善好施",
+        TenGod.JIE_CAI to "命局组合好往往因祸得福败中获利",
+    )
+
     fun analyze(bazi: BaziResult): ShiShenResult {
         val dayMaster = bazi.dayPillar.stem
         val items = mutableListOf<ShiShenResult.ShiShenItem>()
@@ -248,6 +271,7 @@ object ShiShenCalculator {
         TenGod.ZHENG_CAI -> zhengCaiTou[pillar]
         TenGod.PIAN_CAI -> pianCaiTou[pillar]
         TenGod.SHANG_GUAN -> shangGuanTou[pillar]
+        TenGod.SHI_SHEN -> shiShenTou[pillar]
         else -> null
     }
 
@@ -260,6 +284,7 @@ object ShiShenCalculator {
         TenGod.ZHENG_CAI -> zhengCaiZuo[zuo]
         TenGod.PIAN_CAI -> pianCaiZuo[zuo]
         TenGod.SHANG_GUAN -> shangGuanZuo[zuo]
+        TenGod.SHI_SHEN -> shiShenZuo[zuo]
         else -> null
     }
 
