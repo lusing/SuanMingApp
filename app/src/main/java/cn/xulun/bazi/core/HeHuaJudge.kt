@@ -102,14 +102,23 @@ object HeHuaJudge {
         }
         // 印重埋没（生正化之行≥2.5×正化行且正化行<2.5——土重埋金/木多晦火）→ 连反化不成
         val yin = Element.entries.first { it.generates == z }
-        val mai = f[yin]!! >= 2.5 * f[z]!! && f[z]!! < 2.5
-        // 反化：强干行≥2×弱干行、有根基、≠正化行
-        if (!mai && strongLine != z && strongLine.controls == weakLine &&
-            f[strongLine]!! >= 2 * f[weakLine]!! && genJi(strongLine)) {
+        // 埋没/晦光：印（生Z）或泄（Z生）之行自身有力（≥2.5）且≥2.5×Z且Z<2.5——
+        // 土重埋金（印）、土方局晦火无光（泄——乙丑癸未戊辰壬戌泄土7晦火0）；只拦克型
+        val mai = (f[yin]!! >= 2.5 || f[z.generates]!! >= 2.5) &&
+            (f[yin]!! >= 2.5 * f[z]!! || f[z.generates]!! >= 2.5 * f[z]!!) && f[z]!! < 2.5
+        // 反化双模式（强制作用——以力服人）：
+        // 克型：强干行克弱干行+≥2倍+有根基（甲征服己化木）；
+        // 势型：弱干无根（≤1.5）+强干≥2倍+**化神得令**（大势所趋——戊申辛酉丙申戊戌丙从辛化金，
+        // 丙如火中残烛连暖金之力亦不足；从财格之理）
+        if (strongLine != z && f[strongLine]!! >= 2 * f[weakLine]!!) {
             val ke2 = Element.entries.first { it.controls == strongLine }
-            if (f[ke2]!! < f[strongLine]!!) {
+            // 印重埋没只拦克型（生正化行≥2.5且≥2.5×正化行——土重埋金）；势服式得令大势不受埋
+            val modeKe = !mai && strongLine.controls == weakLine && genJi(strongLine)
+            val modeShi = f[weakLine]!! <= 1.5 && yueXing == strongLine
+            if ((modeKe || modeShi) && f[ke2]!! < f[strongLine]!!) {
                 return HeHuaVerdict(a to b, strongLine, true,
-                    "${a.chinese}${b.chinese}合——正化${z.chinese}不成而**反化**${strongLine.chinese}：强干${strongLine.chinese}${f[strongLine]}≥2×弱干${weakLine.chinese}${f[weakLine]}（征服式）")
+                    "${a.chinese}${b.chinese}合——正化${z.chinese}不成而**反化**${strongLine.chinese}：强干${strongLine.chinese}${f[strongLine]}≥2×弱干${weakLine.chinese}${f[weakLine]}" +
+                    (if (modeKe) "（征服式）" else "（势服式——弱干无根化神得令，从格之理）"))
             }
         }
         val why = listOfNotNull(
