@@ -71,8 +71,9 @@ object CongGeYunCalculator {
                     f0x[el] = f0x[el]!! + n * (n - 1) / 2.0 + st
                 }
                 val ruo = shi.minBy { f0x[it]!! }
-                // 势首克日主（从杀式）或势首生身（从印式）→按单从论：势首=用、生势首=喜
-                val shiShou = shi.maxBy { f0x[it]!! }
+                // 势首克日主（从杀式）或势首生身（从印式）→按单从论：势首=用、生势首=喜；
+                // 化气格势首=化神行（乙庚化金，纵土5金4）
+                val shiShou = TeShuGeJuCalculator.huaShenElOf(bazi)?.takeIf { it in shi } ?: shi.maxBy { f0x[it]!! }
                 val danCong = shiShou.controls == dayEl || shiShou.generates == dayEl
                 if (danCong && pb == shiShou) {
                     verdict = YunVerdict.YONG; newEl = null

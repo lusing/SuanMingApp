@@ -38,6 +38,25 @@ object TeShuGeJuCalculator {
         x.generates == m && m.generates == y
     }
 
+    /** 化气格化神行：日干与年/月/时干五合且化神有力（≥2.5，变节力转移后）——乙庚化金式。 */
+    fun huaShenElOf(bazi: BaziResult): Element? {
+        val partner = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem).firstOrNull { g ->
+            (g.ordinal - bazi.dayPillar.stem.ordinal + 10) % 5 == 0 && g.ordinal != bazi.dayPillar.stem.ordinal
+        } ?: return null
+        val hs = huaShenOf(partner, bazi.dayPillar.stem)
+        val f0 = BingYaoCalculator.forces(bazi).toMutableMap()
+        val heJu0 = DiZhiRelationCalculator.analyze(bazi).sanHeList.map { it.branches to it.resultElement } +
+            HeHuaCalculator.analyze(bazi).branchSanHuiList.map { it.branches to it.resultElement }
+        for ((bs, el) in heJu0) for (b in bs) {
+            if (b.element != el && b in bazi.branches) { f0[b.element] = f0[b.element]!! - 1; f0[el] = f0[el]!! + 1 }
+        }
+        val rulerB0 = bazi.monthPillar.branch
+        heJu0.firstOrNull { (bs, el) -> rulerB0 in bs && el != rulerB0.element }?.let { (_, el) ->
+            f0[rulerB0.element] = f0[rulerB0.element]!! - 2; f0[el] = f0[el]!! + 2
+        }
+        return hs.takeIf { f0[it]!! >= 2.5 }
+    }
+
     fun analyze(bazi: BaziResult, extraPillars: List<Pillar> = emptyList()): TeShuGeJuResult? {
         val dayEl = bazi.dayPillar.stem.element
         val yinEl = Element.entries.first { it.generates == dayEl }
@@ -154,8 +173,15 @@ object TeShuGeJuCalculator {
                 val others = Element.entries.filter { it != dayEl }
                 val strong = others.filter { fAdj[it]!! >= 2.5 }
                 if (strong.isNotEmpty()) {
+                    // 链首：化气格取化神行（日干五合且化神力强——乙庚化金势首为金非生金之土）
+                    val huaShenEl = run {
+                        val partner = listOf(bazi.yearPillar.stem, bazi.monthPillar.stem, bazi.hourPillar.stem).firstOrNull { g ->
+                            (g.ordinal - bazi.dayPillar.stem.ordinal + 10) % 5 == 0 && g.ordinal != bazi.dayPillar.stem.ordinal
+                        }
+                        partner?.let { huaShenOf(it, bazi.dayPillar.stem) }?.takeIf { fAdj[it]!! >= 2.5 }
+                    }
                     // 链组装：自最强行向前向后延（生我者/我生者中在 strong 或为连接行）
-                    val maxEl = strong.maxBy { fAdj[it]!! }
+                    val maxEl = huaShenEl ?: strong.maxBy { fAdj[it]!! }
                     val chain = linkedSetOf(maxEl)
                     var grew = true
                     while (grew) {
@@ -239,7 +265,8 @@ object TeShuGeJuCalculator {
                     else if (fake) TeShuKind.JIA_CONG else TeShuKind.DUO_CONG
                     // 命名按势首（最强成员）与日主之关系：財→从财、官→从杀、食伤→从儿、印→从印
                     // （杨先生火財5:4土官→从财；丁巳例火食6:2土財→从儿——同构异名，关系定之）
-                    val shiShou = chainList.maxBy { fAdj[it]!! }
+                    // 化气格以化神行定名（乙庚化金→从杀，纵生金之土力5居首）
+                    val shiShou = huaShenEl ?: chainList.maxBy { fAdj[it]!! }
                     val relName = when {
                         shiShou == dayEl.controls -> "从财"
                         shiShou.controls == dayEl -> "从杀"
