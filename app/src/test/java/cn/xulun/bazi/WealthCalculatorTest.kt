@@ -27,7 +27,7 @@ class WealthCalculatorTest {
         val bazi = BaziCalculator.calculate(LocalDateTime.of(1985, 5, 20, 0, 10))
         assertEquals("乙丑 辛巳 己未 甲子", bazi.fullBazi)
         val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
-        val result = WealthCalculator.analyze(bazi, daYun)
+        val result = WealthCalculator.analyze(bazi)
 
         // 财五行：己土所克 = 水
         assertEquals(Element.WATER, result.wealthElement)
@@ -46,15 +46,13 @@ class WealthCalculatorTest {
         assertEquals(EarthlyBranch.CHEN, result.storage.branch)
         assertFalse(result.storage.present)
 
-        // 第一步大运庚辰带财（辰藏癸偏财）
-        assertTrue(result.yunFortune.dayun.any { it.label == "庚辰大运" && it.desc == "偏财藏支" })
     }
 
     @Test
     fun `四土局 甲木日 财多身弱 财库辰逢辰戌冲开`() {
         // 年辰 月戌 日丑 时未；日主甲木，财属土
         val bazi = baziOf(EarthlyBranch.CHEN, EarthlyBranch.XU, EarthlyBranch.CHOU, EarthlyBranch.WEI)
-        val result = WealthCalculator.analyze(bazi, null)
+        val result = WealthCalculator.analyze(bazi)
 
         assertEquals(Element.EARTH, result.wealthElement)
 
@@ -74,8 +72,6 @@ class WealthCalculatorTest {
         assertEquals("辰戌相冲", result.storage.openBy)
 
         // daYun=null → 岁运财运为空
-        assertTrue(result.yunFortune.dayun.isEmpty())
-        assertTrue(result.yunFortune.liunian.isEmpty())
     }
 
     /** 以四地支构造 BaziResult（天干统一取甲，仅用于财运逻辑测试，不保证干支合法配对） */

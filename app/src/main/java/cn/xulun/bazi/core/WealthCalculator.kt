@@ -1,7 +1,6 @@
 package cn.xulun.bazi.core
 
 import cn.xulun.bazi.model.BaziResult
-import cn.xulun.bazi.model.DaYunInfo
 import cn.xulun.bazi.model.DayStrength
 import cn.xulun.bazi.model.Pillar
 import cn.xulun.bazi.model.PillarBranchLabels
@@ -30,20 +29,18 @@ object WealthCalculator {
     /** 藏干位次名 */
     private val hiddenPositions = listOf("本气", "中气", "余气")
 
-    fun analyze(bazi: BaziResult, daYun: DaYunInfo?): WealthResult {
+    fun analyze(bazi: BaziResult): WealthResult {
         val dayMaster = bazi.dayPillar.stem
         val wealthElement = dayMaster.element.controls
         val stars = findStars(bazi, dayMaster)
         val storage = findStorage(bazi, wealthElement)
         val (pattern, basis) = determinePattern(bazi, dayMaster, stars)
-        val yunFortune = findYunFortune(daYun, dayMaster)
         return WealthResult(
             wealthElement = wealthElement,
             stars = stars,
             storage = storage,
             pattern = pattern,
             patternBasis = basis,
-            yunFortune = yunFortune,
         )
     }
 
@@ -119,26 +116,6 @@ object WealthCalculator {
         }
     }
 
-    // ── 岁运财运 ──
-    private fun findYunFortune(
-        daYun: DaYunInfo?,
-        dayMaster: cn.xulun.bazi.model.HeavenlyStem,
-    ): cn.xulun.bazi.model.YunFortune {
-        if (daYun == null) return cn.xulun.bazi.model.YunFortune(emptyList(), emptyList())
-        val dayunList = mutableListOf<cn.xulun.bazi.model.FortunePeriod>()
-        val liunianList = mutableListOf<cn.xulun.bazi.model.FortunePeriod>()
-        for (yun in daYun.yuns) {
-            wealthDescOfPillar(yun.pillar, dayMaster)?.let { desc ->
-                dayunList.add(cn.xulun.bazi.model.FortunePeriod("${yun.pillar.fullName}大运", yun.pillar, desc))
-            }
-            for (ln in yun.liuNian) {
-                wealthDescOfPillar(ln.pillar, dayMaster)?.let { desc ->
-                    liunianList.add(cn.xulun.bazi.model.FortunePeriod("${ln.year} ${ln.pillar.fullName}", ln.pillar, desc))
-                }
-            }
-        }
-        return cn.xulun.bazi.model.YunFortune(dayunList, liunianList)
-    }
 
     /** 运岁柱的财星描述（透干优先），无财返回 null */
     private fun wealthDescOfPillar(

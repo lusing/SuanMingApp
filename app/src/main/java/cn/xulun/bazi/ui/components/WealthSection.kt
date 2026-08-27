@@ -23,7 +23,7 @@ import cn.xulun.bazi.ui.theme.CreamSurface
 import cn.xulun.bazi.ui.theme.SeedRed
 import cn.xulun.bazi.ui.theme.elementColor
 
-/** 财运分析展示区域：财星 · 富格 · 财库 · 岁运财运 */
+/** 财运分析展示区域：财星 · 富格 · 财库（岁运逐年批断见财运·岁运批断区块） */
 @Composable
 fun WealthSection(result: WealthResult, modifier: Modifier = Modifier) {
     val wealthColor = elementColor(result.wealthElement)
@@ -99,37 +99,6 @@ fun WealthSection(result: WealthResult, modifier: Modifier = Modifier) {
                 color = if (s.opened) SeedRed else Color(0xFF333333),
             )
 
-            // 岁运财运
-            SectionLabel("岁运财运", Modifier.padding(top = 14.dp))
-            val yf = result.yunFortune
-            if (yf.dayun.isEmpty() && yf.liunian.isEmpty()) {
-                HintText("未排大运")
-            } else {
-                if (yf.dayun.isNotEmpty()) {
-                    Text("行财运的大运", fontSize = 12.sp, color = Color(0xFF757575))
-                    yf.dayun.forEach {
-                        Text(
-                            text = "${it.label} · ${it.desc}",
-                            fontSize = 12.sp,
-                            color = wealthColor,
-                            modifier = Modifier.padding(top = 2.dp),
-                        )
-                    }
-                }
-                if (yf.liunian.isNotEmpty()) {
-                    Text(
-                        text = "行财运的流年",
-                        fontSize = 12.sp,
-                        color = Color(0xFF757575),
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                    ChipFlow {
-                        yf.liunian.forEach {
-                            WealthChip(text = it.label, subtitle = it.desc, color = wealthColor)
-                        }
-                    }
-                }
-            }
         }
     }
 }

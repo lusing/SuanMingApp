@@ -36,23 +36,6 @@ enum class WealthPattern(val chinese: String, val summary: String) {
     BALANCED("身财两停", "身财均衡，财运平稳"),
 }
 
-/** 一段带财星的大运 / 流年 */
-data class FortunePeriod(
-    /** 标签，如 "庚辰大运" / "2000 庚辰" */
-    val label: String,
-    val pillar: Pillar,
-    /** 财星描述，如 "偏财透干" / "正财藏支" */
-    val desc: String,
-)
-
-/** 岁运财运 */
-data class YunFortune(
-    /** 带财的大运 */
-    val dayun: List<FortunePeriod>,
-    /** 带财的流年 */
-    val liunian: List<FortunePeriod>,
-)
-
 /** 财运分析总结果 */
 data class WealthResult(
     /** 财五行（日主所克） */
@@ -65,8 +48,6 @@ data class WealthResult(
     val pattern: WealthPattern,
     /** 富格判定依据文案 */
     val patternBasis: String,
-    /** 岁运财运 */
-    val yunFortune: YunFortune,
 )
 
 /**
