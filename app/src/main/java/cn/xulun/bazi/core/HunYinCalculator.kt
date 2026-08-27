@@ -66,6 +66,12 @@ object HunYinCalculator {
         setOf(EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU) to Element.METAL,
         setOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU) to Element.WATER,
     )
+    /** 六害。 */
+    private val liuHaiPairs = setOf(
+        setOf(EarthlyBranch.ZI, EarthlyBranch.WEI), setOf(EarthlyBranch.CHOU, EarthlyBranch.WU),
+        setOf(EarthlyBranch.YIN, EarthlyBranch.SI), setOf(EarthlyBranch.MAO, EarthlyBranch.CHEN),
+        setOf(EarthlyBranch.SHEN, EarthlyBranch.HAI), setOf(EarthlyBranch.YOU, EarthlyBranch.XU),
+    )
     private val sanXingGroups = listOf(
         setOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN),
         setOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI),
@@ -278,6 +284,83 @@ object HunYinCalculator {
         if (allYang) {
             unfav += LiuQinItem("四柱纯阳", "四柱纯阳——婚姻难如意，${if (male) "婚姻不称心" else "性刚而婚多磨"}。")
         }
+        // ── 离婚隐患:配偶宫被月/时支冲刑合害(第四节) ──
+        run {
+            val posLabels2 = listOf("年支", "月支", "日支", "时支")
+            val gongShang = mutableListOf<String>()
+            listOf(1, 3).forEach { i ->
+                val ob = bazi.branches[i]
+                when {
+                    EarthlyBranch.entries[(ob.ordinal + 6) % 12] == dayBranch -> gongShang += "${posLabels2[i]}${ob.chinese}冲配偶宫"
+                    sanXingGroups.any { ob in it && dayBranch in it } -> gongShang += "${posLabels2[i]}${ob.chinese}刑配偶宫"
+                    liuHePairs.any { ob in it && dayBranch in it } -> gongShang += "${posLabels2[i]}${ob.chinese}合配偶宫"
+                    sanHeGroups.any { ob in it && dayBranch in it } -> gongShang += "${posLabels2[i]}${ob.chinese}半合配偶宫"
+                    liuHaiPairs.any { ob in it && dayBranch in it } -> gongShang += "${posLabels2[i]}${ob.chinese}害配偶宫"
+                }
+            }
+            if (gongShang.isNotEmpty()) {
+                val heYue = gongShang.any { it.startsWith("月支") && it.contains("合") }
+                unfav += LiuQinItem(
+                    "配偶宫受伤·离婚隐患",
+                    "配偶宫被${gongShang.joinToString("、")}——宫之状态即婚姻状态,原局有离婚隐患;" +
+                        (if (heYue) "宫与月令合,预示配偶有外遇之兆;日柱干支比和者感情结合不牢,第三者可乘虚而入。" else "") +
+                        "再逢刑冲合害配偶宫之大运流年即引发:轻则口角矛盾,重则离异(刑冲尤重)。",
+                )
+            }
+        }
+        // ── 克夫(女)/克妻(男)组合 ──
+        if (!male) {
+            val yangRenItems = ShenShaCalculator.analyze(bazi).items.filter { it.name == "羊刃" }
+            val shangWang = forces[elementOf(GodCategory.SHI, dayEl)]!! >= 3.0
+            val starKong = bazi.branches.indices.filter { branchHiddenStems.getValue(bazi.branches[it]).any { h -> h.element == spouseEl } }
+                .any { KongWangCalculator.analyze(bazi).isKong(it) }
+            val starRuMu = bazi.branches.contains(LiuQinXiJi.tombOf[spouseEl]!!) && forces[spouseEl]!! <= 1.5
+            val gongMa = ShenShaCalculator.analyze(bazi).items.any { it.name == "驿马" && it.branch == dayBranch }
+            val kb = mutableListOf<String>()
+            if (forces[dayEl]!! >= 3.0 || yangRenItems.isNotEmpty()) kb += "比劫${if (yangRenItems.isNotEmpty()) "羊刃" else ""}重重欺夫"
+            if (shangWang) kb += "食伤旺透伤夫"
+            if (starKong) kb += "夫星落空亡"
+            if (starRuMu) kb += "夫星入墓"
+            if (gongMa) kb += "夫宫临驿马(夫有跑掉之象)"
+            if (kb.size >= 2) {
+                unfav += LiuQinItem(
+                    "克夫之象",
+                    kb.joinToString("、") + "——婚姻极不顺:多婚克夫,不离婚则有死夫之虞;伤官食神旺年攻星、墓门冲开星入墓之年最凶。",
+                )
+            }
+        } else {
+            val yueBranch = bazi.monthPillar.branch
+            val gongPo = EarthlyBranch.entries[(yueBranch.ordinal + 6) % 12] == dayBranch
+            val caiZhiAnHe = bazi.branches.any { ob -> ob != dayBranch && anHePairs.any { ob in it && it.any { x -> x != ob && x == dayBranch } } } ||
+                bazi.branches.any { ob -> branchHiddenStems.getValue(ob).firstOrNull()?.element == spouseEl && anHePairs.any { ap -> ob in ap && ap.any { it != ob && it in bazi.branches } } }
+            if (gongPo) {
+                unfav += LiuQinItem(
+                    "克妻之象",
+                    "配偶宫被当令之支冲破" + (if (caiZhiAnHe) "+财(妻)星被暗合" else "") +
+                        "——婚姻不稳,克妻信息明显:岁运妻星配偶宫遭冲克之年,不生离则死别(例二十四式)。",
+                )
+            }
+        }
+        // ── 多婚多妻妾 ──
+        run {
+            if (!male) {
+                val guanSha = bazi.stems.indices.filter {
+                    it != 2 && (tenGodOfStem(day, bazi.stems[it]) == TenGod.ZHENG_GUAN || tenGodOfStem(day, bazi.stems[it]) == TenGod.QI_SHA)
+                }
+                if (guanSha.size >= 2) {
+                    unfav += LiuQinItem("官杀混杂·多夫", "年月透官杀而混杂——多夫之象:不嫁老夫便为妾,感情纠葛多婚之命(例十五、十七式)。")
+                }
+            } else {
+                val caiTou = bazi.stems.count { tenGodOfStem(day, it) == TenGod.ZHENG_CAI || tenGodOfStem(day, it) == TenGod.PIAN_CAI }
+                val caiCang = bazi.branches.count { branchHiddenStems.getValue(it).any { h -> h.element == spouseEl } }
+                if (caiTou >= 1 && caiCang >= 2 && forces[spouseEl]!! >= 2.5) {
+                    fav += LiuQinItem(
+                        "正偏财透藏·有妻有妾",
+                        "正偏财天透地藏(年月时均有财)——老婆多,身财两停者有妻有妾而不离;年月财透初同床者长于己;时支桃花临财者与子女同龄者为妻(例十八式)。",
+                    )
+                }
+            }
+        }
         // 夫星弱而无扶（例七：年月日无夫星仅时支余气，身旺欺夫，1988前难成婚）
         if (!male && starStems.isEmpty() && forces[spouseEl]!! in 0.51..1.0 &&
             BingYaoCalculator.analyze(bazi).strength == DayStrength.STRONG) {
@@ -338,6 +421,7 @@ object HunYinCalculator {
                     // 巳申等对六合三刑并存——合优先于刑（贪合忘刑）
                     if (!heWithGong && sanXingGroups.any { yb in it && dayBranch in it }) triggers += "${yb.chinese}刑配偶宫${dayBranch.chinese}——婚变动荡"
                     if (sanHeGroups.any { yb in it && dayBranch in it }) triggers += "${yb.chinese}与配偶宫${dayBranch.chinese}三合"
+                    if (liuHaiPairs.any { yb in it && dayBranch in it }) triggers += "${yb.chinese}害配偶宫${dayBranch.chinese}——婚变引信"
                     if (yb.element == dayBranch.element) triggers += "${yb.chinese}比助配偶宫${dayBranch.chinese}"
                     if (yb.element.generates == dayBranch.element) triggers += "${yb.chinese}生配偶宫${dayBranch.chinese}"
                 }
@@ -392,7 +476,26 @@ object HunYinCalculator {
                     yb.element == dayEl || yb.element.generates == dayEl) && age in legalAge..31 // 印比扶身届婚龄（身弱尤验——例九乙亥）
                 val gongKeGan = dayBrEl.controls == dayEl
                 val zhuGong = yb == dayBranch || (gongKeGan && yb.element == dayBranch.element)
+                // 离婚引发:原局宫有伤(冲刑合害)而流年再刑冲合害宫——状态再变,婚变之应
+                val gongShangJu = unfav.any { it.dim == "配偶宫受伤·离婚隐患" }
+                val lihunYin =
+                    triggers.any { it.contains("冲配偶宫") || it.contains("刑配偶宫") || it.contains("害配偶宫") } &&
+                        (gongShangJu || (xingTou && age >= 25))
+                // 亡偶:配偶星入墓之支被流年冲开(墓门开)或星逢流年墓
+                val starTomb = LiuQinXiJi.tombOf[spouseEl]!!
+                val wangOu = (yb == EarthlyBranch.entries[(starTomb.ordinal + 6) % 12] && bazi.branches.contains(starTomb)) ||
+                    (yb == starTomb && forces[spouseEl]!! <= 1.5)
                 when {
+                    wangOu && age > legalAge -> {
+                        kind = HunLianKind.BIAN_DONG
+                        text = "配偶星墓门之应——" + (if (yb == EarthlyBranch.entries[(starTomb.ordinal + 6) % 12]) "流年冲开${starTomb.chinese}墓,配偶星入墓" else "流年临配偶星之墓") +
+                            "亡偶之厄:不生离则死别(例九夫星入墓离婚、例二十三墓门开夫被误杀式)。"
+                    }
+                    lihunYin && age > legalAge -> {
+                        kind = HunLianKind.BIAN_DONG
+                        text = "原局配偶宫带伤,流年再" + triggers.firstOrNull { it.contains("配偶宫") }?.substringBefore("——") +
+                            "——宫之状态再变,婚变之应:口角激化乃至离异分居;若为合则防配偶外遇(第三方进入配偶生活——例一1999卯合戌式)。"
+                    }
                     zhuGong && gongKeGan && age > legalAge -> {
                         kind = HunLianKind.BIAN_DONG
                         text = "岁支${yb.chinese}助起克身之配偶宫（宫本克干）——夫妻关系恶化之年：口角压抑加剧（例三己巳庚午式）。"
