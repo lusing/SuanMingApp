@@ -161,7 +161,12 @@ private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.
     )
 
     /** 计算原局神煞，顺序固定（与 xuanzong calcShenSha 一致）。 */
-    fun analyze(bazi: BaziResult): ShenShaResult {
+    fun analyze(bazi: BaziResult): ShenShaResult = analyze(bazi, null)
+
+    /**
+     * 带性别版：附元辰（大耗）——阳男阴女取年支冲之前一位、阴男阳女取后一位（子冲午午前未；申冲寅寅后丑）。
+     */
+    fun analyze(bazi: BaziResult, male: Boolean?): ShenShaResult {
         val dayStem = bazi.dayPillar.stem
         val dayBranch = bazi.dayPillar.branch
         val monthBranch = bazi.monthPillar.branch
@@ -298,6 +303,7 @@ private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.
                 if (p.branch == jiangXing[yg]) out.add(ShenShaItem("将星", PillarBranchLabels[i + 1], branch = p.branch))
                 if (p.branch == zaiSha[yg]) out.add(ShenShaItem("灾煞", PillarBranchLabels[i + 1], branch = p.branch))
                 if (p.branch == jieSha[yg]) out.add(ShenShaItem("劫煞", PillarBranchLabels[i + 1], branch = p.branch))
+                if (p.branch == wangShen[yg]) out.add(ShenShaItem("亡神", PillarBranchLabels[i + 1], branch = p.branch))
             }
         }
         scanBranch(bazi, "将星", jiangXing[g], out)
@@ -316,6 +322,16 @@ private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.
         tianDeHe[monthBranch]?.let { th ->
             if (th.isStem) scanStem(bazi, "天德合", th.stem!!, out)
             else scanBranch(bazi, "天德合", th.branch!!, out)
+        }
+        if (male != null) {
+            // 元辰：阳男阴女=冲支+1，阴男阳女=冲支-1（以年支查四柱）
+            val yangYear = bazi.yearPillar.stem.ordinal % 2 == 0
+            val forward = (yangYear && male) || (!yangYear && !male)
+            val chong = EarthlyBranch.entries[(bazi.yearPillar.branch.ordinal + 6) % 12]
+            val yuanChen = EarthlyBranch.entries[((if (forward) chong.ordinal + 1 else chong.ordinal + 11) % 12)]
+            bazi.pillars.forEachIndexed { i, pl ->
+                if (pl.branch == yuanChen) out.add(ShenShaItem("元辰", PillarBranchLabels[i], branch = yuanChen))
+            }
         }
         return ShenShaResult(out)
     }
