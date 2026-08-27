@@ -140,7 +140,7 @@ object HangYeCalculator {
                 "身弱官杀制身过重奔波操劳性格内向懦弱，以手艺糊口（丁亥壬子丙子癸巳——铝制品厂工人式）")
         }
         // ⑨身弱官星清透无伤→清闲受人尊重（例十医生式）
-        if (biLi < 2.5 && dayGods.any { it == TenGod.ZHENG_GUAN } && dayGods.none { it == TenGod.SHANG_GUAN } &&
+        if (biLi < 3.5 && dayGods.any { it == TenGod.ZHENG_GUAN } && dayGods.none { it == TenGod.SHANG_GUAN } &&
             guanLi < 2.0 * biLi && bazi.branches.count { it.element == guanEl } < 3) {
             items += HangYeResult.HangYeItem("做事循规蹈矩安于现状（身弱官星清透）", "清闲受人尊重的职业",
                 "身弱官星清透——做事循规蹈矩安于现状，宜清闲受人尊重的职业（癸卯辛酉甲申甲子——医生式）")
