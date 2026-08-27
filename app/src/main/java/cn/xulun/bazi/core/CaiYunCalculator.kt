@@ -49,6 +49,11 @@ object CaiYunCalculator {
         setOf(EarthlyBranch.MAO, EarthlyBranch.XU), setOf(EarthlyBranch.CHEN, EarthlyBranch.YOU),
         setOf(EarthlyBranch.SI, EarthlyBranch.SHEN), setOf(EarthlyBranch.WU, EarthlyBranch.WEI),
     )
+    /** 地支暗合（支中藏干相合）：寅丑、午亥、子巳、卯申。 */
+    private val anHePairs = setOf(
+        setOf(EarthlyBranch.YIN, EarthlyBranch.CHOU), setOf(EarthlyBranch.WU, EarthlyBranch.HAI),
+        setOf(EarthlyBranch.ZI, EarthlyBranch.SI), setOf(EarthlyBranch.MAO, EarthlyBranch.SHEN),
+    )
     private val ganChong = setOf(
         setOf(HeavenlyStem.JIA, HeavenlyStem.GENG), setOf(HeavenlyStem.YI, HeavenlyStem.XIN),
         setOf(HeavenlyStem.BING, HeavenlyStem.REN), setOf(HeavenlyStem.DING, HeavenlyStem.GUI),
@@ -131,9 +136,13 @@ object CaiYunCalculator {
             bazi.branches.forEach { f[it.element] = f[it.element]!! + 1.0 }
             f[bazi.monthPillar.branch.element] = f[bazi.monthPillar.branch.element]!! + 2.0
             extraBranches.forEach { f[it.element] = f[it.element]!! + 1.0 }
-            // 三刑组齐
+            // 三刑组齐（可被暗合解——两丑暗合寅木；可被三合局覆盖解——亥卯未局解丑戌未刑）
             sanXingGroups.forEach { g ->
-                if (g.count { it in all } >= 3) return HeZhan(false, "三刑组齐（${g.joinToString("") { it.chinese }}）刑战")
+                if (g.count { it in all } >= 3) {
+                    val anHeSolve = anHePairs.any { ap -> ap.any { it in extraBranches } && ap.count { it in all } >= 2 }
+                    val sanHeSolve = sanHeGroups.any { (sg, _) -> sg.count { it in all && it in g } >= 1 && sg.count { it in all } >= 3 }
+                    if (!anHeSolve && !sanHeSolve) return HeZhan(false, "三刑组齐（${g.joinToString("") { it.chinese }}）刑战")
+                }
             }
             // 六合对数（合化解战）
             var hePairs = 0
@@ -178,20 +187,32 @@ object CaiYunCalculator {
                 return HeZhan(true, "${strong.chinese}克${weak.chinese}得${tong.chinese}通关" +
                     (if (tong == yearStemEl) "（岁干通关）" else if (yueGanTong) "（月干通关）" else ""))
             }
+            // 暗合有情解战——须交战双方之支尽被暗合（例十八子巳+午亥双暗合；郎双亥一午不尽仍战）
+            val zhiA = all.count { it.element == strong }
+            val zhiB = all.count { it.element == weak }
+            val anHeCnt = anHePairs.count { ap -> ap.any { it in extraBranches } && ap.count { it in all } >= 2 && ap.any { it.element == strong } && ap.any { it.element == weak } }
+            if (zhiA == zhiB && anHeCnt >= zhiA) { // 力均之战方谈尽合（徐1999金5木1力悬殊——一卯难解众金）
+                return HeZhan(true, "${strong.chinese}${weak.chinese}相战得暗合有情")
+            }
             return HeZhan(false, "${strong.chinese}${weak.chinese}交战无通关")
         }
 
-        fun mergeStemHeZhan(extraStems: List<HeavenlyStem>): HeZhan {
+        fun mergeStemHeZhan(extraStems: List<HeavenlyStem>, extraBranchesForStem: List<EarthlyBranch> = emptyList()): HeZhan {
             val all = bazi.stems + extraStems
             // 岁运并临而天干对冲——力增不可解（林2004甲申并临甲庚冲），从格亦战
+            val yearZhiCai = extraBranchesForStem.isNotEmpty() &&
+                branchHiddenStems.getValue(extraBranchesForStem.last()).firstOrNull()?.element == caiEl
             if (extraStems.size == 2 && extraStems[0] == extraStems[1] &&
-                extraStems[0].element != caiEl && // 岁干为财星当值不以战论（浙程2002壬午并临——财星当值而发）
+                extraStems[0].element != caiEl && !yearZhiCai && // 岁干/支财星当值不以战论（浙程壬午/例十八丁亥并临）
                 ganChong.any { g -> extraStems[0] in g && bazi.stems.any { it in g } }
             ) {
                 return HeZhan(false, "天干岁运并临对冲——力增战局")
             }
             // 干对冲（例外：从格从则不战；岁干为财星当值不判；冲方力≥3方冲得动）
-            if (!isCong && extraStems.isNotEmpty() && extraStems.last().element != caiEl) {
+            val bingLinCaiZhi = extraStems.size == 2 && extraStems[0] == extraStems[1] &&
+                extraBranchesForStem.isNotEmpty() &&
+                branchHiddenStems.getValue(extraBranchesForStem.last()).firstOrNull()?.element == caiEl
+            if (!isCong && extraStems.isNotEmpty() && extraStems.last().element != caiEl && !bingLinCaiZhi) {
                 val gf = Element.entries.associateWith { 0.0 }.toMutableMap()
                 all.forEach { gf[it.element] = gf[it.element]!! + 1.0 }
                 ganChong.forEach { p ->
@@ -251,12 +272,17 @@ object CaiYunCalculator {
                     DayStrength.STRONG -> setOf(cn.xulun.bazi.model.GodCategory.SHI, cn.xulun.bazi.model.GodCategory.CAI, cn.xulun.bazi.model.GodCategory.GUAN)
                     DayStrength.BALANCED -> setOf(cn.xulun.bazi.model.GodCategory.YIN)
                 }
+                val caiTouWithSource = (yGanGod == TenGod.ZHENG_CAI || yGanGod == TenGod.PIAN_CAI) &&
+                    ln.pillar.branch.element.generates == ln.pillar.stem.element
                 val yinDong = yGanGod == TenGod.ZHENG_CAI || yGanGod == TenGod.PIAN_CAI ||
                     // 比劫支当值（郎1995亥——胜财或败财之变年）
                     branchHiddenStems.getValue(ln.pillar.branch).firstOrNull()?.element == biEl ||
                     // 岁干支全喜用（例九1993癸酉）
                     (LiuQinXiJi.categoryOf(ln.pillar.stem.element, dayEl) in rawFav &&
                         LiuQinXiJi.categoryOf(branchHiddenStems.getValue(ln.pillar.branch).first().element, dayEl) in rawFav) ||
+                    sanHeGroups.any { (sg, _) -> ln.pillar.branch in sg &&
+                    (sg.any { sb -> sb == yun.pillar.branch && branchHiddenStems.getValue(sb).firstOrNull()?.element == caiEl } ||
+                        bazi.branches.any { sb -> sb in sg && sb.element == caiEl }) } || // 年支三合而财星支在组（合动财）
                     yZhiHasCai || ((yGanGod == TenGod.SHANG_GUAN || yGanGod == TenGod.SHI_SHEN) && run {
                         val keShi = Element.entries.first { it.controls == shiEl }
                         forces[shiEl]!! >= 2.0 && forces[shiEl]!! >= forces[keShi]!! // 食伤受克过重则不引（郑女士亥水遭土克）
@@ -275,6 +301,35 @@ object CaiYunCalculator {
                 val guanZhiDang = yZhiBenQiEl == guanElX && cn.xulun.bazi.model.GodCategory.GUAN in d.unf &&
                     ln.pillar.stem.element != biEl // 年干帮身则官受制不克身（林1999己比肩）
                 val biZhiDang = yZhiBenQiEl == biEl
+                // 官杀支当值而为喜且比劫力重——官星制劫护财，发财之机（例十六戊寅）
+                val guanZhiHuCai = yZhiBenQiEl == guanElX && cn.xulun.bazi.model.GodCategory.GUAN in d.fav &&
+                    forces[biEl]!! >= 3.0
+                // 专旺/两气成象——年支本气克势之行=逆势犯旺（例二十五乙亥丙子水逆火土势）
+                val teShu = TeShuGeJuCalculator.analyze(bazi)
+                val shiEl = teShu?.yongShen?.firstOrNull()
+                val niShi = teShu != null && shiEl != null &&
+                    teShu.kind in setOf(
+                        cn.xulun.bazi.model.TeShuKind.ZHUAN_WANG,
+                        cn.xulun.bazi.model.TeShuKind.LIANG_QI,
+                    ) && yZhiBenQiEl.controls == shiEl
+                // 财透而无根被克泄——破财导火索（例二十九丙子）
+                val keCaiEl = Element.entries.first { e -> e.controls == caiEl }
+                val xieCaiEl = caiEl.controls
+                val shengCaiEl = Element.entries.first { it.generates == caiEl }
+                val caiTouWuGen = (yGanGod == TenGod.ZHENG_CAI || yGanGod == TenGod.PIAN_CAI) &&
+                    !caiTouWithSource && // 岁支生岁干——财有贴身生源（例十二丙寅寅木生丙火）
+                    (bazi.branches + listOf(yun.pillar.branch, ln.pillar.branch)).none { it.element == caiEl } &&
+                    bazi.branches.count { it.element == keCaiEl } + bazi.branches.count { it.element == xieCaiEl } >
+                        bazi.branches.count { it.element == shengCaiEl } // 克泄之力压过生源——衰财被损（例二十九）
+                // 官合财——年支官杀行与运支/原局财星支六合三合,财被合绊（例二十二己卯卯合亥财）;
+                // 官支自身被暗合/六合于运支原局则官受绊不克财（林1999卯申暗合）
+                val guanZhiHeSelf = liuHePairs.any { pr -> ln.pillar.branch in pr && pr.any { it != ln.pillar.branch && (it == yun.pillar.branch || it in bazi.branches) } } ||
+                    anHePairs.any { ap -> ln.pillar.branch in ap && ap.any { it != ln.pillar.branch && it == yun.pillar.branch } } // 暗合须合于运支方有力绊官
+                val guanHeCai = yZhiBenQiEl == guanElX && !guanZhiHeSelf &&
+                    // 三合成合方为合绊（六合乃相合有情不绊——例十六寅亥六合官反护财而发）
+                    (sanHeGroups.any { (sg, _) -> ln.pillar.branch in sg } &&
+                        ((branchHiddenStems.getValue(yun.pillar.branch).firstOrNull()?.element == caiEl && yun.pillar.branch in sanHeGroups.keys.firstOrNull { ln.pillar.branch in it && yun.pillar.branch in it }.let { it ?: emptySet() }) ||
+                            caiBenQiPillars.any { p0 -> bazi.branches[p0] in sanHeGroups.keys.firstOrNull { g2 -> ln.pillar.branch in g2 && bazi.branches[p0] in g2 }.let { it ?: emptySet() } }))
                 val biJie = biZhiDang && forces[biEl]!! >= 3.0 &&
                     (cn.xulun.bazi.model.GodCategory.BI in d.unf || cn.xulun.bazi.model.GodCategory.CAI in d.fav) && // 教材忌/财旺争财
                     ln.pillar.stem.element.controls != biEl // 年干官杀制劫则劫不夺财（例十三甲戌——甲木制土劫，从势而发）
@@ -284,7 +339,7 @@ object CaiYunCalculator {
                 ) {
                     // 年干财星而年支本气生之——食伤生财，干气和顺
                     HeZhan(true, "岁干财星得年支${ln.pillar.branch.chinese}本气相生（食伤生财）")
-                } else mergeStemHeZhan(listOf(yun.pillar.stem, ln.pillar.stem))
+                } else mergeStemHeZhan(listOf(yun.pillar.stem, ln.pillar.stem), listOf(yun.pillar.branch, ln.pillar.branch))
                 // 比劫强克财之干战——群劫争财（严格强才算）
                 val jieCai = !stHe.he && stHe.desc.contains("交战") && run {
                     val fs = Element.entries.associateWith { 0.0 }.toMutableMap()
@@ -301,9 +356,21 @@ object CaiYunCalculator {
                 val chongNote = chongOf(ln.pillar.branch)?.let { cb ->
                     bazi.branches.filter { it == cb }.firstOrNull()?.let { "惟年支${ln.pillar.branch.chinese}冲${cb.chinese}，防有不愉快之事。" }
                 } ?: ""
-                if (allXiYong) {
+                if (guanHeCai) {
+                    kind = CaiYunKind.PO
+                    text = "年支${ln.pillar.branch.chinese}（官杀）合绊运支${yun.pillar.branch.chinese}财星——财被官合，投资失利破财之年。"
+                } else if (niShi) {
+                    kind = CaiYunKind.PO
+                    text = "命成${teShu!!.name}，年支${ln.pillar.branch.chinese}（${yZhiBenQiEl.chinese}行）逆势犯旺——破财之灾，切忌投资。"
+                } else if (caiTouWuGen) {
+                    kind = CaiYunKind.PO
+                    text = "财星${ln.pillar.stem.chinese}透而支中无根，被克泄耗交加——财星之力被损，破财导火索。"
+                } else if (allXiYong) {
                     kind = CaiYunKind.FA
                     text = "岁干支皆喜用（${ln.pillar.stem.chinese}${ln.pillar.branch.chinese}）——日干得生扶能胜财，有求财之举，财运尚可；得流年相助宜乘势而为。"
+                } else if (guanZhiHuCai) {
+                    kind = CaiYunKind.FA
+                    text = "官杀${ln.pillar.branch.chinese}当值而为喜，且比劫力重（${forces[biEl]}）——官星制劫护财，发财之机到来，可发大财。"
                 } else if (guanZhiDang) {
                     kind = CaiYunKind.PO
                     text = "官杀${ln.pillar.branch.chinese}当值而克身（官杀为忌）——因财生灾，官司口舌而损财，此年切忌违法冒险求财。"
