@@ -262,6 +262,49 @@ private val zaiSha = arrayOf(EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.
         if (bazi.dayPillar.fullName in listOf("壬辰", "庚戌", "庚辰", "戊戌")) {
             out.add(ShenShaItem("魁罡", "日柱", branch = bazi.dayPillar.branch))
         }
+        // 四废日（季节查日柱——当令行克死绝之行：春金废/夏水废/秋木废/冬火废）
+        val siFei = when (monthBranch) {
+            EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN -> listOf("庚申", "辛酉")
+            EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI -> listOf("壬子", "癸亥")
+            EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU -> listOf("甲寅", "乙卯")
+            else -> listOf("丙午", "丁巳")
+        }
+        if (bazi.dayPillar.fullName in siFei) out.add(ShenShaItem("四废日", "日柱", branch = bazi.dayPillar.branch))
+        // 阴阳差错（十二日柱——婚姻之煞：丙子丁丑戊寅辛卯壬辰癸巳丙午丁未戊申辛酉壬戌癸亥）
+        if (bazi.dayPillar.fullName in listOf(
+                "丙子", "丁丑", "戊寅", "辛卯", "壬辰", "癸巳", "丙午", "丁未", "戊申", "辛酉", "壬戌", "癸亥")) {
+            out.add(ShenShaItem("阴阳差错", "日柱", branch = bazi.dayPillar.branch))
+        }
+        // 十恶大败（十日柱禄入空亡：甲辰乙巳壬申丙申丁亥庚辰戊戌癸亥辛巳己丑；贵人吉神解救不以凶论）
+        if (bazi.dayPillar.fullName in listOf(
+                "甲辰", "乙巳", "壬申", "丙申", "丁亥", "庚辰", "戊戌", "癸亥", "辛巳", "己丑")) {
+            out.add(ShenShaItem("十恶大败", "日柱", branch = bazi.dayPillar.branch))
+        }
+        // 六甲空亡（旬尽处有支无干——以日柱查年月时支，也可以年柱查）
+        val kongOf: (Pillar) -> List<EarthlyBranch> = { pl ->
+            val head = pl.cycleIndex - (pl.cycleIndex % 10)
+            listOf(
+                EarthlyBranch.entries[(head + 10) % 12],
+                EarthlyBranch.entries[(head + 11) % 12],
+            )
+        }
+        val dayKong = kongOf(bazi.dayPillar)
+        bazi.pillars.forEachIndexed { i, pl ->
+            if (i != 2 && pl.branch in dayKong) out.add(ShenShaItem("空亡", PillarBranchLabels[i], branch = pl.branch))
+        }
+        // 丧门吊客（命前二位为丧后二位为吊——以年支查其余各支；主要用于查流年）
+        val sangMen = EarthlyBranch.entries[(bazi.yearPillar.branch.ordinal + 2) % 12]
+        val diaoKe = EarthlyBranch.entries[(bazi.yearPillar.branch.ordinal + 10) % 12]
+        bazi.pillars.drop(1).forEachIndexed { i, pl ->
+            if (pl.branch == sangMen) out.add(ShenShaItem("丧门", PillarBranchLabels[i + 1], branch = pl.branch))
+            if (pl.branch == diaoKe) out.add(ShenShaItem("吊客", PillarBranchLabels[i + 1], branch = pl.branch))
+        }
+        val yearKong = kongOf(bazi.yearPillar)
+        bazi.pillars.forEachIndexed { i, pl ->
+            if (i != 0 && pl.branch in yearKong && out.none { it.name == "空亡" && it.branch == pl.branch }) {
+                out.add(ShenShaItem("空亡", PillarBranchLabels[i], branch = pl.branch))
+            }
+        }
         // 金神（时柱三座：乙丑/己巳/癸酉——破财之神要制伏入火乡为胜；带七煞阳刃真贵人）
         if (bazi.hourPillar.fullName in listOf("乙丑", "己巳", "癸酉")) {
             out.add(ShenShaItem("金神", "时柱", branch = bazi.hourPillar.branch))

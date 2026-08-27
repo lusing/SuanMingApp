@@ -34,6 +34,8 @@ class ShenShaCalculatorTest {
                 itemStem("月德合", "年干", HeavenlyStem.YI),
                 itemStem("天德贵人", "月干", HeavenlyStem.XIN),
                 item("六厄", "时支", EarthlyBranch.ZI),
+                item("空亡", "年支", EarthlyBranch.CHOU),  // 己未日甲寅旬空子丑
+                item("空亡", "时支", EarthlyBranch.ZI),
             ).map { it.name + "@" + it.pillarLabel }.sorted(),
             r.items.map { it.name + "@" + it.pillarLabel }.sorted(),
         )
@@ -55,6 +57,10 @@ class ShenShaCalculatorTest {
                 itemStem("月德合", "日干", HeavenlyStem.XIN),
                 itemStem("月德合", "时干", HeavenlyStem.XIN),
                 item("六厄", "时支", EarthlyBranch.MAO),
+                item("阴阳差错", "日柱", EarthlyBranch.YOU),  // 辛酉在十二日柱
+                item("四废日", "日柱", EarthlyBranch.YOU),  // 春月金废
+                item("空亡", "日支", EarthlyBranch.YOU),  // 庚辰年甲戌旬空申酉
+                item("吊客", "月支", EarthlyBranch.YIN),  // 庚辰年后二位寅
             ).map { it.name + "@" + it.pillarLabel }.sorted(),
             r.items.map { it.name + "@" + it.pillarLabel }.sorted(),
         )
