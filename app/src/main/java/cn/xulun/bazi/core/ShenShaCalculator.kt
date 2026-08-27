@@ -138,6 +138,22 @@ object ShenShaCalculator {
         EarthlyBranch.HAI to TianDe(true, stem = HeavenlyStem.YI),          // 亥→乙(干)
     )
 
+    // ── 天德合（月支查）：与天德干五合/支六合——寅壬 卯巳 辰丁 巳丙 午寅 未己 申戊 酉亥 戌辛 亥庚 子申 丑乙 ──
+    private val tianDeHe: Map<EarthlyBranch, TianDe> = mapOf(
+        EarthlyBranch.ZI to TianDe(false, branch = EarthlyBranch.SHEN),     // 子→申(支)
+        EarthlyBranch.CHOU to TianDe(true, stem = HeavenlyStem.YI),         // 丑→乙(干)
+        EarthlyBranch.YIN to TianDe(true, stem = HeavenlyStem.REN),         // 寅→壬(干)
+        EarthlyBranch.MAO to TianDe(false, branch = EarthlyBranch.SI),      // 卯→巳(支)
+        EarthlyBranch.CHEN to TianDe(true, stem = HeavenlyStem.DING),       // 辰→丁(干)
+        EarthlyBranch.SI to TianDe(true, stem = HeavenlyStem.BING),         // 巳→丙(干)
+        EarthlyBranch.WU to TianDe(false, branch = EarthlyBranch.YIN),      // 午→寅(支)
+        EarthlyBranch.WEI to TianDe(true, stem = HeavenlyStem.JI),          // 未→己(干)
+        EarthlyBranch.SHEN to TianDe(true, stem = HeavenlyStem.WU),         // 申→戊(干)
+        EarthlyBranch.YOU to TianDe(false, branch = EarthlyBranch.HAI),     // 酉→亥(支)
+        EarthlyBranch.XU to TianDe(true, stem = HeavenlyStem.XIN),          // 戌→辛(干)
+        EarthlyBranch.HAI to TianDe(true, stem = HeavenlyStem.GENG),        // 亥→庚(干)
+    )
+
     /** 计算原局神煞，顺序固定（与 xuanzong calcShenSha 一致）。 */
     fun analyze(bazi: BaziResult): ShenShaResult {
         val dayStem = bazi.dayPillar.stem
@@ -176,6 +192,11 @@ object ShenShaCalculator {
         tianDe[monthBranch]?.let { td ->
             if (td.isStem) scanStem(bazi, "天德贵人", td.stem!!, out)
             else scanBranch(bazi, "天德贵人", td.branch!!, out)
+        }
+        // 天德合：与天德之星干五合或支六合者（正丁天德壬为合；二月申天德巳为合）——命中无天德而只有天德合亦起相似作用
+        tianDeHe[monthBranch]?.let { th ->
+            if (th.isStem) scanStem(bazi, "天德合", th.stem!!, out)
+            else scanBranch(bazi, "天德合", th.branch!!, out)
         }
         return ShenShaResult(out)
     }
