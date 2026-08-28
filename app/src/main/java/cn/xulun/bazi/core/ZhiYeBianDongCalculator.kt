@@ -5,6 +5,7 @@ import cn.xulun.bazi.model.DaYunInfo
 import cn.xulun.bazi.model.DayStrength
 import cn.xulun.bazi.model.Element
 import cn.xulun.bazi.model.EarthlyBranch
+import cn.xulun.bazi.model.HeavenlyStem
 import cn.xulun.bazi.model.BianDongYear
 import cn.xulun.bazi.model.ZhiYeBianDongResult
 import cn.xulun.bazi.model.branchHiddenStems
@@ -43,6 +44,19 @@ object ZhiYeBianDongCalculator {
 
     private fun br2(b: EarthlyBranch): EarthlyBranch = EarthlyBranch.entries[(b.ordinal + 6) % 12]
 
+    /** 日干起金舆（禄前二位）：甲辰乙巳丙戊未，丁己申庚戌，辛亥壬丑癸寅。 */
+    private val jinYuOf = mapOf(
+        HeavenlyStem.JIA to EarthlyBranch.CHEN, HeavenlyStem.YI to EarthlyBranch.SI,
+        HeavenlyStem.BING to EarthlyBranch.WEI, HeavenlyStem.WU to EarthlyBranch.WEI,
+        HeavenlyStem.DING to EarthlyBranch.SHEN, HeavenlyStem.JI to EarthlyBranch.SHEN,
+        HeavenlyStem.GENG to EarthlyBranch.XU, HeavenlyStem.XIN to EarthlyBranch.HAI,
+        HeavenlyStem.REN to EarthlyBranch.CHOU, HeavenlyStem.GUI to EarthlyBranch.YIN,
+    )
+    private val anHePairs = listOf(
+        setOf(EarthlyBranch.YIN, EarthlyBranch.CHOU), setOf(EarthlyBranch.WU, EarthlyBranch.HAI),
+        setOf(EarthlyBranch.ZI, EarthlyBranch.SI), setOf(EarthlyBranch.MAO, EarthlyBranch.SHEN),
+    )
+
     fun analyze(bazi: BaziResult, daYun: DaYunInfo?): ZhiYeBianDongResult {
         val day = bazi.dayPillar.stem
         val dayEl = day.element
@@ -78,12 +92,19 @@ object ZhiYeBianDongCalculator {
                 }
                 if (triggers.isNotEmpty()) notes += "刑冲合动官杀印星——工作环境变动之应"
 
-                // ② 驿马（年支起，岁支/运支临马）
-                val ma = yiMa[bazi.yearPillar.branch]
-                if (ma != null && (yb == ma || yun.pillar.branch == ma)) {
+                // ② 驿马（年支/日支起，岁支/运支临马）
+                val maSet = setOfNotNull(yiMa[bazi.yearPillar.branch], yiMa[bazi.dayPillar.branch])
+                val ma = maSet.firstOrNull { yb == it || yun.pillar.branch == it }
+                if (ma != null) {
                     val zhong = yb == ma && yun.pillar.branch == ma
-                    triggers += "驿马${ma.chinese}入命" + (if (zhong) "（岁运并临——驿马重重）" else "")
+                    triggers += "驿马${ma.chinese}入命" + (if (zhong) "（岁运并临——驿马重重）" else if (yb == ma) "（驿马值年）" else "")
                     notes += "驿马主奔波走动——工作调动之应"
+                }
+
+                // ②c 官杀值岁得运支之生——官星得生而动（例八式：岁支官杀得子水生且临驿马）
+                if (benQi(yb) == guanEl && yun.pillar.branch.element.generates == guanEl) {
+                    triggers += "岁支${yb.chinese}（官杀）得运支${yun.pillar.branch.chinese}（${yun.pillar.branch.element.chinese}）之生"
+                    notes += "官杀得生而临动星——工作环境变化（例八毕业参加工作式）"
                 }
 
                 // ③ 官杀值年克身较重（身弱）
@@ -98,6 +119,24 @@ object ZhiYeBianDongCalculator {
                 ) {
                     triggers += "食伤流年（${ys.chinese}${yb.chinese}）"
                     notes += "食伤之年多工作变动之应"
+                }
+
+                // ②b 金舆（日干起，禄前二位）——岁支临金舆，或运支临金舆而被岁支引动（合冲暗合）——工作调动（例五式）
+                val jinYu = jinYuOf[day]
+                val yinDongYun = yb != yun.pillar.branch &&
+                    (liuHePairs.any { yb in it && yun.pillar.branch in it } || anHePairs.any { yb in it && yun.pillar.branch in it } ||
+                        br2(yb) == yun.pillar.branch)
+                if (jinYu != null && (yb == jinYu || (yun.pillar.branch == jinYu && yinDongYun))) {
+                    triggers += "金舆${jinYu.chinese}临岁运"
+                    notes += "金舆主迁移——有工作方面的调动（例五式）"
+                }
+
+                // 特殊：天合地合（岁干合运干+岁支合运支）——合也主动，环境变化（例六式）
+                val ganHe = Math.floorMod(ys.ordinal - yun.pillar.stem.ordinal, 10) == 5 && ys != yun.pillar.stem
+                val zhiHeYun = liuHePairs.any { yb in it && yun.pillar.branch in it }
+                if (ganHe && zhiHeYun) {
+                    triggers += "${ys.chinese}${yun.pillar.stem.chinese}合、${yb.chinese}${yun.pillar.branch.chinese}合——与大运天合地合"
+                    notes += "天合地合，合也主动——有工作环境变化（例六驻外式）"
                 }
 
                 // 特殊：岁运逢冲（岁支冲运支）——环境变化之应（例四式；运与原局组三刑时"刑也主动"）
