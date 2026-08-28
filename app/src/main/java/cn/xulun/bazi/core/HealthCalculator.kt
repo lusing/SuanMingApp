@@ -31,6 +31,18 @@ object HealthCalculator {
         Element.METAL to "肺大肠", Element.WATER to "肾膀胱",
     )
 
+    /** 受损行之伤类说明（第三章伤灾相战→伤类）。 */
+    private fun injuryNote(el: Element, keEl: Element, haoEl: Element): String {
+        val note = when (el) {
+            Element.WOOD -> "金木交战主刀伤手术骨折（木主筋骨）；木土交战主锐器撞摔伤——筋骨之伤（骨折）难免。"
+            Element.FIRE -> "水火交战主烫伤烧伤中毒车祸（行驰为水流血为火）。"
+            Element.EARTH -> "木土交战主锐器撞摔伤；土水相战主碰伤土石砸伤。"
+            Element.METAL -> "火金交战主灼伤刀伤；金主刀刃血光——手术之象。"
+            Element.WATER -> "土水相战主碰伤土埋溺水。"
+        }
+        return note + "伤灾应期为${keEl.chinese}${haoEl.chinese}当值引动战局之流年。"
+    }
+
     fun analyze(bazi: BaziResult): HealthResult {
         val dayEl = bazi.dayPillar.stem.element
         val d = LiuQinXiJi.derive(bazi)
@@ -102,6 +114,7 @@ object HealthCalculator {
                 crowd >= 2.0 * own && own < 3.0 -> risks += LiuQinItem(
                     "${el.chinese}行受损·${elementZang[el]}",
                     "${el.chinese}行力仅$own，被克泄耗之行合力$crowd（${keEl.chinese}克${xieEl.chinese}泄${haoEl.chinese}耗）——${elementDisease[el]}；" +
+                        injuryNote(el, keEl, haoEl) +
                         "逢克泄耗${el.chinese}之行的大运流年易发病，宜提前调养（通关之行到位则缓解）。",
                 )
                 piao -> risks += LiuQinItem(
@@ -140,6 +153,14 @@ object HealthCalculator {
             risks += LiuQinItem(
                 "土水混杂·皮肤之患",
                 "土主皮肤而土水混杂——易患皮肤病（例二式怪病/例七式伴疤痕）；木运木年克土时引发加剧。",
+            )
+        }
+
+        // ── 伤灾倾向（第三章：五行激烈相战）──
+        if (risks.count { it.dim.contains("受损") || it.dim.contains("皮肤病") || it.dim.contains("眼疾") } >= 3) {
+            risks += LiuQinItem(
+                "五行混战·伤灾",
+                "原局多行交战（三行以上受损）——一生容易生病受伤，伤灾突如其来：木土战锐器撞摔伤、水火战烫伤车祸（行驰为水流血为火）、金木战刀伤手术骨折、火金战灼伤、土水战碰伤溺水；岁运引发战局之流年尤须防范（特定时段避乘车辆等可免）。",
             )
         }
 

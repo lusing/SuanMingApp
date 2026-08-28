@@ -109,4 +109,26 @@ class HealthCalculatorTest {
         )
         assertTrue(r.risks.any { it.dim.contains("眼疾") && it.text.contains("土多火晦") })
     }
+
+    @Test
+    fun `伤灾例一 崔先生 五行混战 一生伤病`() {
+        val r = health(
+            HeavenlyStem.WU, EarthlyBranch.WU,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN,
+            HeavenlyStem.DING, EarthlyBranch.WEI,
+            HeavenlyStem.GUI, EarthlyBranch.MAO,
+        )
+        assertTrue(r.risks.any { it.dim.contains("混战") && it.text.contains("伤灾") })
+    }
+
+    @Test
+    fun `伤灾例十四 乙丑丁亥乙丑丁丑 土旺木折 骨折`() {
+        val r = health(
+            HeavenlyStem.YI, EarthlyBranch.CHOU,
+            HeavenlyStem.DING, EarthlyBranch.HAI,
+            HeavenlyStem.YI, EarthlyBranch.CHOU,
+            HeavenlyStem.DING, EarthlyBranch.CHOU,
+        )
+        assertTrue(r.risks.any { it.dim.contains("木") && it.text.contains("骨折") })
+    }
 }
