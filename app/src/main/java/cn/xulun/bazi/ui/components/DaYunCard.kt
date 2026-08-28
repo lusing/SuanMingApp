@@ -2,9 +2,7 @@ package cn.xulun.bazi.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,15 +17,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.xulun.bazi.model.DaYun
 import cn.xulun.bazi.model.HeavenlyStem
+import cn.xulun.bazi.model.LiuNianDetail
 import cn.xulun.bazi.model.tenGodOfStem
 import cn.xulun.bazi.ui.theme.CreamBg
 import cn.xulun.bazi.ui.theme.PillarBorder
+import cn.xulun.bazi.ui.theme.SeedRed
 
-/** 一步大运卡片：干支 + 十神、起止、10 个流年（纯展示，全面铺开不可点选）。 */
+/**
+ * 一步大运卡片：干支 + 十神、起止、每流年细断全面铺开——
+ * 干支十神/喜忌/刑冲克害/三合三会/六合五合/暗合/合化成否/格局变化。
+ */
 @Composable
 fun DaYunCard(
     yun: DaYun,
     dayMaster: HeavenlyStem,
+    years: List<LiuNianDetail> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val god = tenGodOfStem(dayMaster, yun.pillar.stem).chinese
@@ -50,17 +54,35 @@ fun DaYunCard(
             color = Color(0xFF757575),
         )
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            yun.liuNian.forEach { ln ->
-                Text(
-                    text = "${ln.year} ${ln.pillar.fullName} ${tenGodOfStem(dayMaster, ln.pillar.stem).chinese}",
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp,
-                    color = Color(0xFF333333),
-                )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            years.forEach { y ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                ) {
+                    Text(
+                        text = "${y.year} ${y.ganZhi}  ${y.tenGods}  ${y.xiJi}",
+                        fontSize = 12.sp,
+                        color = Color(0xFF333333),
+                    )
+                    if (y.relations.isNotEmpty()) {
+                        Text(
+                            text = y.relations.joinToString("；"),
+                            fontSize = 10.sp,
+                            lineHeight = 14.sp,
+                            color = Color(0xFF8D6E63),
+                        )
+                    }
+                    if (y.geJu != null) {
+                        Text(
+                            text = y.geJu,
+                            fontSize = 10.sp,
+                            lineHeight = 14.sp,
+                            color = SeedRed,
+                        )
+                    }
+                }
             }
         }
     }

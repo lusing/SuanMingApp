@@ -155,7 +155,11 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         YongShenSection(result = yongShen)
         TiaoHouSection(result = tiaoHou)
         if (daYun != null) {
-            DaYunSection(info = daYun, dayMaster = dayMaster)
+            DaYunSection(
+                info = daYun,
+                dayMaster = dayMaster,
+                yunNian = cn.xulun.bazi.core.YunNianCalculator.analyze(result, daYun),
+            )
         }
         HeHuaSection(result = heHua)
         DiZhiRelationSection(result = diZhiRelation)
@@ -208,6 +212,7 @@ private fun NayinChip(label: String, pillar: cn.xulun.bazi.model.Pillar) {
 private fun DaYunSection(
     info: DaYunInfo,
     dayMaster: cn.xulun.bazi.model.HeavenlyStem,
+    yunNian: cn.xulun.bazi.model.YunNianResult,
 ) {
     Card(
         modifier = Modifier
@@ -227,14 +232,24 @@ private fun DaYunSection(
                 color = androidx.compose.ui.graphics.Color(0xFF757575),
                 modifier = Modifier.padding(top = 4.dp),
             )
+            Text(
+                text = "喜忌口径：${yunNian.xiJiBasis}",
+                fontSize = 11.sp,
+                color = androidx.compose.ui.graphics.Color(0xFF6D4C41),
+                modifier = Modifier.padding(top = 2.dp),
+            )
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                info.yuns.forEach { yun ->
-                    DaYunCard(yun = yun, dayMaster = dayMaster)
+                info.yuns.forEachIndexed { i, yun ->
+                    DaYunCard(
+                        yun = yun,
+                        dayMaster = dayMaster,
+                        years = yunNian.yuns.getOrNull(i)?.years ?: emptyList(),
+                    )
                 }
             }
         }
