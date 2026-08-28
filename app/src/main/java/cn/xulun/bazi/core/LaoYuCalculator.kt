@@ -134,6 +134,14 @@ object LaoYuCalculator {
             )
         }
 
+        // 身旺印旺财弱——见财起意见利忘义（例十四式）
+        if (f[yinEl]!! >= 3.0 && f[dayEl]!! >= 3.0 && f[dayEl.controls]!! <= 2.0) {
+            risks += LiuQinItem(
+                "身旺印旺财弱",
+                "身旺印旺而财弱——往往见财起意、见利忘义；枭印为忌虎视眈眈——阴险狡诈、精于算计之人（例十四式：多行不义，难逃法网）。",
+            )
+        }
+
         // 伤官双体有力+官透+身弱——伤官见官定有官灾（例十三式）；三刑入命提示职务多变+触犯刑法
         val shangShuangTi = shangTouIdx.isNotEmpty() &&
             bazi.branches.any { branchHiddenStems.getValue(it).firstOrNull()?.element == dayEl.generates &&
@@ -437,6 +445,22 @@ object LaoYuCalculator {
                         triggers += "岁支${yb.chinese}为印星还原"
                         notes += "印星得力获生机——可获救出狱（例十三甲申乙酉式）"
                     }
+                }
+
+                // 禄会之年+财星值岁+财印相战——贪污入狱（例十四己卯式）
+                val luZhi = when (day) {
+                    HeavenlyStem.JIA -> EarthlyBranch.YIN; HeavenlyStem.YI -> EarthlyBranch.MAO
+                    HeavenlyStem.BING -> EarthlyBranch.SI; HeavenlyStem.WU -> EarthlyBranch.SI
+                    HeavenlyStem.DING -> EarthlyBranch.WU; HeavenlyStem.JI -> EarthlyBranch.WU
+                    HeavenlyStem.GENG -> EarthlyBranch.SHEN; HeavenlyStem.XIN -> EarthlyBranch.YOU
+                    HeavenlyStem.REN -> EarthlyBranch.HAI; else -> EarthlyBranch.ZI
+                }
+                if (yb == luZhi && tenGodOfStem(day, ys) in setOf(TenGod.ZHENG_CAI, TenGod.PIAN_CAI) &&
+                    f[yinEl]!! >= 3.0
+                ) {
+                    triggers += "禄会之年（${yb.chinese}为日主之禄）+财星${ys.chinese}轮值+印旺（${f[yinEl]}）——财印相战"
+                    notes += "印旺身旺见财起意——因伙同贪污而入狱（例十四己卯式）"
+                    severe = true
                 }
 
                 // 干支两系统皆战（混战）——续灾（例一戊寅式）

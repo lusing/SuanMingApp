@@ -43,6 +43,25 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例十四 乾造 壬辰癸卯乙丑丙子 身旺印旺财弱+己卯禄会贪污入狱`() {
+        val bazi = chartOf(
+            HeavenlyStem.REN, EarthlyBranch.CHEN,
+            HeavenlyStem.GUI, EarthlyBranch.MAO,
+            HeavenlyStem.YI, EarthlyBranch.CHOU,
+            HeavenlyStem.BING, EarthlyBranch.ZI,
+            1950, 2000,
+        )
+        assertEquals2("壬辰 癸卯 乙丑 丙子", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 身旺印旺财弱——见财起意见利忘义；枭印为忌阴险狡诈
+        assertTrue(r.baseRisks.any { it.dim.contains("身旺印旺财弱") })
+        // 1999己卯：禄会之年财星轮值财印相战——因伙同贪污而入狱
+        val y99 = r.years.firstOrNull { it.year == 1999 }
+        assertNotNull(y99)
+        assertTrue(y99!!.text.contains("贪污") || y99.text.contains("入狱"))
+    }
+
+    @Test
     fun `例十三 乾造 壬辰戊申癸巳甲寅 伤官越印攻官入狱+印还原获救`() {
         val bazi = chartOf(
             HeavenlyStem.REN, EarthlyBranch.CHEN,
