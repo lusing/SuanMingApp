@@ -34,8 +34,8 @@ object JiaoJiCalculator {
         val shiBenQi = bazi.branches.count { branchHiddenStems.getValue(it).firstOrNull()?.element == shiEl }
         val shiLi = f[shiEl]!!
 
-        // 制住：印星力明显压过食伤（印克食伤）
-        val zhiZhu = f[yinEl]!! >= shiLi + 1.0
+        // 制住：印星力明显压过食伤（印克食伤）；印所生之行（比劫）通关则贪生忘克不制（例三——火印2比土1通关）
+        val zhiZhu = f[yinEl]!! >= shiLi + 1.0 && f[yinEl.generates]!! < 1.0
         // 合住：食伤透干与原局他干五合（贪合忘泄）
         val heZhu = (shiShenTou || shangTou) && run {
             val shiShangGans = bazi.stems.indices.filter { it != 2 }
@@ -63,6 +63,10 @@ object JiaoJiCalculator {
                 parts += "原局食伤不弱（${shiEl.chinese}行力${shiLi}）且未被制住合住——交际天赋较好，能力往往也不错"
                 "交际天赋好"
             }
+            f[Element.WATER]!! >= 4.0 -> {
+                parts += "食伤偏弱（力${shiLi}）而水智强旺（水力${f[Element.WATER]}）——非常聪明灵活，补表达之弱——交际还是不错的（例二王先生式）"
+                "交际天赋不错（水智补弱）"
+            }
             else -> {
                 parts += "食伤力${shiLi}偏弱——交际天赋一般，后天锻炼可补"
                 "交际天赋一般"
@@ -84,24 +88,34 @@ object JiaoJiCalculator {
         }
         val style = when {
             shangTou && shangLi >= shiShenLi -> "伤官较强——语言直接爽快，一针见血"
-            shiShenTou || shiShenLi > 0 -> "食神较强——含蓄委婉，言语得体"
+            shiShenTou -> "食神透干——含蓄委婉，言语得体"
+            shiBenQi > 0 && shangLi < 0.5 -> "食神藏支而无伤官——内秀型：含蓄委婉，初识不觉、久处方知，口碑渐好（例二王先生式）"
+            shiBenQi > 0 || shiShenLi > 0 -> "食神较弱——含蓄委婉"
             else -> "食伤不显——少言寡语"
         }
 
-        // 水智与生克
-        val waterNote = when {
-            f[Element.WATER]!! >= 3.0 && f[Element.EARTH]!! < f[Element.WATER]!! ->
+        // 水智与生克（多注并列——可同时有水智强与食伤克水打折）
+        val waterNotes = mutableListOf<String>()
+        if (f[Element.WATER]!! >= 3.0) {
+            waterNotes += if (f[Element.EARTH]!! < f[Element.WATER]!!) {
                 "命局水多水强（力${f[Element.WATER]}）而无土克——水主智，交际手段和能力较好"
-            f[Element.WATER]!! >= 3.0 && f[Element.EARTH]!! >= f[Element.WATER]!! ->
+            } else {
                 "水虽多（力${f[Element.WATER]}）而被土克——交际智慧打折"
-            Element.WATER.generates == shiEl && f[Element.WATER]!! >= 2.0 ->
-                "水生食伤（水力${f[Element.WATER]}）——智慧生表达，交际能力得到加强"
-            shiEl.controls == Element.WATER && shiLi >= 2.0 ->
-                "食伤（${shiEl.chinese}）克水——表达压过智慧，交际天赋打折扣"
-            Element.WATER.controls == shiEl && f[Element.WATER]!! >= 3.0 ->
-                "水克食伤（${shiEl.chinese}）——智慧压过表达，想说说不出口"
-            else -> ""
+            }
         }
+        if (Element.WATER.generates == shiEl && f[Element.WATER]!! >= 2.0) {
+            waterNotes += "水生食伤（水力${f[Element.WATER]}）——智慧生表达，交际能力得到加强"
+        }
+        if (shiEl.generates == Element.WATER && shiLi >= 1.0) {
+            waterNotes += "食伤（${shiEl.chinese}）与水相生——表达与智慧相济，交际天赋不错（例三刘先生式）"
+        }
+        if (shiEl.controls == Element.WATER && shiBenQi >= 1) {
+            waterNotes += "食伤（${shiEl.chinese}本气支）与水相克——交际天赋打折扣；惟水多而强旺——聪明灵活，交际仍然不错（例二式）"
+        }
+        if (Element.WATER.controls == shiEl && f[Element.WATER]!! >= 3.0) {
+            waterNotes += "水克食伤（${shiEl.chinese}）——智慧压过表达，想说说不出口"
+        }
+        val waterNote = waterNotes.joinToString("；")
 
         // 食伤大运转折
         val yunTurning = if (shiLi <= 1.0 && daYun != null) {

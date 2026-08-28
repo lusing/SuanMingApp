@@ -33,4 +33,40 @@ class JiaoJiCalculatorTest {
         // 42岁后行壬子、辛亥食伤运——交际转折点
         assertTrue(r.yunTurning.contains("壬子") || r.yunTurning.contains("转折"))
     }
+
+    @Test
+    fun `例二 王先生 壬子辛亥丙辰庚寅 食神藏支内秀+食伤克水打折+水智补弱`() {
+        val bazi = chartOf(
+            HeavenlyStem.REN, EarthlyBranch.ZI,
+            HeavenlyStem.XIN, EarthlyBranch.HAI,
+            HeavenlyStem.BING, EarthlyBranch.CHEN,
+            HeavenlyStem.GENG, EarthlyBranch.YIN,
+            1950, 2000,
+        )
+        assertEquals("壬子 辛亥 丙辰 庚寅", bazi.fullBazi)
+        val dy = DaYunCalculator.compute(bazi, Gender.MALE)
+        val r = JiaoJiCalculator.analyze(bazi, dy)
+        // 有食神（辰藏支）+水当令党众——交际天赋；食神与水相克打折；水旺聪明灵活——交际仍不错
+        assertTrue(r.talent.contains("不错") || r.talent.contains("好"))
+        assertTrue(r.waterNote.contains("相克") || r.waterNote.contains("折扣"))
+        // 只有食神无伤官且食神在地支——内秀：久处方知，口碑好
+        assertTrue(r.style.contains("内秀"))
+    }
+
+    @Test
+    fun `例三 刘先生 己酉丙子戊午癸亥 伤官与水相生交际不错`() {
+        val bazi = chartOf(
+            HeavenlyStem.JI, EarthlyBranch.YOU,
+            HeavenlyStem.BING, EarthlyBranch.ZI,
+            HeavenlyStem.WU, EarthlyBranch.WU,
+            HeavenlyStem.GUI, EarthlyBranch.HAI,
+            1950, 2000,
+        )
+        assertEquals("己酉 丙子 戊午 癸亥", bazi.fullBazi)
+        val dy = DaYunCalculator.compute(bazi, Gender.MALE)
+        val r = JiaoJiCalculator.analyze(bazi, dy)
+        // 原局有伤官和水，伤官与水相生——交际天赋不错（聪明能干待人热情善交际）
+        assertTrue(r.talent.contains("不错") || r.talent.contains("好"))
+        assertTrue(r.waterNote.contains("相生"))
+    }
 }
