@@ -68,6 +68,22 @@ class LaoYuCalculatorTest {
         val y04 = r3.years.firstOrNull { it.year == 2004 }
         assertNotNull(y04)
         assertTrue(y04!!.text.contains("官司") || y04.text.contains("麻烦") || y04.text.contains("小人"))
+
+        // 例四 程先生 庚戌己卯戊子壬戌：偏财贴身+子卯刑+透食神——2000庚辰食神生偏财+辰冲戌+
+        // 卯辰害+比劫亢旺克财——盗用商标坐牢
+        val bazi4 = chartOf(
+            HeavenlyStem.GENG, EarthlyBranch.XU,
+            HeavenlyStem.JI, EarthlyBranch.MAO,
+            HeavenlyStem.WU, EarthlyBranch.ZI,
+            HeavenlyStem.REN, EarthlyBranch.XU,
+            1950, 2000,
+        )
+        assertEquals2("庚戌 己卯 戊子 壬戌", bazi4.fullBazi)
+        val r4 = LaoYuCalculator.analyze(bazi4, DaYunCalculator.compute(bazi4, Gender.MALE))
+        assertTrue(r4.baseRisks.any { it.text.contains("铤而走险") })
+        val y00 = r4.years.firstOrNull { it.year == 2000 }
+        assertNotNull(y00)
+        assertTrue(y00!!.text.contains("牢狱"))
         val y02 = r.years.firstOrNull { it.year == 2002 }
         assertNotNull(y02)
         assertTrue(y02!!.text.contains("牢狱") || y02.text.contains("制裁"))

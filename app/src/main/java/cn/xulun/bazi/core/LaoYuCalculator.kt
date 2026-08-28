@@ -92,6 +92,24 @@ object LaoYuCalculator {
             )
         }
 
+        // 偏财贴身与日干相战+财支与官支相刑+透食神——为钱财违犯法律铤而走险（例四式）
+        val pianCaiGan = bazi.stems.indices.filter { it != 2 }
+            .firstOrNull { tenGodOfStem(day, bazi.stems[it]) == TenGod.PIAN_CAI }
+        val caiZhi = bazi.branches.firstOrNull { branchHiddenStems.getValue(it).firstOrNull()?.element == dayEl.controls }
+        val caiXingGuan = caiZhi != null && (
+            sanXingGroups.any { g -> caiZhi in g && bazi.branches.any { it in g && it != caiZhi } } ||
+                (setOf(EarthlyBranch.ZI, EarthlyBranch.MAO).contains(caiZhi) &&
+                    bazi.branches.any { it in setOf(EarthlyBranch.ZI, EarthlyBranch.MAO) && it != caiZhi })
+            )
+        if (pianCaiGan != null && Math.abs(pianCaiGan - 2) == 1 && caiZhi != null && Math.abs(bazi.branches.indexOf(caiZhi) - 2) <= 1 &&
+            caiXingGuan && tou(TenGod.SHI_SHEN)
+        ) {
+            risks += LiuQinItem(
+                "财星贴身相战为财铤而走险",
+                "偏财在干支皆与日干紧贴相战，财星支又与官星支相刑，天干透食神——为钱财会违犯法律铤而走险（例四程先生式：盗用他人商标坐牢并高额罚款）。",
+            )
+        }
+
         // 财官强而日干弱——贪污受贿犯法（rule3）
         if (weak && f[dayEl.controls]!! >= 3.0 && f[guanEl]!! >= 3.0) {
             risks += LiuQinItem("财官强而身弱", "财官强而日干弱——易因贪污受贿而犯法（rule3）。")
@@ -148,6 +166,23 @@ object LaoYuCalculator {
                 if (shangGen && chongShangGan) {
                     triggers += "岁支${yb.chinese}通伤官本气之根而旺（行为过分猖獗）+天干${ys.chinese}与伤官${bazi.stems[shangTouIdx.first()].chinese}冲战"
                     notes += "非法行为受到制裁——牢狱之灾（例二壬午式）"
+                    severe = true
+                }
+
+                // 铤而走险求财招灾（例四庚辰式）：食伤生偏财+岁支冲动+刑害聚+比劫亢旺克财
+                val shiShengPianCai = (tenGodOfStem(day, ys) == TenGod.SHI_SHEN || tenGodOfStem(day, ys) == TenGod.SHANG_GUAN) &&
+                    pianCaiGan != null && ys.element.generates == bazi.stems[pianCaiGan].element
+                val chongZhi = EarthlyBranch.entries[(yb.ordinal + 6) % 12]
+                val suiChong = bazi.branches.contains(chongZhi)
+                val haiDui = listOf(
+                    setOf(EarthlyBranch.ZI, EarthlyBranch.WEI), setOf(EarthlyBranch.CHOU, EarthlyBranch.WU),
+                    setOf(EarthlyBranch.YIN, EarthlyBranch.SI), setOf(EarthlyBranch.MAO, EarthlyBranch.CHEN),
+                    setOf(EarthlyBranch.SHEN, EarthlyBranch.HAI), setOf(EarthlyBranch.YOU, EarthlyBranch.XU),
+                ).any { p -> yb in p && bazi.branches.any { it in p } }
+                val xingDui = sanXingGroups.any { g -> g.count { it in all } >= 2 } || caiXingGuan
+                if (shiShengPianCai && suiChong && (haiDui || xingDui) && f[dayEl]!! >= f[dayEl.controls]!! + 1.0) {
+                    triggers += "食伤生偏财+岁支${yb.chinese}冲动+刑害聚+比劫亢旺（${f[dayEl]}）克财（${f[dayEl.controls]}）"
+                    notes += "冒险求财意识突然加强——不法行为惹火烧身，招致牢狱之灾而失去人身自由（例四庚辰盗用商标式）"
                     severe = true
                 }
 
