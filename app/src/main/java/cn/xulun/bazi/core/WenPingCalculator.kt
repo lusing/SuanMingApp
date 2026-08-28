@@ -243,11 +243,12 @@ object WenPingCalculator {
         // 食神有力（食神透干或文昌在局）——文昌即食神
         val shiShenTou = bazi.stems.indices.filter { it != 2 }.any { tenGodOfStem(day, bazi.stems[it]) == TenGod.SHI_SHEN }
         if (f[shiEl]!! >= 3.0) {
-            talentParts += "食神特别强旺（${shiEl.chinese}行力${f[shiEl]}）" +
+            talentParts += "食神" + (if (shiShenTou) "透干" else "") + "特别强旺（${shiEl.chinese}行力${f[shiEl]}）" +
                 (if (wenChangIn) "，文昌${day.wenChang.chinese}在局（文昌即食神）" else "") +
                 "——读书天赋相当不错（例三肖先生式）"
         } else if (shiShenTou || wenChangIn) {
-            talentParts += "食神" + (if (wenChangIn) "（文昌${day.wenChang.chinese}在局——文昌即食神）" else "透干") +
+            talentParts += "食神" + (if (shiShenTou) "透干强旺" else "") +
+                (if (wenChangIn) "（文昌${day.wenChang.chinese}在局——文昌即食神）" else "") +
                 "——食伤为智商，读书天赋之星"
         }
         // 伤官强旺（无印制亦聪明——伤官即才智）
@@ -273,7 +274,13 @@ object WenPingCalculator {
                 val yinNian = tenGodOfStem(day, ys).category() == GodCategory.YIN ||
                     (ybBenQi != null && tenGodOfStem(day, ybBenQi).category() == GodCategory.YIN)
                 val text = when {
-                    isShiShenNian -> "食神当值——有上进的激情，比较勤奋，有利于提高学习成绩"
+                    isShiShenNian ->
+                        if (shiShenTou && f[shiEl]!! >= 2.0) {
+                            // 流年干金引动原局食伤力量大增——考试最佳之年（例六辛未保送式）
+                            "食神当值而原局食神透干强旺——流年引动原局食伤力量大增，聪明才智充分发挥，考试最佳之年，有望考上大学（例六辛未保送式）"
+                        } else {
+                            "食神当值——有上进的激情，比较勤奋，有利于提高学习成绩"
+                        }
                     isShangNian && f[shiEl]!! >= 3.0 ->
                         // 岁支伤官而原局食神强旺（戌2未1食神强于伤官）——食神心性居主导（例三辛未清华式）
                         "岁支伤官而原局食神强旺——食神心性居主导地位，聪明才智充分发挥，对学习和考试都非常有利（例三辛未考清华式）；岁干辛金生壬水，印星之力亦得加强"
@@ -289,6 +296,10 @@ object WenPingCalculator {
                         listOf(ys.element, yun.pillar.stem.element).any { it.generates == yinEl } ->
                         "岁运${ys.element.chinese}${yun.pillar.stem.element.chinese}生印星${yinEl.chinese}而原局伤官有根可用——伤官佩印之年：" +
                             "考试（伤官）正常发挥，且能被较好的学校（正印）录取（例四孙先生1983本科式）"
+                    // 比劫过强（岁干比劫+支本气比劫或生比劫）——缺乏灵活，对考试不利（例六戊辰/己巳式）
+                    tenGodOfStem(day, ys).category() == GodCategory.BI && ybBenQi != null &&
+                        (ybBenQi!!.element == biEl || ybBenQi!!.element.generates == biEl) ->
+                        "比劫${ys.chinese}当值而比劫过强——缺乏灵活，对考试不利（例六戊辰/己巳式）"
                     else -> null
                 }
                 text?.let {

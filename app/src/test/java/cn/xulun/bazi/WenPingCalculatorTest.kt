@@ -456,6 +456,30 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `天赋例六 王女士 辛亥丙申己丑戊辰 食神透干+1991辛未引动食伤最佳+1988比劫不利`() {
+        val bazi = chartOf(
+            HeavenlyStem.XIN, EarthlyBranch.HAI,
+            HeavenlyStem.BING, EarthlyBranch.SHEN,
+            HeavenlyStem.JI, EarthlyBranch.CHOU,
+            HeavenlyStem.WU, EarthlyBranch.CHEN,
+            1950, 2000,
+        )
+        assertEquals2("辛亥 丙申 己丑 戊辰", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.FEMALE))
+        val dip = r.diploma
+        // 食神透干强旺，月干丙火弱合不住辛金——食神可发挥作用
+        assertTrue(dip.talent.contains("食神透干"))
+        // 1991辛未：流年干金引动原局食伤力量大增——考试最佳之年，有望考上大学（保送）
+        val y91 = dip.talentYears.firstOrNull { it.year == 1991 }
+        assertNotNull(y91)
+        assertTrue(y91!!.text.contains("考上大学") || y91.text.contains("最佳"))
+        // 1988戊辰：比劫过强缺乏灵活，对考试不利
+        val y88 = dip.talentYears.firstOrNull { it.year == 1988 }
+        assertNotNull(y88)
+        assertTrue(y88!!.text.contains("缺乏灵活"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,
