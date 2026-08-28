@@ -49,6 +49,24 @@ class ZhiYeBianDongCalculatorTest {
     }
 
     @Test
+    fun `例四 乾造 甲申丁丑庚寅丙戌 1983癸亥伤官岁运逢冲 环境变化迁居`() {
+        val bazi = chartOf(
+            HeavenlyStem.JIA, EarthlyBranch.SHEN,
+            HeavenlyStem.DING, EarthlyBranch.CHOU,
+            HeavenlyStem.GENG, EarthlyBranch.YIN,
+            HeavenlyStem.BING, EarthlyBranch.XU,
+            1900, 1970,
+        )
+        assertEquals("甲申 丁丑 庚寅 丙戌", bazi.fullBazi)
+        val r = ZhiYeBianDongCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 辛巳运寅巳申三刑刑也主动；癸亥年伤官流年+岁运逢冲（亥冲巳）——工作环境变化（1983分房迁新居）
+        val y = r.years.firstOrNull { it.year == 1983 }
+        assertNotNull(y)
+        assertTrue(y!!.text.contains("环境") || y.text.contains("变动"))
+        assertTrue(y.triggers.any { it.contains("岁运逢冲") || it.contains("伤官") || it.contains("食伤") })
+    }
+
+    @Test
     fun `例三 乾造 甲辰甲戌乙卯丙戌 戊辰年冲旺财星 调走或病灾`() {
         val bazi = chartOf(
             HeavenlyStem.JIA, EarthlyBranch.CHEN,

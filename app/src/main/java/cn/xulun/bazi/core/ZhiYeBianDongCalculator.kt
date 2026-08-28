@@ -100,6 +100,13 @@ object ZhiYeBianDongCalculator {
                     notes += "食伤之年多工作变动之应"
                 }
 
+                // 特殊：岁运逢冲（岁支冲运支）——环境变化之应（例四式；运与原局组三刑时"刑也主动"）
+                if (yb != yun.pillar.branch && br2(yb) == yun.pillar.branch) {
+                    triggers += "${yb.chinese}冲运支${yun.pillar.branch.chinese}（岁运逢冲）"
+                    val yunSanXing = sanXingGroups.any { g -> g.count { it in bazi.branches || it == yun.pillar.branch } >= 3 }
+                    notes += "岁运逢冲主动" + (if (yunSanXing) "，且运支与原局组三刑——刑也主动" else "") + "——有工作环境变化（例四分房迁居式）"
+                }
+
                 // 特殊：卯酉冲——地域冲（环境变化，例二式）
                 if ((yb == EarthlyBranch.MAO && bazi.branches.contains(EarthlyBranch.YOU)) ||
                     (yb == EarthlyBranch.YOU && bazi.branches.contains(EarthlyBranch.MAO))
