@@ -267,6 +267,23 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `例十四 某先生 戊申壬戌庚申己卯 身强泄耗欠力亢旺 高中`() {
+        val bazi = chartOf(
+            HeavenlyStem.WU, EarthlyBranch.SHEN,
+            HeavenlyStem.REN, EarthlyBranch.XU,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN,
+            HeavenlyStem.JI, EarthlyBranch.MAO,
+            1950, 2000,
+        )
+        assertEquals2("戊申 壬戌 庚申 己卯", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        val dip = r.diploma
+        // 原局身强而水木泄耗欠力，形成亢旺——高中时肝炎病后无心读书
+        assertTrue(dip.level, dip.level.contains("学历不高"))
+        assertTrue(dip.basis.contains("亢旺"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,

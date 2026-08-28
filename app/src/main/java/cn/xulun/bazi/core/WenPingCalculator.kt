@@ -100,6 +100,12 @@ object WenPingCalculator {
             return cats
         }
         val youngCats = youngYuns.flatMap { yunCats(it.pillar) }.toSet()
+        // 伤官认定三源：透干 / 原局本气支 / 少运支当值（食神不算）
+        val shangBenQi = bazi.branches.any { br -> branchHiddenStems.getValue(br).firstOrNull()?.let { godOf(it) == TenGod.SHANG_GUAN } == true }
+        val youngShangDangZhi = youngYuns.any { y ->
+            branchHiddenStems.getValue(y.pillar.branch).firstOrNull()?.let { godOf(it) == TenGod.SHANG_GUAN } == true
+        }
+        val shangYouLi = shangRevealed || shangBenQi || youngShangDangZhi
 
         // ── 少运喜忌链（总则；特殊格局除外——从格顺势论不作扶抑喜忌）──
         val basisParts = mutableListOf<String>()
@@ -159,16 +165,27 @@ object WenPingCalculator {
                 basisParts += "印星为用而少行财运损印——学历受阻"
             }
         } else if (GodCategory.YIN in d.unf) {
-            if (GodCategory.SHI in youngCats && f[shiEl]!! >= 1.0) {
+            // 亢旺：比印≥2.5×泄耗、印有力帮亢、无官杀制比、原局无伤官佩印根基、日支非食伤贴身泄秀
+            // ——泄耗欠力无心读书（例十四高中式；例一印0逃、例十一巳官制比逃、例二原局伤官佩印逃、例四日支食伤逃）
+            val kangWang = (f[biEl]!! + f[yinEl]!!) >= 2.5 * (f[shiEl]!! + f[caiEl]!!) &&
+                f[yinEl]!! >= 1.0 && f[guanEl]!! < 1.0 &&
+                !(shangRevealed || shangBenQi) &&
+                branchHiddenStems.getValue(bazi.dayPillar.branch).first().element != shiEl
+            if (kangWang) {
+                lowSignal = true
+                basisParts += "原局身强而食伤财力泄耗欠力（比印${f[biEl]!! + f[yinEl]!!}对泄耗${f[shiEl]!! + f[caiEl]!!}），形成亢旺——无心读书（例十四高中式）" +
+                    (if (caiEl == Element.WOOD) "；木为肝胆，亢${biEl.chinese}克${caiEl.chinese}——高中时肝炎病扰" else "")
+            }
+            if (GodCategory.SHI in youngCats && f[shiEl]!! >= 1.0 && !kangWang) {
                 highSignal = true
                 basisParts += "印星为忌而少行食伤运，泄秀反利登科（例二/例四/例十一式）"
             }
-            if (GodCategory.SHI in youngCats && f[shiEl]!! < 1.0) {
+            if (GodCategory.SHI in youngCats && f[shiEl]!! < 1.0 && !kangWang) {
                 // 原局食伤绝无，仅赖运化泄为救——有利文凭而非大旺（例十二专科式）
                 mediumHigh = true
                 basisParts += "身旺印为忌，原局食伤绝无，逢伤食运化泄为有救——有利文凭，通过努力可考（例十二专科式）"
             }
-            if (youngCats.any { it in d.fav } && !yinDangLingCaiHuai) {
+            if (youngCats.any { it in d.fav } && !yinDangLingCaiHuai && !kangWang) {
                 highSignal = true
                 basisParts += "印星为忌而少年走用神运——亦取高学历"
             }
@@ -216,11 +233,6 @@ object WenPingCalculator {
         if (f[Element.METAL]!! + f[Element.WATER]!! >= 5.0 && f[Element.FIRE]!! >= 1.0) {
             fav += item("金水相涵有火暖", "金水相涵有火暖——聪明机智，文章振发。")
         }
-        val shangBenQi = bazi.branches.any { br -> branchHiddenStems.getValue(br).firstOrNull()?.let { godOf(it) == TenGod.SHANG_GUAN } == true }
-        val youngShangDangZhi = youngYuns.any { y ->
-            branchHiddenStems.getValue(y.pillar.branch).firstOrNull()?.let { godOf(it) == TenGod.SHANG_GUAN } == true
-        }
-        val shangYouLi = shangRevealed || shangBenQi || youngShangDangZhi
         if (shangYouLi && f[yinEl]!! >= 3.0 && GodCategory.SHI in d.fav) {
             fav += item(
                 "伤官佩印为喜用",
