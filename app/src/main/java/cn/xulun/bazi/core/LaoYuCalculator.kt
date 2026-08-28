@@ -115,6 +115,20 @@ object LaoYuCalculator {
             )
         }
 
+        // 身旺无制+燥气结党（rule6，例十式）
+        if (f[dayEl]!! >= 5.0 && f[guanEl]!! <= 1.0) {
+            risks += LiuQinItem(
+                "身旺无制",
+                "比劫当令结党而身旺无制（${dayEl.chinese}力${f[dayEl]}，官杀力${f[guanEl]}）——不拘礼法、藐视他人，易引发官非（rule6，例十式）。",
+            )
+        }
+        if ((f[Element.EARTH]!! + f[Element.FIRE]!!) >= 5.0 && f[Element.WATER]!! <= 0.5) {
+            risks += LiuQinItem(
+                "燥气结党",
+                "局中一片燥气（火土${f[Element.EARTH]!! + f[Element.FIRE]!!}而无水润）——燥土重重，性格冲动、不计后果；燥土脆金、土多埋金（例十式）。",
+            )
+        }
+
         // 辰戌罗网交加且为忌（rule9）+双伤夹日柱（例九式）
         if (bazi.branches.containsAll(listOf(EarthlyBranch.CHEN, EarthlyBranch.XU)) &&
             (weak || f[shiEl]!! >= f[dayEl]!!)
@@ -217,8 +231,11 @@ object LaoYuCalculator {
             risks += LiuQinItem("凶神气势最旺", "伤官、枭神、劫财、七杀等凶神气势最旺——易犯官灾（rule11）。")
         }
 
-        // ── 岁运应期 ──
-        val years = daYun?.yuns.orEmpty().flatMap { yun ->
+        // ── 岁运应期（交运年前 8 个月仍行前运——有效运=本运+前运）──
+        val allYuns = daYun?.yuns.orEmpty()
+        val years = allYuns.mapIndexedNotNull { yi, yun ->
+            val prevYun = allYuns.getOrNull(yi - 1)
+            val effYuns = listOfNotNull(prevYun, yun)
             yun.liuNian.mapNotNull { ln ->
                 val yb = ln.pillar.branch
                 val ys = ln.pillar.stem
@@ -312,6 +329,21 @@ object LaoYuCalculator {
                     severe = true
                 }
 
+                // 官杀混杂（运官+局杀）+身旺欺官+伤官当值+岁支与原局同字双刃争合——因财色犯罪入狱（例十丁巳式）
+                val yunGuanSha = effYuns.any { yy ->
+                    tenGodOfStem(day, yy.pillar.stem) in setOf(TenGod.ZHENG_GUAN, TenGod.QI_SHA)
+                } && shaTou
+                val yunShiShang = effYuns.any { yy ->
+                    branchHiddenStems.getValue(yy.pillar.branch).firstOrNull()
+                        ?.let { tenGodOfStem(day, it) in setOf(TenGod.SHI_SHEN, TenGod.SHANG_GUAN) } == true
+                }
+                val shuangRen = bazi.branches.contains(yb)
+                if (yunGuanSha && f[dayEl]!! >= 5.0 && yunShiShang && shuangRen) {
+                    triggers += "运干${effYuns.joinToString("") { it.pillar.stem.chinese }}与原局杀透官杀混杂+身旺（${f[dayEl]}）欺官欺法+运支伤官当值胆大妄为+岁支${yb.chinese}与原局同字（双刃合用争合）"
+                    notes += "年纪尚轻却因财色犯罪入狱（例十丁巳式）"
+                    severe = true
+                }
+
                 // 干支两系统皆战（混战）——续灾（例一戊寅式）
                 val mGan = sysWar(bazi.stems + listOf(yun.pillar.stem, ys), emptyList(), false, 2.0)
                 val mZhi = sysWar(emptyList(), bazi.branches + listOf(yun.pillar.branch, yb), true, 1.0)
@@ -323,7 +355,7 @@ object LaoYuCalculator {
                 if (triggers.isEmpty()) return@mapNotNull null
                 LaoYuYear(ln.year, "${ln.year} ${ln.pillar.fullName}", triggers, notes.joinToString("；") + "。")
             }
-        }
+        }.flatten()
 
         return LaoYuResult(
             baseRisks = risks,

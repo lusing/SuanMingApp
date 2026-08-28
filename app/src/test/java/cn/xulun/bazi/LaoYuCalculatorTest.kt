@@ -43,6 +43,25 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例十 李先生 乙未丙戌己酉己巳 身旺无制+甲申运丁巳双刃财色入狱`() {
+        val bazi = chartOf(
+            HeavenlyStem.YI, EarthlyBranch.WEI,
+            HeavenlyStem.BING, EarthlyBranch.XU,
+            HeavenlyStem.JI, EarthlyBranch.YOU,
+            HeavenlyStem.JI, EarthlyBranch.SI,
+            1950, 2000,
+        )
+        assertEquals2("乙未 丙戌 己酉 己巳", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 比劫结党身旺无制+燥气结党脆金——牢狱之基
+        assertTrue(r.baseRisks.any { it.dim.contains("身旺无制") || it.dim.contains("燥气") })
+        // 甲申运丁巳：官杀混杂身旺欺官+伤官当值+双巳双刃争合——因财色犯罪入狱
+        val y77 = r.years.firstOrNull { it.year == 1977 }
+        assertNotNull(y77)
+        assertTrue(y77!!.text.contains("财色") || y77.text.contains("入狱"))
+    }
+
+    @Test
     fun `例九 乾造 丁亥甲辰丁巳庚戌 罗网交加双伤夹日+辛未冲根刑聚被捕`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.HAI,
