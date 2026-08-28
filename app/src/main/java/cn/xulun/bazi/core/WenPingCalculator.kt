@@ -134,6 +134,16 @@ object WenPingCalculator {
             mediumHigh = true
             basisParts += "印星当令为用而少行财运，财星坏印（破印耗身）——不利考学（例十三专科式）"
         }
+        val liuHePairs = listOf(
+            setOf(EarthlyBranch.ZI, EarthlyBranch.CHOU), setOf(EarthlyBranch.YIN, EarthlyBranch.HAI),
+            setOf(EarthlyBranch.MAO, EarthlyBranch.XU), setOf(EarthlyBranch.CHEN, EarthlyBranch.YOU),
+            setOf(EarthlyBranch.SI, EarthlyBranch.SHEN), setOf(EarthlyBranch.WU, EarthlyBranch.WEI),
+        )
+        val tombOfEl = mapOf(
+            Element.METAL to EarthlyBranch.CHOU, Element.WOOD to EarthlyBranch.WEI,
+            Element.WATER to EarthlyBranch.CHEN, Element.FIRE to EarthlyBranch.XU,
+            Element.EARTH to EarthlyBranch.CHEN,
+        )
         // 学龄关键期（15-25 岁）流年干支双体克印——印主智慧被杂，不利文途（例十六退学式）；
         // 印为用即扫（从格分支亦适用）；印为忌则克印年反吉不取
         val keYinEl = Element.entries.first { it.controls == yinEl }
@@ -158,6 +168,48 @@ object WenPingCalculator {
             lowSignal = true
             basisParts += "学龄关键期" + keYinYears.joinToString("、") { it.label } +
                 "流年干支双体${keYinEl.chinese}克${yinEl.chinese}——${yinEl.chinese}主智慧被${keYinEl.chinese}杂，不利文途（例十六退学式）"
+        }
+
+        // ── 辍学年（例八乙丑式）：岁支六合绊住智慧之水（水旺命局）+ 收敛食伤之墓 + 六害印支（印=学校）──
+        // 三凶聚于一支——结束读书生涯（离开学校）
+        if (f[Element.WATER]!! >= 3.0) {
+            val liuHaiPairs = listOf(
+                setOf(EarthlyBranch.ZI, EarthlyBranch.WEI), setOf(EarthlyBranch.CHOU, EarthlyBranch.WU),
+                setOf(EarthlyBranch.YIN, EarthlyBranch.SI), setOf(EarthlyBranch.MAO, EarthlyBranch.CHEN),
+                setOf(EarthlyBranch.SHEN, EarthlyBranch.HAI), setOf(EarthlyBranch.YOU, EarthlyBranch.XU),
+            )
+            val shiShangZhi = bazi.branches.firstOrNull { br ->
+                branchHiddenStems.getValue(br).firstOrNull()?.let {
+                    tenGodOfStem(day, it) == TenGod.SHI_SHEN || tenGodOfStem(day, it) == TenGod.SHANG_GUAN
+                } == true
+            }
+            val yinZhi = bazi.branches.firstOrNull { br ->
+                branchHiddenStems.getValue(br).firstOrNull()?.let {
+                    tenGodOfStem(day, it).category() == GodCategory.YIN
+                } == true
+            }
+            val chuoXueYears = daYun?.yuns.orEmpty().filter { it.startAge < 26 }.flatMap { yun ->
+                yun.liuNian.filter { ln ->
+                    val yb = ln.pillar.branch
+                    (ln.year - birthYear) in 6..25 &&
+                        liuHePairs.any { p -> yb in p && bazi.branches.any { it.element == Element.WATER && it in p && it != yb } } &&
+                        shiShangZhi != null && tombOfEl[shiShangZhi.element] == yb &&
+                        yinZhi != null && liuHaiPairs.any { p -> yb in p && yinZhi in p }
+                }.map { ln ->
+                    StudyDiplomaYear(
+                        ln.year,
+                        "${ln.year} ${ln.pillar.fullName}",
+                        "岁支${ln.pillar.branch.chinese}合住原局智慧之水、收敛食伤${shiShangZhi!!.chinese}（入墓）、又害印星${yinZhi!!.chinese}（印主学校——学校受损）——" +
+                            "种种不利集中于一身，此年将结束读书生涯（辍学离校，例八乙丑初中毕业式）。",
+                    )
+                }
+            }
+            if (chuoXueYears.isNotEmpty()) {
+                lowSignal = true
+                badYearsList = badYearsList + chuoXueYears
+                basisParts += "学龄期" + chuoXueYears.joinToString("、") { it.label } +
+                    "岁支合水、收敛食伤、害印（学校）三凶聚——结束读书生涯（例八式）"
+            }
         }
 
         // ── 利文途流年：学龄关键期岁运并入全局，干支两系统皆和而不战——高考必中式（例十七/例十八）──
@@ -319,16 +371,6 @@ object WenPingCalculator {
             "思想糊涂注意力不集中，学业难成（例十五初中式）"
         // 少运支六合绊住原局支（智慧之水被合），且运支恰为原局食神本气支之墓（食神入墓）
         // ——食神与智慧之源俱失其用，智商大打折扣，读书升学无缘（例七小学式）
-        val liuHePairs = listOf(
-            setOf(EarthlyBranch.ZI, EarthlyBranch.CHOU), setOf(EarthlyBranch.YIN, EarthlyBranch.HAI),
-            setOf(EarthlyBranch.MAO, EarthlyBranch.XU), setOf(EarthlyBranch.CHEN, EarthlyBranch.YOU),
-            setOf(EarthlyBranch.SI, EarthlyBranch.SHEN), setOf(EarthlyBranch.WU, EarthlyBranch.WEI),
-        )
-        val tombOfEl = mapOf(
-            Element.METAL to EarthlyBranch.CHOU, Element.WOOD to EarthlyBranch.WEI,
-            Element.WATER to EarthlyBranch.CHEN, Element.FIRE to EarthlyBranch.XU,
-            Element.EARTH to EarthlyBranch.CHEN,
-        )
         val shiShenZhi = bazi.branches.firstOrNull { br ->
             branchHiddenStems.getValue(br).firstOrNull()?.let { tenGodOfStem(day, it) == TenGod.SHI_SHEN } == true
         }
@@ -422,6 +464,12 @@ object WenPingCalculator {
         if (!highSignal && GodCategory.SHI in d.fav && f[shiEl]!! >= 3.0) {
             highSignal = true
             basisParts += "食伤旺（${shiEl.chinese}力${f[shiEl]}）而秀气流通，格局清纯——一举成名（例五式）"
+        }
+
+        // 辍学年（三凶聚——结束读书生涯）为硬事件：压过一切高档信号（例八——假从财从神运亦不救）
+        if (badYearsList.any { it.text.contains("结束读书") }) {
+            highSignal = false
+            lowSignal = true
         }
         if (!highSignal && !lowSignal) {
             basisParts += "少运无印食财之显著取向，以原局断语参断"

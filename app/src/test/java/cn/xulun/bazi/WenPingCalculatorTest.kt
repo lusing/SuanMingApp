@@ -498,6 +498,27 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `天赋例八 刘先生 己酉丙子戊午癸亥 水旺伤官智+1985乙丑三凶聚辍学`() {
+        val bazi = chartOf(
+            HeavenlyStem.JI, EarthlyBranch.YOU,
+            HeavenlyStem.BING, EarthlyBranch.ZI,
+            HeavenlyStem.WU, EarthlyBranch.WU,
+            HeavenlyStem.GUI, EarthlyBranch.HAI,
+            1950, 2000,
+        )
+        assertEquals2("己酉 丙子 戊午 癸亥", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        val dip = r.diploma
+        // 水旺+年支伤官——先天智商不错；甲戌运土旺克水戌酉害——读书差
+        assertTrue(dip.talent.contains("水旺") || dip.talent.contains("水主智"))
+        assertTrue(dip.level, dip.level.contains("学历不高"))
+        // 1985乙丑：丑合子水+收敛酉伤官+害午印(学校)——三凶聚，结束读书生涯（初中毕业）
+        val bad = dip.badYears.firstOrNull { it.year == 1985 }
+        assertNotNull(bad)
+        assertTrue(bad!!.text.contains("结束读书") || bad.text.contains("辍学") || bad.text.contains("离开学校"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,
