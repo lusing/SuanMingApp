@@ -480,6 +480,24 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `天赋例七 段先生 戊申甲子戊午戊午 乙丑运合住子水又申入墓 小学毕业`() {
+        val bazi = chartOf(
+            HeavenlyStem.WU, EarthlyBranch.SHEN,
+            HeavenlyStem.JIA, EarthlyBranch.ZI,
+            HeavenlyStem.WU, EarthlyBranch.WU,
+            HeavenlyStem.WU, EarthlyBranch.WU,
+            1950, 2000,
+        )
+        assertEquals2("戊申 甲子 戊午 戊午", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        val dip = r.diploma
+        // 水当令有申金源头+申为食神——先天智商不错；乙丑运丑合住子水、又为申之墓——食神与智慧俱废
+        assertTrue(dip.talent.contains("水旺") || dip.talent.contains("水主智") || dip.talent.contains("食神"))
+        assertTrue(dip.level, dip.level.contains("学历不高"))
+        assertTrue(dip.basis.contains("合住") || dip.basis.contains("入墓"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,

@@ -317,6 +317,29 @@ object WenPingCalculator {
         }
         val yinZhiChongBasis = "印星为用而原局印绝，运支印星又被原局冲克——无源无助用神不力，" +
             "思想糊涂注意力不集中，学业难成（例十五初中式）"
+        // 少运支六合绊住原局支（智慧之水被合），且运支恰为原局食神本气支之墓（食神入墓）
+        // ——食神与智慧之源俱失其用，智商大打折扣，读书升学无缘（例七小学式）
+        val liuHePairs = listOf(
+            setOf(EarthlyBranch.ZI, EarthlyBranch.CHOU), setOf(EarthlyBranch.YIN, EarthlyBranch.HAI),
+            setOf(EarthlyBranch.MAO, EarthlyBranch.XU), setOf(EarthlyBranch.CHEN, EarthlyBranch.YOU),
+            setOf(EarthlyBranch.SI, EarthlyBranch.SHEN), setOf(EarthlyBranch.WU, EarthlyBranch.WEI),
+        )
+        val tombOfEl = mapOf(
+            Element.METAL to EarthlyBranch.CHOU, Element.WOOD to EarthlyBranch.WEI,
+            Element.WATER to EarthlyBranch.CHEN, Element.FIRE to EarthlyBranch.XU,
+            Element.EARTH to EarthlyBranch.CHEN,
+        )
+        val shiShenZhi = bazi.branches.firstOrNull { br ->
+            branchHiddenStems.getValue(br).firstOrNull()?.let { tenGodOfStem(day, it) == TenGod.SHI_SHEN } == true
+        }
+        val heMuYun = youngYuns.firstOrNull { y ->
+            val yb = y.pillar.branch
+            liuHePairs.any { p -> yb in p && bazi.branches.any { it in p && it != yb } } &&
+                shiShenZhi != null && tombOfEl[shiShenZhi.element] == yb
+        }
+        val yongHeMu = heMuYun != null
+        val yongHeMuBasis = if (heMuYun == null) "" else
+            "少运${heMuYun.pillar.fullName}：运支${heMuYun.pillar.branch.chinese}合住原局${liuHePairs.first { p -> heMuYun.pillar.branch in p }.filter { it in bazi.branches }.joinToString("") { it.chinese }}（智慧之源被绊），又为食神${shiShenZhi!!.chinese}之墓（食神入墓）——食神与智慧俱失其用，智商大打折扣，与读书升学无缘（例七小学式）"
         val teShu = TeShuGeJuCalculator.analyze(bazi)
         if (teShu != null) {
             if (yinZhiChong) {
@@ -351,6 +374,9 @@ object WenPingCalculator {
         } else if (yinZhiChong) {
             lowSignal = true
             basisParts += yinZhiChongBasis
+        } else if (yongHeMu) {
+            lowSignal = true
+            basisParts += yongHeMuBasis
         } else if (GodCategory.YIN in d.fav) {
             if (GodCategory.YIN in youngCats) {
                 highSignal = true
