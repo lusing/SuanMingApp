@@ -87,4 +87,26 @@ class HealthCalculatorTest {
         )
         assertTrue(r.risks.any { it.dim.contains("皮肤病") && it.text.contains("狂泄") })
     }
+
+    @Test
+    fun `眼例五 甲寅丁卯壬子乙巳 木多火窒 先天性眼疾`() {
+        val r = health(
+            HeavenlyStem.JIA, EarthlyBranch.YIN,
+            HeavenlyStem.DING, EarthlyBranch.MAO,
+            HeavenlyStem.REN, EarthlyBranch.ZI,
+            HeavenlyStem.YI, EarthlyBranch.SI,
+        )
+        assertTrue(r.risks.any { it.dim.contains("眼疾") && it.text.contains("木多火窒") })
+    }
+
+    @Test
+    fun `眼例九 己巳丁丑戊戌戊午 土多火晦 近视`() {
+        val r = health(
+            HeavenlyStem.JI, EarthlyBranch.SI,
+            HeavenlyStem.DING, EarthlyBranch.CHOU,
+            HeavenlyStem.WU, EarthlyBranch.XU,
+            HeavenlyStem.WU, EarthlyBranch.WU,
+        )
+        assertTrue(r.risks.any { it.dim.contains("眼疾") && it.text.contains("土多火晦") })
+    }
 }

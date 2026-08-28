@@ -143,6 +143,25 @@ object HealthCalculator {
             )
         }
 
+        // ── 眼疾专项（丙午火=眼睛，第八节）──
+        val muDuoHuoZhi = mu >= 4.0 && huo in 0.5..2.0 // 木多火窒
+        val shuiKeHuo = shui >= 3.0 && huo in 0.5..2.0 // 强水克弱火
+        val tuDuoHuoHui = tu >= 4.0 && huo in 0.5..3.0 // 土多火晦(例九火3土7仍晦)
+        val shiTuHuiHuo = shui >= 1.5 && tu >= 3.0 && huo in 0.5..2.0 // 湿土晦火
+        val eyeCause = when {
+            muDuoHuoZhi -> "木多火窒（例三五式——木强难资生火，近视/青光眼）"
+            shuiKeHuo -> "强水克弱火（例一式——水火相战，眼病手术）"
+            tuDuoHuoHui -> "土多火晦（例四九式——土结党晦火之光，小小年纪戴镜）"
+            shiTuHuiHuo -> "湿土晦火（例六式——克泄耗交加，眼手术）"
+            else -> null
+        }
+        if (eyeCause != null) {
+            risks += LiuQinItem(
+                "火行眼疾·${eyeCause!!.take(4)}",
+                "丙午火主眼睛——${eyeCause}；近视多发青少年，逢火还原/水火战/湿土之岁运易发，宜护眼调肝木滋火源。",
+            )
+        }
+
         val summary = "五行对应：木肝胆/火心小肠/土脾胃/金肺大肠/水肾膀胱（阳干腑阴干脏）。" +
             "原局储藏一生疾病信息，发病须待岁运引发——逢受损五行之克泄耗冲刑的岁运宜防，通关之行到位则缓解。"
         return HealthResult(items = items, risks = risks, summary = summary)
