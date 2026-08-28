@@ -39,6 +39,26 @@ data class StudyYunFortune(
     val liunian: List<StudyFortunePeriod>,
 )
 
+/** 文凭断语条目（第十节·一）。 */
+data class StudyDiplomaItem(
+    /** 断语标题，如 "食伤泄秀为喜用" */
+    val title: String,
+    /** 断语全文 */
+    val text: String,
+    /** true=有利学历 / false=不利学历 */
+    val favorable: Boolean,
+)
+
+/** 文凭推断结果（用神+印星为标志，少运定高低）。 */
+data class StudyDiploma(
+    /** 级别结论：高学历（硕博之才）/学历较高/学历中等/学历不高 */
+    val level: String,
+    /** 推断依据链（少运喜忌+格局），附时代提示 */
+    val basis: String,
+    val favorable: List<StudyDiplomaItem>,
+    val unfavorable: List<StudyDiplomaItem>,
+)
+
 /** 学业分析总结果 */
 data class StudyResult(
     val sealStars: List<StudyStar>,
@@ -46,6 +66,7 @@ data class StudyResult(
     val patternBasis: String,
     val shenSha: List<StudyShenSha>,
     val yunFortune: StudyYunFortune,
+    val diploma: StudyDiploma,
 )
 
 /** 文昌（日干食神长生位）：甲巳 乙午 丙戊申 丁己酉 庚亥 辛子 壬寅 癸卯 */

@@ -39,7 +39,8 @@ object StudyCalculator {
         val (pattern, basis) = determinePattern(bazi, dayMaster, seals, foods, officers)
         val shenSha = findShenSha(bazi)
         val yunFortune = findYunFortune(daYun, dayMaster)
-        return StudyResult(seals, pattern, basis, shenSha, yunFortune)
+        val diploma = WenPingCalculator.analyze(bazi, daYun)
+        return StudyResult(seals, pattern, basis, shenSha, yunFortune, diploma)
     }
 
     /** 按目标十神集合辨识星（天干跳日干 + 藏干） */

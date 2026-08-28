@@ -66,6 +66,26 @@ fun StudySection(result: StudyResult, modifier: Modifier = Modifier) {
             Text(result.pattern.summary, fontSize = 12.sp, color = Color(0xFF616161), modifier = Modifier.padding(top = 2.dp))
             Text("依据：${result.patternBasis}", fontSize = 11.sp, color = Color(0xFF9E9E9E), modifier = Modifier.padding(top = 2.dp))
 
+            // 文凭推断（用神+印星为标志，少运定高低）
+            SectionLabel("文凭推断", Modifier.padding(top = 14.dp))
+            val dip = result.diploma
+            Text(dip.level, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = SeedRed)
+            Text("依据：${dip.basis}", fontSize = 11.sp, color = Color(0xFF9E9E9E), modifier = Modifier.padding(top = 2.dp))
+            if (dip.favorable.isNotEmpty()) {
+                Text("有利文凭", fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 8.dp))
+                dip.favorable.forEach {
+                    Text("◆ ${it.title}", fontSize = 12.sp, color = SeedRed, modifier = Modifier.padding(top = 3.dp))
+                    Text(it.text, fontSize = 11.sp, color = Color(0xFF616161), modifier = Modifier.padding(top = 1.dp))
+                }
+            }
+            if (dip.unfavorable.isNotEmpty()) {
+                Text("不利文凭", fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 8.dp))
+                dip.unfavorable.forEach {
+                    Text("◆ ${it.title}", fontSize = 12.sp, color = Color(0xFF8D6E63), modifier = Modifier.padding(top = 3.dp))
+                    Text(it.text, fontSize = 11.sp, color = Color(0xFF616161), modifier = Modifier.padding(top = 1.dp))
+                }
+            }
+
             // 学业神煞
             SectionLabel("学业神煞", Modifier.padding(top = 14.dp))
             if (result.shenSha.isEmpty()) {
