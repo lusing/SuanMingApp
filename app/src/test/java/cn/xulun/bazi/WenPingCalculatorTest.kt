@@ -519,6 +519,23 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `天赋例九 范女士 丙申辛丑庚辰乙酉 从象金多水浊 初中学历`() {
+        val bazi = chartOf(
+            HeavenlyStem.BING, EarthlyBranch.SHEN,
+            HeavenlyStem.XIN, EarthlyBranch.CHOU,
+            HeavenlyStem.GENG, EarthlyBranch.CHEN,
+            HeavenlyStem.YI, EarthlyBranch.YOU,
+            1950, 2000,
+        )
+        assertEquals2("丙申 辛丑 庚辰 乙酉", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.FEMALE))
+        val dip = r.diploma
+        // 食伤为水原局弱成从象，行运金多水浊——文凭较低（初中）
+        assertTrue(dip.level, dip.level.contains("学历不高"))
+        assertTrue(dip.basis.contains("浊"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,

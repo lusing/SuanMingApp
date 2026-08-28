@@ -382,6 +382,16 @@ object WenPingCalculator {
         val yongHeMu = heMuYun != null
         val yongHeMuBasis = if (heMuYun == null) "" else
             "少运${heMuYun.pillar.fullName}：运支${heMuYun.pillar.branch.chinese}合住原局${liuHePairs.first { p -> heMuYun.pillar.branch in p }.filter { it in bazi.branches }.joinToString("") { it.chinese }}（智慧之源被绊），又为食神${shiShenZhi!!.chinese}之墓（食神入墓）——食神与智慧俱失其用，智商大打折扣，与读书升学无缘（例七小学式）"
+        // 食伤原局绝无而其母过旺（生食伤之行力≥4），且少运干为母行或生母之行（母愈多）——
+        // 母多子浊（金多水浊式），智慧之水不清（例九）；运干不生母则母不加浊（文凭例七丁戊运干仍本科）
+        val shiMu = Element.entries.first { it.generates == shiEl }
+        val duZhuo = f[shiEl]!! <= 0.5 && f[shiMu]!! >= 4.0 &&
+            youngYuns.any { it.pillar.stem.element == shiMu || it.pillar.stem.element.generates == shiMu } &&
+            youngYuns.none { it.pillar.stem.element == shiEl }
+        if (duZhuo) {
+            lowSignal = true
+            basisParts += "食伤（${shiEl.chinese}行）原局绝无而其母${shiMu.chinese}过旺（力${f[shiMu]}）——${shiMu.chinese}多${shiEl.chinese}浊，智慧之${shiEl.chinese}不清，文凭较低（例九金多水浊式）"
+        }
         val teShu = TeShuGeJuCalculator.analyze(bazi)
         if (teShu != null) {
             if (yinZhiChong) {
@@ -396,7 +406,7 @@ object WenPingCalculator {
                 val congCats = congEls.map { categoryOf(it, dayEl) }.toSet()
                 val yinBiShi = congCats.isNotEmpty() && congCats.all { it == GodCategory.BI || it == GodCategory.YIN }
                 when {
-                    youngCats.any { it in congCats } && !yinBiShi -> {
+                    youngCats.any { it in congCats } && !yinBiShi && !duZhuo -> {
                         highSignal = true
                         val zhanJu = teShu.kind == TeShuKind.ZHAN_JU
                         basisParts += "命成${teShu.name}，少行${if (zhanJu) "通关" else "从神/喜神"}" +
