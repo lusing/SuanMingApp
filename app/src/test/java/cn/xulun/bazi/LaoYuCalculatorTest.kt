@@ -43,6 +43,25 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例八 乾造 丙午乙未丁丑辛亥 枭食同柱+壬戌刑开墓门抢劫入狱`() {
+        val bazi = chartOf(
+            HeavenlyStem.BING, EarthlyBranch.WU,
+            HeavenlyStem.YI, EarthlyBranch.WEI,
+            HeavenlyStem.DING, EarthlyBranch.CHOU,
+            HeavenlyStem.XIN, EarthlyBranch.HAI,
+            1950, 2000,
+        )
+        assertEquals2("丙午 乙未 丁丑 辛亥", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 枭食同柱有官非信息；食多变伤得令——自恃聪明胆大冒险喜与官斗
+        assertTrue(r.baseRisks.any { it.dim.contains("枭食") || it.dim.contains("官非") })
+        // 1982壬戌：官星透干+丑未戌三刑刑开日干火墓之门+伤官见官——因抢劫入狱判两年
+        val y82 = r.years.firstOrNull { it.year == 1982 }
+        assertNotNull(y82)
+        assertTrue(y82!!.text.contains("入狱"))
+    }
+
+    @Test
     fun `例七 乾造 辛巳丙申庚戌丁丑 官杀混杂+局无财众劫抢财戊寅判无期`() {
         val bazi = chartOf(
             HeavenlyStem.XIN, EarthlyBranch.SI,

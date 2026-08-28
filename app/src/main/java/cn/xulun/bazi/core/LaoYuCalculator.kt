@@ -37,6 +37,7 @@ object LaoYuCalculator {
         val f = BingYaoCalculator.forces(bazi)
         val guanEl = Element.entries.first { it.controls == dayEl }
         val yinEl = Element.entries.first { it.generates == dayEl }
+        val shiEl = dayEl.generates
         val weak = StrengthEngine.analyze(bazi).verdict == DayStrength.WEAK
 
         fun tou(target: TenGod) = bazi.stems.indices.filter { it != 2 }.any { tenGodOfStem(day, bazi.stems[it]) == target }
@@ -89,6 +90,26 @@ object LaoYuCalculator {
             risks += LiuQinItem(
                 "七杀贴身无制",
                 "七杀与日干紧贴而无食伤制约——心狠手辣；七杀代表法律，与日干紧贴相克——一旦触犯法纪即遭惩罚（牢狱信息标志，例二式）。",
+            )
+        }
+
+        // 枭食同柱有官非信息（rule8）；食多变伤——自恃聪明胆大冒险喜与官斗（例八式）
+        val xiaoShiTongZhu = bazi.stems.indices.filter { it != 2 }.any { i ->
+            val g = tenGodOfStem(day, bazi.stems[i])
+            val zhiShi = branchHiddenStems.getValue(bazi.branches[i]).any { tenGodOfStem(day, it) == TenGod.SHI_SHEN }
+            val zhiXiao = branchHiddenStems.getValue(bazi.branches[i]).any { tenGodOfStem(day, it) == TenGod.PIAN_YIN }
+            (g == TenGod.PIAN_YIN && zhiShi) || (g == TenGod.SHI_SHEN && zhiXiao)
+        }
+        if (xiaoShiTongZhu) {
+            risks += LiuQinItem(
+                "枭食同柱",
+                "枭神与食神同柱——有官非信息（rule8，例八式）。",
+            )
+        }
+        if (f[shiEl]!! >= 3.0 && bazi.branches.count { it.element == shiEl } >= 2) {
+            risks += LiuQinItem(
+                "食多变伤·喜与官斗",
+                "食多食旺变为伤官之性而得令，支逢冲则愈冲愈旺——伤官心性自恃聪明、胆大冒险、喜与官斗，易目无法纪，下场不佳（例八式）。",
             )
         }
 
@@ -248,6 +269,15 @@ object LaoYuCalculator {
                 ) {
                     triggers += "岁支${yb.chinese}（财星）值岁而原局无财+比劫旺（${f[dayEl]}）——群凶劫财，刑冲并现引发战局"
                     notes += "因财之事招官灾重判（例七戊寅年判无期式）"
+                    severe = true
+                }
+
+                // 三刑刑开日干墓门+官星透干+伤官心性——无法无天入狱（rule10，例八壬戌式）
+                if (riGanMu != null && yb == riGanMu && sanXingGroups.any { g -> g.count { it in all } >= 3 } &&
+                    tenGodOfStem(day, ys) in setOf(TenGod.ZHENG_GUAN, TenGod.QI_SHA)
+                ) {
+                    triggers += "岁支${yb.chinese}（日干之墓）逢三刑刑开墓门+岁干${ys.chinese}官星透干（伤官见官）"
+                    notes += "无法无天，因不法行为（抢劫之类）而入狱（例八壬戌判两年式）"
                     severe = true
                 }
 
