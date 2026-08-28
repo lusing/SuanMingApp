@@ -65,4 +65,26 @@ class HealthCalculatorTest {
         assertTrue(r.risks.isNotEmpty())
         assertTrue(r.summary.isNotBlank())
     }
+
+    @Test
+    fun `皮肤例四 丙辰庚寅丙午戊戌 寅午戌火局土焦 严重皮肤病`() {
+        val r = health(
+            HeavenlyStem.BING, EarthlyBranch.CHEN,
+            HeavenlyStem.GENG, EarthlyBranch.YIN,
+            HeavenlyStem.BING, EarthlyBranch.WU,
+            HeavenlyStem.WU, EarthlyBranch.XU,
+        )
+        assertTrue(r.risks.any { it.dim.contains("皮肤病") && it.text.contains("火多土焦") })
+    }
+
+    @Test
+    fun `皮肤例六 戊申庚申庚申甲申 旺金狂泄土 严重皮肤病`() {
+        val r = health(
+            HeavenlyStem.WU, EarthlyBranch.SHEN,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN,
+            HeavenlyStem.JIA, EarthlyBranch.SHEN,
+        )
+        assertTrue(r.risks.any { it.dim.contains("皮肤病") && it.text.contains("狂泄") })
+    }
 }

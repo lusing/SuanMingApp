@@ -115,6 +115,34 @@ object HealthCalculator {
             }
         }
 
+        // ── 皮肤病专项（土=皮肤，第七节）──
+        val tu = forces[Element.EARTH]!!
+        val huo = forces[Element.FIRE]!!
+        val shui = forces[Element.WATER]!!
+        val mu = forces[Element.WOOD]!!
+        val jin = forces[Element.METAL]!!
+        val skinCause = when {
+            huo >= 3.0 && tu >= 2.5 && shui <= 1.0 -> "火多土焦（热毒性皮肤病，例一九式火炎土燥滴水无存——难根治，忌辛辣）"
+            shui >= 3.5 && tu in 1.0..3.0 -> "水多土流（湿毒性皮肤病）"
+            tu >= 2.5 && shui <= 0.5 -> "土太燥少水润（易生毒疮，体内热毒）"
+            mu >= 3.0 && tu <= 2.0 -> "强木克土（皮肤病易留疤痕）"
+            tu >= 4.5 && huo <= 1.0 -> "土成亢旺（皮肤病）"
+            jin >= 4.0 && tu in 0.5..2.0 -> "旺金狂泄土（严重皮肤病，例六式冬裂夏亦裂）"
+            else -> null
+        }
+        val skinWet = shui >= 2.5 && tu >= 2.5 && jin >= 2.0 // 土水混杂(例二/七)
+        if (skinCause != null) {
+            risks += LiuQinItem(
+                "土行皮肤病·${skinCause!!.take(4)}",
+                "土主皮肤——${skinCause}；岁运逢火/水/木/金之年加剧，水运润燥（火多土焦者）可不药而愈。皮肤乃人身之表，宜及早调养燥湿平衡。",
+            )
+        } else if (skinWet) {
+            risks += LiuQinItem(
+                "土水混杂·皮肤之患",
+                "土主皮肤而土水混杂——易患皮肤病（例二式怪病/例七式伴疤痕）；木运木年克土时引发加剧。",
+            )
+        }
+
         val summary = "五行对应：木肝胆/火心小肠/土脾胃/金肺大肠/水肾膀胱（阳干腑阴干脏）。" +
             "原局储藏一生疾病信息，发病须待岁运引发——逢受损五行之克泄耗冲刑的岁运宜防，通关之行到位则缓解。"
         return HealthResult(items = items, risks = risks, summary = summary)
