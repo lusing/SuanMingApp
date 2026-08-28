@@ -32,6 +32,7 @@ fun PillarCard(
     dayMaster: HeavenlyStem,
     isDayPillar: Boolean,
     kong: Boolean = false,
+    shenSha: List<String> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val stemGod = if (isDayPillar) "日主" else tenGodOfStem(dayMaster, pillar.stem).chinese
@@ -105,6 +106,16 @@ fun PillarCard(
             color = Color(0xFF9E9E9E),
             modifier = Modifier.padding(top = 2.dp),
         )
+        // 落本柱之神煞（紧凑小字，不另设区块）
+        if (shenSha.isNotEmpty()) {
+            Text(
+                text = shenSha.joinToString("·"),
+                fontSize = 9.sp,
+                color = Color(0xFF8D6E63),
+                lineHeight = 12.sp,
+                modifier = Modifier.padding(top = 3.dp),
+            )
+        }
     }
 }
 

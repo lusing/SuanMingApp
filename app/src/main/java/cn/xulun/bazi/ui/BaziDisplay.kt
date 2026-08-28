@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +47,7 @@ import cn.xulun.bazi.ui.components.HeHuaSection
 import cn.xulun.bazi.ui.components.JieChongSection
 import cn.xulun.bazi.ui.components.LiuQinSection
 import cn.xulun.bazi.ui.components.HealthSection
+import cn.xulun.bazi.ui.components.GuanYunSection
 import cn.xulun.bazi.ui.components.HealthYunSection
 import cn.xulun.bazi.ui.components.HunYinSection
 import cn.xulun.bazi.ui.components.MarriageSection
@@ -85,6 +87,10 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
     val shiShen = cn.xulun.bazi.core.ShiShenCalculator.analyze(result)
     val kongWang = KongWangCalculator.analyze(result)
     val wealth = WealthCalculator.analyze(result)
+    // 神煞按柱分组（入柱卡展示，不单列区块）
+    val shenShaByPillar: List<List<String>> = listOf("年", "月", "日", "时").map { zi ->
+        shenSha.items.filter { it.pillarLabel.startsWith(zi) }.map { it.name }
+    }
     // 选定的大运/流年；随原局切换自动清空
     var selection by remember(result) { mutableStateOf<YunSelection?>(null) }
 
@@ -122,9 +128,24 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
                             dayMaster = dayMaster,
                             isDayPillar = i == 2,
                             kong = kongWang.isKong(i),
+                            shenSha = shenShaByPillar[i],
                             modifier = Modifier.weight(1f),
                         )
                     }
+                }
+                // 命宫·胎元（紧贴排盘）
+                val mingGong = cn.xulun.bazi.core.MingGongCalculator.analyze(result, gender)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 14.dp),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = "命宫 ${mingGong.mingGong.fullName}·${mingGong.starName}    胎元 ${mingGong.taiYuan.fullName}",
+                        fontSize = 12.sp,
+                        color = Color(0xFF6D4C41),
+                    )
                 }
                 // 纳音
                 FlowRow(
@@ -140,7 +161,6 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
                 }
             }
         }
-        ShenShaSection(result = shenSha)
         cn.xulun.bazi.ui.components.ShiShenSection(result = shiShen)
         cn.xulun.bazi.ui.components.HangYeSection(result = cn.xulun.bazi.core.HangYeCalculator.analyze(result))
         cn.xulun.bazi.ui.components.XingGeSection(result = cn.xulun.bazi.core.XingGeCalculator.analyze(result), composite = cn.xulun.bazi.core.XingGeCalculator.analyzeComposite(result))
@@ -159,15 +179,10 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         HeHuaSection(result = heHua)
         DiZhiRelationSection(result = diZhiRelation)
         JieChongSection(result = jieChong)
-        MingGongSection(
-            result = cn.xulun.bazi.core.MingGongCalculator.analyze(
-                result, gender,
-                flowYear = (selection as? YunSelection.LiuNian)?.liuNian?.year,
-            ),
-        )
         WealthSection(result = wealth)
         daYun?.let { dy ->
             CaiYunSection(result = cn.xulun.bazi.core.CaiYunCalculator.analyze(result, gender, dy))
+            GuanYunSection(result = cn.xulun.bazi.core.GuanYunCalculator.analyze(result, dy))
         }
         MarriageSection(result = MarriageCalculator.analyze(result, gender))
         HealthSection(result = cn.xulun.bazi.core.HealthCalculator.analyze(result))
