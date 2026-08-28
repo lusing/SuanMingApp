@@ -314,7 +314,16 @@ object CaiYunCalculator {
                     // 食伤年支引动财星（例六甲申乙酉）
                     yZhiBenQiEl == shiEl ||
                     // 比劫年支为忌夺财（例六庚辰——比劫行力≥3）
-                    (yZhiBenQiEl == biEl && forces[biEl]!! >= 3.0)
+                    (yZhiBenQiEl == biEl && forces[biEl]!! >= 3.0) ||
+                    // 劫比透干而岁支冲原局支——争财起纷亦为引动（例一陈2007丁亥巳亥冲）
+                    // 贪合忘冲豁免：冲对之一与全局他支六合（卯戌合解卯酉冲——例五林1999己卯）
+                    ((yGanGod == TenGod.JIE_CAI || yGanGod == TenGod.BI_JIAN) &&
+                        chongOf(ln.pillar.branch)?.let { cb ->
+                            bazi.branches.contains(cb) && !liuHePairs.any { pr ->
+                                (ln.pillar.branch in pr || cb in pr) &&
+                                    pr.any { x -> x != ln.pillar.branch && x != cb && (x in bazi.branches || x == yun.pillar.branch) }
+                            }
+                        } == true)
                 // ── 流年干支与原局/大运的作用关系（刑冲会合害+合化成否）──
                 val posLabels = listOf("年支", "月支", "日支", "时支")
                 fun huaCheng(huaEl: Element): String {
@@ -445,6 +454,25 @@ object CaiYunCalculator {
                 } else if (allXiYong) {
                     kind = CaiYunKind.FA
                     text = "岁干支皆喜用（${ln.pillar.stem.chinese}${ln.pillar.branch.chinese}）——日干得生扶能胜财，有求财之举，财运尚可；得流年相助宜乘势而为。"
+                } else if ((yGanGod == TenGod.JIE_CAI || yGanGod == TenGod.BI_JIAN) &&
+                    chongOf(ln.pillar.branch)?.let { cb ->
+                            bazi.branches.contains(cb) && !liuHePairs.any { pr ->
+                                (ln.pillar.branch in pr || cb in pr) &&
+                                    pr.any { x -> x != ln.pillar.branch && x != cb && (x in bazi.branches || x == yun.pillar.branch) }
+                            }
+                        } == true
+                ) {
+                    // 劫比透干而岁支冲原局支——劫财逢冲争财(例一丁亥巳亥冲+癸丁冲式)
+                    kind = CaiYunKind.PO
+                    text = "劫比透干（${ln.pillar.stem.chinese}）而岁支${ln.pillar.branch.chinese}冲原局${chongOf(ln.pillar.branch)!!.chinese}——争财起纷：" +
+                        "求财不利反损，易遇矛盾纠纷欠款难收，宜守不宜攻。"
+                } else if (yZhiBenQiEl == guanElX && cn.xulun.bazi.model.GodCategory.GUAN in d.fav &&
+                    (brHe.he && stHe.he)
+                ) {
+                    // 官星支当值为喜而全命局和局——官星引动,晋升机遇(例八林先生癸酉酉冲卯对峙成和式)
+                    kind = CaiYunKind.FA
+                    text = "官星（${ln.pillar.branch.chinese}）当值为喜而全命局和局——官星引动之年：" +
+                        "晋升机遇,加官晋级(例八林先生式);发财机遇之年遇官星则主贵。"
                 } else if (guanZhiHuCai) {
                     kind = CaiYunKind.FA
                     text = "官杀${ln.pillar.branch.chinese}当值而为喜，且比劫力重（${forces[biEl]}）——官星制劫护财，发财之机到来，可发大财。"
