@@ -43,6 +43,25 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例十七 黄先生 丁巳壬子癸丑癸丑 通关酉被丙戌刑害战局重现入狱`() {
+        val bazi = chartOf(
+            HeavenlyStem.DING, EarthlyBranch.SI,
+            HeavenlyStem.REN, EarthlyBranch.ZI,
+            HeavenlyStem.GUI, EarthlyBranch.CHOU,
+            HeavenlyStem.GUI, EarthlyBranch.CHOU,
+            1950, 2000,
+        )
+        assertEquals2("丁巳 壬子 癸丑 癸丑", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 原局水火土水交战+七杀无制——官非牢狱信息
+        assertTrue(r.baseRisks.any { it.dim.contains("相战") })
+        // 己酉运丙戌年：酉戌害+丑戌刑——通关之金被毁，战局重现——入狱判4年
+        val y06 = r.years.firstOrNull { it.year == 2006 }
+        assertNotNull(y06)
+        assertTrue(y06!!.text.contains("牢狱") || y06.text.contains("入狱"))
+    }
+
+    @Test
     fun `例十五 乾造 丁酉辛亥己亥丁卯 两枭夺食杀枭同柱+乙卯通关拘留轻灾`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.YOU,

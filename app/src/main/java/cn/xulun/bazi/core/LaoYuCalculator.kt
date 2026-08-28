@@ -522,6 +522,20 @@ object LaoYuCalculator {
                     severe = true
                 }
 
+                // 通关运支被岁支刑害而毁——战局重现入狱（例十七丙戌式）
+                val haiDui3 = listOf(
+                    setOf(EarthlyBranch.ZI, EarthlyBranch.WEI), setOf(EarthlyBranch.CHOU, EarthlyBranch.WU),
+                    setOf(EarthlyBranch.YIN, EarthlyBranch.SI), setOf(EarthlyBranch.MAO, EarthlyBranch.CHEN),
+                    setOf(EarthlyBranch.SHEN, EarthlyBranch.HAI), setOf(EarthlyBranch.YOU, EarthlyBranch.XU),
+                ).any { yb in it && yun.pillar.branch in it }
+                if (ganWar && zhiWar && haiDui3 &&
+                    sanXingGroups.any { g -> g.count { it in all } >= 2 }
+                ) {
+                    triggers += "运支${yun.pillar.branch.chinese}（通关之力）被岁支${yb.chinese}刑害而毁+${sanXingGroups.first { g -> g.count { it in all } >= 2 }.joinToString("") { it.chinese }}相刑——土水、水火大战重现"
+                    notes += "加之官杀混杂——牢狱之苦难免（例十七丙戌农历九月入狱判四年式）"
+                    severe = true
+                }
+
                 // 干支两系统皆战（混战）——续灾（例一戊寅式）
                 val mGan = sysWar(bazi.stems + listOf(yun.pillar.stem, ys), emptyList(), false, 2.0)
                 val mZhi = sysWar(emptyList(), bazi.branches + listOf(yun.pillar.branch, yb), true, 1.0)
