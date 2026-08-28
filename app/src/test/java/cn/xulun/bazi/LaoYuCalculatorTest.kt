@@ -43,6 +43,44 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例十五 乾造 丁酉辛亥己亥丁卯 两枭夺食杀枭同柱+乙卯通关拘留轻灾`() {
+        val bazi = chartOf(
+            HeavenlyStem.DING, EarthlyBranch.YOU,
+            HeavenlyStem.XIN, EarthlyBranch.HAI,
+            HeavenlyStem.JI, EarthlyBranch.HAI,
+            HeavenlyStem.DING, EarthlyBranch.MAO,
+            1950, 2000,
+        )
+        assertEquals2("丁酉 辛亥 己亥 丁卯", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 年时双枭挂两头+月上食神——两枭夺食；杀枭同柱——喜踏偏门打擦边球
+        assertTrue(r.baseRisks.any { it.dim.contains("两枭夺食") || it.dim.contains("杀枭同柱") })
+        // 1975乙卯：两卯冲两酉幸有亥水通关——只拘留15天而释放
+        val y75 = r.years.firstOrNull { it.year == 1975 }
+        assertNotNull(y75)
+        assertTrue(y75!!.text.contains("拘留") || y75.text.contains("释放"))
+    }
+
+    @Test
+    fun `例十六 乾造 甲申甲戌丙寅己丑 三枭双伤夹日+丑戌刑子卯刑聚入狱`() {
+        val bazi = chartOf(
+            HeavenlyStem.JIA, EarthlyBranch.SHEN,
+            HeavenlyStem.JIA, EarthlyBranch.XU,
+            HeavenlyStem.BING, EarthlyBranch.YIN,
+            HeavenlyStem.JI, EarthlyBranch.CHOU,
+            1900, 1950,
+        )
+        assertEquals2("甲申 甲戌 丙寅 己丑", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 三枭双伤夹日干——牢狱信息明显
+        assertTrue(r.baseRisks.any { it.dim.contains("夹日") })
+        // 己卯运丙子年：丑戌刑+子卯刑——刑聚入狱
+        val y96 = r.years.firstOrNull { it.year == 1996 }
+        assertNotNull(y96)
+        assertTrue(y96!!.text.contains("入狱"))
+    }
+
+    @Test
     fun `例十四 乾造 壬辰癸卯乙丑丙子 身旺印旺财弱+己卯禄会贪污入狱`() {
         val bazi = chartOf(
             HeavenlyStem.REN, EarthlyBranch.CHEN,

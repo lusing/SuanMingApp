@@ -134,6 +134,43 @@ object LaoYuCalculator {
             )
         }
 
+        // 两枭夺食（双枭透+食神透）+杀枭同柱（例十五式）
+        val xiaoTouCount = bazi.stems.indices.filter { it != 2 }
+            .count { tenGodOfStem(day, bazi.stems[it]) == TenGod.PIAN_YIN }
+        if (xiaoTouCount >= 2 && tou(TenGod.SHI_SHEN)) {
+            risks += LiuQinItem(
+                "两枭夺食",
+                "双枭挂两头而食神居中——两枭夺食，rule8 有牢狱之虞（例十五式：枭神无根则灾轻）。",
+            )
+        }
+        val shaXiaoTongZhu = bazi.stems.indices.filter { it != 2 }.any { i ->
+            tenGodOfStem(day, bazi.stems[i]) == TenGod.PIAN_YIN &&
+                branchHiddenStems.getValue(bazi.branches[i]).firstOrNull()?.element == guanEl
+        }
+        if (shaXiaoTongZhu) {
+            risks += LiuQinItem(
+                "杀枭同柱",
+                "七杀与枭神同柱——不愿干正当生意，喜踏偏门，打政策的擦边球（例十五式）。",
+            )
+        }
+
+
+        // 三枭双伤夹日干（rule8 夹日型，例十六式）
+        val jiaRi = (bazi.stems.getOrNull(0)?.let { tenGodOfStem(day, it) } == TenGod.PIAN_YIN ||
+            bazi.stems.getOrNull(1)?.let { tenGodOfStem(day, it) } == TenGod.PIAN_YIN) &&
+            bazi.stems.getOrNull(3)?.let { tenGodOfStem(day, it) } == TenGod.SHANG_GUAN
+        val jiaRi2 = (bazi.stems.getOrNull(0)?.let { tenGodOfStem(day, it) } == TenGod.SHANG_GUAN ||
+            bazi.stems.getOrNull(1)?.let { tenGodOfStem(day, it) } == TenGod.SHANG_GUAN) &&
+            bazi.stems.getOrNull(3)?.let { tenGodOfStem(day, it) } == TenGod.PIAN_YIN
+        if ((jiaRi || jiaRi2) && xiaoTouCount + bazi.stems.indices.count {
+                it != 2 && tenGodOfStem(day, bazi.stems[it]) == TenGod.PIAN_YIN
+            } >= 2) {
+            risks += LiuQinItem(
+                "枭伤夹日干",
+                "枭神与伤官（双枭双伤以上）夹日干——rule8 有牢狱之信息（例十六式）。",
+            )
+        }
+
         // 身旺印旺财弱——见财起意见利忘义（例十四式）
         if (f[yinEl]!! >= 3.0 && f[dayEl]!! >= 3.0 && f[dayEl.controls]!! <= 2.0) {
             risks += LiuQinItem(
@@ -460,6 +497,28 @@ object LaoYuCalculator {
                 ) {
                     triggers += "禄会之年（${yb.chinese}为日主之禄）+财星${ys.chinese}轮值+印旺（${f[yinEl]}）——财印相战"
                     notes += "印旺身旺见财起意——因伙同贪污而入狱（例十四己卯式）"
+                    severe = true
+                }
+
+                // 两X冲两Y而通关在局——拘留轻灾而释放（例十五乙卯式）
+                val shuangChong = (bazi.branches + yb).count { it == yb } >= 2 &&
+                    (bazi.branches + yun.pillar.branch).count { it == br2Of(yb) } >= 2
+                val tongGuan = Element.entries.firstOrNull { t ->
+                    br2Of(yb).element.let { strong -> strong.generates == t && t.generates == yb.element }
+                }?.let { bazi.branches.count { b -> b.element == it } >= 1 } == true
+                if (shuangChong && tongGuan) {
+                    triggers += "两${yb.chinese}冲两${br2Of(yb).chinese}——幸有通关之行化解"
+                    notes += "只拘留数日（半月）而释放——灾轻（例十五乙卯式）"
+                }
+
+                // 原局刑+岁运刑聚——入狱（例十六丙子式）
+                val natXing = sanXingGroups.any { g -> g.count { it in bazi.branches } >= 2 } ||
+                    (setOf(EarthlyBranch.ZI, EarthlyBranch.MAO).let { zm -> bazi.branches.count { it in zm } >= 2 })
+                val suiYunXing = sanXingGroups.any { g -> setOf(yb, yun.pillar.branch).count { it in g } == 2 } ||
+                    setOf(yb, yun.pillar.branch) == setOf(EarthlyBranch.ZI, EarthlyBranch.MAO)
+                if ((jiaRi || jiaRi2) && natXing && suiYunXing) {
+                    triggers += "原局刑（丑戌/子卯类）+岁运支刑聚"
+                    notes += "牢狱信息明显——此年入狱（例十六丙子式）"
                     severe = true
                 }
 
