@@ -129,32 +129,49 @@ object WenPingCalculator {
             mediumHigh = true
             basisParts += "印星当令为用而少行财运，财星坏印（破印耗身）——不利考学（例十三专科式）"
         }
+        // 原局印星绝无、全赖运印，而运支印星又被原局冲克，运干亦非印非生印（无源无助）——用神不力（例十五初中式）；
+        // 运干支皆印则印运连片有助（例一辛酉庚申冲卯仍博士）；原局印有力则运印被冲不伤根本（例十）。
+        val yinZhiChong = f[yinEl]!! <= 0.5 && youngYuns.any { y ->
+            val b = y.pillar.branch
+            b.element == yinEl && bazi.branches.contains(EarthlyBranch.entries[(b.ordinal + 6) % 12]) &&
+                y.pillar.stem.element != yinEl && y.pillar.stem.element.generates != yinEl
+        }
+        val yinZhiChongBasis = "印星为用而原局印绝，运支印星又被原局冲克——无源无助用神不力，" +
+            "思想糊涂注意力不集中，学业难成（例十五初中式）"
         val teShu = TeShuGeJuCalculator.analyze(bazi)
         if (teShu != null) {
-            // ── 从格/战局：少行从神/喜神/通关之运——顺势求学 ──
-            // 从儿喜财（儿再生儿）——从神集并入从儿之财；印比之势（身旺象）另断
-            val congEls = (teShu.yongShen + teShu.xi +
-                (if (teShu.name.contains("从儿")) listOf(teShu.yongShen.first().generates) else emptyList())
-                ).distinct()
-            val congCats = congEls.map { categoryOf(it, dayEl) }.toSet()
-            val yinBiShi = congCats.isNotEmpty() && congCats.all { it == GodCategory.BI || it == GodCategory.YIN }
-            when {
-                youngCats.any { it in congCats } && !yinBiShi -> {
-                    highSignal = true
-                    val zhanJu = teShu.kind == TeShuKind.ZHAN_JU
-                    basisParts += "命成${teShu.name}，少行${if (zhanJu) "通关" else "从神/喜神"}" +
-                        "（${congEls.joinToString("") { it.chinese }}）之运——" +
-                        (if (zhanJu) "战者和为贵，形成顺势相生之势，印为喜（例九式）" else "顺势求学有成（例六/例八/例九式）") +
-                        (if (!zhanJu && teShu.ji.firstOrNull()?.let { f[it]!! >= 1.0 } == true) {
-                            "；惟忌神${teShu.ji.first().chinese}在局有力（金木交战式）——学历上限受限，难再升高位"
-                        } else "")
-                }
-                // 印比之势成象（身旺象）而原局食伤绝无——运泄为救，有利文凭而非大旺（例十二专科式）
-                yinBiShi && GodCategory.SHI in youngCats && f[shiEl]!! < 1.0 -> {
-                    mediumHigh = true
-                    basisParts += "命成${teShu.name}（印比之势——身旺象），原局食伤绝无，逢伤食运化泄为有救——有利文凭，通过努力可考（例十二专科式）"
+            if (yinZhiChong) {
+                lowSignal = true
+                basisParts += yinZhiChongBasis
+            } else {
+                // ── 从格/战局：少行从神/喜神/通关之运——顺势求学 ──
+                // 从儿喜财（儿再生儿）——从神集并入从儿之财；印比之势（身旺象）另断
+                val congEls = (teShu.yongShen + teShu.xi +
+                    (if (teShu.name.contains("从儿")) listOf(teShu.yongShen.first().generates) else emptyList())
+                    ).distinct()
+                val congCats = congEls.map { categoryOf(it, dayEl) }.toSet()
+                val yinBiShi = congCats.isNotEmpty() && congCats.all { it == GodCategory.BI || it == GodCategory.YIN }
+                when {
+                    youngCats.any { it in congCats } && !yinBiShi -> {
+                        highSignal = true
+                        val zhanJu = teShu.kind == TeShuKind.ZHAN_JU
+                        basisParts += "命成${teShu.name}，少行${if (zhanJu) "通关" else "从神/喜神"}" +
+                            "（${congEls.joinToString("") { it.chinese }}）之运——" +
+                            (if (zhanJu) "战者和为贵，形成顺势相生之势，印为喜（例九式）" else "顺势求学有成（例六/例八/例九式）") +
+                            (if (!zhanJu && teShu.ji.firstOrNull()?.let { f[it]!! >= 1.0 } == true) {
+                                "；惟忌神${teShu.ji.first().chinese}在局有力（金木交战式）——学历上限受限，难再升高位"
+                            } else "")
+                    }
+                    // 印比之势成象（身旺象）而原局食伤绝无——运泄为救，有利文凭而非大旺（例十二专科式）
+                    yinBiShi && GodCategory.SHI in youngCats && f[shiEl]!! < 1.0 -> {
+                        mediumHigh = true
+                        basisParts += "命成${teShu.name}（印比之势——身旺象），原局食伤绝无，逢伤食运化泄为有救——有利文凭，通过努力可考（例十二专科式）"
+                    }
                 }
             }
+        } else if (yinZhiChong) {
+            lowSignal = true
+            basisParts += yinZhiChongBasis
         } else if (GodCategory.YIN in d.fav) {
             if (GodCategory.YIN in youngCats) {
                 highSignal = true

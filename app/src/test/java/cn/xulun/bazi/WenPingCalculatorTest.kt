@@ -284,6 +284,23 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `例十五 某先生 甲寅甲戌甲午辛未 身弱用印运支被冲 初中肄业`() {
+        val bazi = chartOf(
+            HeavenlyStem.JIA, EarthlyBranch.YIN,
+            HeavenlyStem.JIA, EarthlyBranch.XU,
+            HeavenlyStem.JIA, EarthlyBranch.WU,
+            HeavenlyStem.XIN, EarthlyBranch.WEI,
+            1900, 2000,
+        )
+        assertEquals2("甲寅 甲戌 甲午 辛未", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        val dip = r.diploma
+        // 寅午戌合火木生火火生土当令——身弱喜印忌财；丙子运子水无源无助又被午冲——用神不力，初中肄业
+        assertTrue(dip.level, dip.level.contains("学历不高"))
+        assertTrue(dip.basis.contains("冲克") || dip.basis.contains("用神不力"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,
