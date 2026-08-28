@@ -185,6 +185,9 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
             cn.xulun.bazi.ui.components.ZhiYeBianDongSection(result = cn.xulun.bazi.core.ZhiYeBianDongCalculator.analyze(result, dy))
         }
         cn.xulun.bazi.ui.components.RenPinSection(result = cn.xulun.bazi.core.RenPinCalculator.analyze(result, daYun))
+        daYun?.let { dy ->
+            cn.xulun.bazi.ui.components.LaoYuSection(result = cn.xulun.bazi.core.LaoYuCalculator.analyze(result, dy))
+        }
         WuXingFlowSection(result = WuXingFlowCalculator.analyze(result, emptyList()))
         BingYaoSection(result = cn.xulun.bazi.core.BingYaoCalculator.analyze(result))
         when (dayMaster.element) {
