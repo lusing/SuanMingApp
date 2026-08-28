@@ -115,6 +115,8 @@ object WenPingCalculator {
         var mediumHigh = false
         var badYearsList: List<StudyDiplomaYear> = emptyList()
         var goodYearsList: List<StudyDiplomaYear> = emptyList()
+        var talentYearsList: List<StudyDiplomaYear> = emptyList()
+        var talentText = ""
         val yinDangLing = bazi.monthPillar.branch.element == yinEl
         // 杀印相生结构（局级——化杀生身，不随喜忌分支走；财运行杀印循环不作损印论，例三/例十式）
         val shaYin = shaRevealed && (yinDangLing || f[yinEl]!! >= 2.0) && f[guanEl]!! >= 2.0
@@ -227,6 +229,54 @@ object WenPingCalculator {
             }
         }
         goodYearsList = goodYears
+
+        // ── 读书天赋（第二节：食伤=智商，文昌即食神；印=文凭/学校；水旺主智）──
+        val shiShenOf = { stem: HeavenlyStem -> tenGodOfStem(day, stem) == TenGod.SHI_SHEN }
+        val shangGanOf = { stem: HeavenlyStem -> tenGodOfStem(day, stem) == TenGod.SHANG_GUAN }
+        val talentParts = mutableListOf<String>()
+        // 伤官佩印（印力≥2 适当制约即可——例一黄女士火印2）
+        if ((shangRevealed || shangBenQi) && (sealRevealed || f[yinEl]!! >= 2.0)) {
+            talentParts += "伤官佩印——伤官得印星适当制约，聪明才智与勤奋并用的读书天赋（例一黄女士式）"
+        }
+        // 食神有力（食神透干或文昌在局）——文昌即食神
+        val shiShenTou = bazi.stems.indices.filter { it != 2 }.any { tenGodOfStem(day, bazi.stems[it]) == TenGod.SHI_SHEN }
+        if (shiShenTou || wenChangIn) {
+            talentParts += "食神" + (if (wenChangIn) "（文昌${day.wenChang.chinese}在局——文昌即食神）" else "透干") +
+                "——食伤为智商，读书天赋之星"
+        }
+        // 水旺主智
+        if (f[Element.WATER]!! >= 3.0) {
+            talentParts += "命局水旺（力${f[Element.WATER]}）——水主智，智商不错"
+        }
+        val talent = if (talentParts.isEmpty()) "读书天赋一般（食伤不显、水不旺——后天勤奋为主）"
+        else talentParts.joinToString("；")
+        talentText = talent
+
+        // ── 读书天赋流年分类（学龄 6-25 岁）──
+        val talentYears = daYun?.yuns.orEmpty().filter { it.startAge < 26 }.flatMap { yun ->
+            yun.liuNian.filter { ln -> (ln.year - birthYear) in 6..25 }.mapNotNull { ln ->
+                val ys = ln.pillar.stem
+                val ybBenQi = branchHiddenStems.getValue(ln.pillar.branch).firstOrNull()
+                val isShiShenNian = shiShenOf(ys) || (ybBenQi != null && tenGodOfStem(day, ybBenQi) == TenGod.SHI_SHEN)
+                val isShangNian = shangGanOf(ys) || (ybBenQi != null && tenGodOfStem(day, ybBenQi) == TenGod.SHANG_GUAN)
+                val yinPeiShang = (shangRevealed || shangBenQi) && (sealRevealed || f[yinEl]!! >= 2.0)
+                val yinNian = tenGodOfStem(day, ys).category() == GodCategory.YIN ||
+                    (ybBenQi != null && tenGodOfStem(day, ybBenQi).category() == GodCategory.YIN)
+                val text = when {
+                    isShiShenNian -> "食神当值——有上进的激情，比较勤奋，有利于提高学习成绩"
+                    isShangNian && yinPeiShang -> "伤官当值而原局印星配合（伤官佩印之年）——聪明勤奋，利读书"
+                    isShangNian && f[yinEl]!! < 1.0 -> "伤官旺而无印制——贪玩甚至惹是生非，对学习不感兴趣，成绩易滑坡，师长宜耐心教育引导"
+                    yinNian && (shangRevealed || shangBenQi) ->
+                        "印星当值而原局有伤官配合——印主学校，印星旺而食伤不弱，升学考试易被录取到好学校（例一黄女士1987本科式）"
+                    yinNian -> "印星当值而无伤官配合——上进心不足，比较懒散，对学习不利"
+                    else -> null
+                }
+                text?.let {
+                    StudyDiplomaYear(ln.year, "${ln.year} ${ln.pillar.fullName}", it + "。")
+                }
+            }
+        }
+        talentYearsList = talentYears
         // 原局印星绝无、全赖运印，而运支印星又被原局冲克，运干亦非印非生印（无源无助）——用神不力（例十五初中式）；
         // 运干支皆印则印运连片有助（例一辛酉庚申冲卯仍博士）；原局印有力则运印被冲不伤根本（例十）。
         val yinZhiChong = f[yinEl]!! <= 0.5 && youngYuns.any { y ->
@@ -457,6 +507,8 @@ object WenPingCalculator {
             unfavorable = unf,
             badYears = badYearsList,
             goodYears = goodYearsList,
+            talent = talentText,
+            talentYears = talentYearsList,
         )
     }
 

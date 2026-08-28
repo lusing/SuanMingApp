@@ -85,6 +85,16 @@ fun StudySection(result: StudyResult, modifier: Modifier = Modifier) {
                     Text(it.text, fontSize = 11.sp, color = Color(0xFF616161), modifier = Modifier.padding(top = 1.dp))
                 }
             }
+            // 读书天赋（食伤=智商/文昌为食神，印=文凭学校，水旺主智）
+            SectionLabel("读书天赋", Modifier.padding(top = 14.dp))
+            Text(dip.talent, fontSize = 12.sp, color = Color(0xFF616161))
+            if (dip.talentYears.isNotEmpty()) {
+                Text("学龄流年心性", fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 6.dp))
+                dip.talentYears.forEach {
+                    Text("${it.label}——${it.text}", fontSize = 11.sp, color = Color(0xFF616161), modifier = Modifier.padding(top = 2.dp))
+                }
+            }
+
             if (dip.goodYears.isNotEmpty()) {
                 Text("利文途流年（干支和局——高考必中式）", fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 8.dp))
                 dip.goodYears.forEach {

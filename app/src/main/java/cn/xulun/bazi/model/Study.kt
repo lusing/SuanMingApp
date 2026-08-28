@@ -69,6 +69,10 @@ data class StudyDiploma(
     val badYears: List<StudyDiplomaYear> = emptyList(),
     /** 利文途的流年应期（学龄关键期 15-25 岁，岁运并入全局干支皆和——高考必中式） */
     val goodYears: List<StudyDiplomaYear> = emptyList(),
+    /** 读书天赋结论（食伤=智商/文昌为食神，印=文凭学校；水旺主智） */
+    val talent: String = "",
+    /** 读书天赋流年分类（学龄 6-25 岁：食神年勤/伤官佩印年利/印年配伤官易录取/印年无伤官懒散/伤官无制贪玩） */
+    val talentYears: List<StudyDiplomaYear> = emptyList(),
 )
 
 /** 学业分析总结果 */
