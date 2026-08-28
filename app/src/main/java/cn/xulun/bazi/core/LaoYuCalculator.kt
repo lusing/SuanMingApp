@@ -26,6 +26,11 @@ object LaoYuCalculator {
         setOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN),
         setOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI),
     )
+    private val liuHePairs = listOf(
+        setOf(EarthlyBranch.ZI, EarthlyBranch.CHOU), setOf(EarthlyBranch.YIN, EarthlyBranch.HAI),
+        setOf(EarthlyBranch.MAO, EarthlyBranch.XU), setOf(EarthlyBranch.CHEN, EarthlyBranch.YOU),
+        setOf(EarthlyBranch.SI, EarthlyBranch.SHEN), setOf(EarthlyBranch.WU, EarthlyBranch.WEI),
+    )
     private val ganChong = listOf(
         setOf(HeavenlyStem.JIA, HeavenlyStem.GENG), setOf(HeavenlyStem.YI, HeavenlyStem.XIN),
         setOf(HeavenlyStem.BING, HeavenlyStem.REN), setOf(HeavenlyStem.DING, HeavenlyStem.GUI),
@@ -126,6 +131,21 @@ object LaoYuCalculator {
             risks += LiuQinItem(
                 "燥气结党",
                 "局中一片燥气（火土${f[Element.EARTH]!! + f[Element.FIRE]!!}而无水润）——燥土重重，性格冲动、不计后果；燥土脆金、土多埋金（例十式）。",
+            )
+        }
+
+        // 三会官杀方局齐+身轻杀旺无制——受牵连/陷害型官非（例十二式）
+        val sanHuiGuan = when (guanEl) {
+            Element.WOOD -> bazi.branches.containsAll(listOf(EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN))
+            Element.FIRE -> bazi.branches.containsAll(listOf(EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI))
+            Element.METAL -> bazi.branches.containsAll(listOf(EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU))
+            Element.WATER -> bazi.branches.containsAll(listOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU))
+            else -> false
+        }
+        if (sanHuiGuan && f[guanEl]!! >= f[dayEl]!!) {
+            risks += LiuQinItem(
+                "三会杀局攻身",
+                "三会官杀方局齐而身轻杀旺无制——官杀旺攻身为忌：胆小懦弱、易受人摆布缺乏主见；身弱官杀制身——一般不会故意犯罪，**最易受别人牵连**；七杀为忌为小人——**易遭栽赃诬陷而遭官非**（例十二式）。",
             )
         }
 
@@ -369,6 +389,25 @@ object LaoYuCalculator {
                     triggers += "岁运并临${ys.chinese}${yb.chinese}为忌神破格——湿土晦火之光"
                     notes += "名誉有损，有牢狱之兆（例十一丁丑式：伙同抢劫仅三百余元亦被判重刑）"
                     severe = true
+                }
+
+                // 岁支冲日主之根引动+财滋杀攻身——受牵连入牢（例十二辛未式）；
+                // 岁与日柱天合地合绊住官杀——出狱（例十二甲戌式）
+                if (sanHuiGuan) {
+                    val genZhi = bazi.branches.filter { it.element == dayEl }
+                    val chongGen = genZhi.isNotEmpty() && genZhi.any { br2Of(yb) == it }
+                    val yunCai = effYuns.any { yy -> yy.pillar.branch.element == dayEl.controls }
+                    if (chongGen && yunCai) {
+                        triggers += "岁支${yb.chinese}冲日主之根${genZhi.joinToString("") { it.chinese }}引动木土交战+运支财滋杀——财旺生杀、杀旺攻身"
+                        notes += "因受朋友牵连而入牢（例十二辛未式——身弱受牵连型，非故意犯罪）"
+                        severe = true
+                    }
+                    val tianHeZhu = Math.floorMod(ys.ordinal - day.ordinal, 10) == 5
+                    val diHeRi = liuHePairs.contains(setOf(yb, bazi.dayPillar.branch))
+                    if (tianHeZhu && diHeRi) {
+                        triggers += "岁干${ys.chinese}合日干${day.chinese}+岁支${yb.chinese}合日支${bazi.dayPillar.branch.chinese}——与日柱天合地合"
+                        notes += "绊住官杀攻身之力大减，身旺能胜财官——借流年之力得以重见天日（出狱，例十二甲戌式）"
+                    }
                 }
 
                 // 干支两系统皆战（混战）——续灾（例一戊寅式）

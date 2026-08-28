@@ -43,6 +43,29 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例十二 乾造 癸丑甲寅己卯戊辰 三会杀局受牵连入牢+甲戌天合地合出狱`() {
+        val bazi = chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.CHOU,
+            HeavenlyStem.JIA, EarthlyBranch.YIN,
+            HeavenlyStem.JI, EarthlyBranch.MAO,
+            HeavenlyStem.WU, EarthlyBranch.CHEN,
+            1950, 2000,
+        )
+        assertEquals2("癸丑 甲寅 己卯 戊辰", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 三会杀局攻身——不会故意犯罪，最易受牵连/栽赃诬陷
+        assertTrue(r.baseRisks.any { it.dim.contains("杀局") && it.text.contains("牵连") })
+        // 1991辛未：冲丑根引动+财滋杀攻身——受朋友牵连入牢
+        val y91 = r.years.firstOrNull { it.year == 1991 }
+        assertNotNull(y91)
+        assertTrue(y91!!.text.contains("牵连") || y91.text.contains("入牢"))
+        // 1994甲戌：与日柱天合地合绊住卯木——出狱重见天日
+        val y94 = r.years.firstOrNull { it.year == 1994 }
+        assertNotNull(y94)
+        assertTrue(y94!!.text.contains("出狱") || y94.text.contains("重见天日"))
+    }
+
+    @Test
     fun `例十一 乾造 甲寅乙亥丁巳丙午 众劫侮官+丁丑岁运并临湿土晦火入狱`() {
         val bazi = chartOf(
             HeavenlyStem.JIA, EarthlyBranch.YIN,
