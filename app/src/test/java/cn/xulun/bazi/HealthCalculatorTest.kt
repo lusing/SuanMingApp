@@ -131,4 +131,26 @@ class HealthCalculatorTest {
         )
         assertTrue(r.risks.any { it.dim.contains("木") && it.text.contains("骨折") })
     }
+
+    @Test
+    fun `疤痕例 甲午甲戌丙寅壬辰 年月两枭为忌 头上刀伤疤`() {
+        val r = health(
+            HeavenlyStem.JIA, EarthlyBranch.WU,
+            HeavenlyStem.JIA, EarthlyBranch.XU,
+            HeavenlyStem.BING, EarthlyBranch.YIN,
+            HeavenlyStem.REN, EarthlyBranch.CHEN,
+        )
+        assertTrue(r.risks.any { it.dim.contains("枭神为忌") && it.text.contains("疤痕") })
+    }
+
+    @Test
+    fun `疤痕例一 乙卯戊寅丁酉癸卯 枭重面部火烧疤`() {
+        val r = health(
+            HeavenlyStem.YI, EarthlyBranch.MAO,
+            HeavenlyStem.WU, EarthlyBranch.YIN,
+            HeavenlyStem.DING, EarthlyBranch.YOU,
+            HeavenlyStem.GUI, EarthlyBranch.MAO,
+        )
+        assertTrue(r.risks.any { it.dim.contains("枭神为忌") })
+    }
 }

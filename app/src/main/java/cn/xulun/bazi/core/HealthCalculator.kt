@@ -7,6 +7,9 @@ import cn.xulun.bazi.model.DayStrength
 import cn.xulun.bazi.model.Element
 import cn.xulun.bazi.model.GodCategory
 import cn.xulun.bazi.model.HealthResult
+import cn.xulun.bazi.model.TenGod
+import cn.xulun.bazi.model.branchHiddenStems
+import cn.xulun.bazi.model.tenGodOfStem
 import cn.xulun.bazi.model.LiuQinItem
 
 /**
@@ -154,6 +157,49 @@ object HealthCalculator {
                 "土水混杂·皮肤之患",
                 "土主皮肤而土水混杂——易患皮肤病（例二式怪病/例七式伴疤痕）；木运木年克土时引发加剧。",
             )
+        }
+
+        // ── 疤痕痣纹专项（四凶神为忌无制化，第四节）──
+        run {
+            val day = bazi.dayPillar.stem
+            // 四凶神:七杀/伤官/枭神(偏印)/劫财——找透干或本气支者,判喜忌与制化
+            val xiong = listOf(
+                Triple(TenGod.QI_SHA, "七杀", "突发性打斗、病灾、自残留疤"),
+                Triple(TenGod.SHANG_GUAN, "伤官", "顽皮冒险，打斗受伤或手术留疤"),
+                Triple(TenGod.PIAN_YIN, "枭神", "胎记，伤害多在面部"),
+                Triple(TenGod.JIE_CAI, "劫财", "顽皮打斗、自残突发伤灾"),
+            )
+            xiong.forEach { (god, name, nature) ->
+                val tou = bazi.stems.indices.filter { it != 2 && tenGodOfStem(day, bazi.stems[it]) == god }
+                val benQi = bazi.branches.indices.filter {
+                    branchHiddenStems.getValue(bazi.branches[it]).firstOrNull()?.let { h -> tenGodOfStem(day, h) } == god
+                }
+                if (tou.isNotEmpty() || benQi.isNotEmpty()) {
+                    val cat = cn.xulun.bazi.core.LiuQinXiJi.run { god.category() }
+                    val weiJi = cat in d.unf
+                    // 制化:克凶神之行(伤官七杀遇印制/枭遇财制/劫遇官制)力≥1.5
+                    val keCat = when (cat) {
+                        GodCategory.GUAN -> GodCategory.YIN // 印化官杀
+                        GodCategory.SHI -> GodCategory.YIN // 印制伤官?——食伤克应官制?教材无明文,简化:印制伤官/财化枭/官制劫
+                        GodCategory.YIN -> GodCategory.CAI // 财制枭
+                        else -> GodCategory.GUAN // 官制劫财
+                    }
+                    val zhiHua = forces[elementOf(keCat, dayEl)]!! >= 1.5
+                    if (weiJi && !zhiHua) {
+                        val pos = when {
+                            tou.isNotEmpty() -> "${listOf("年干", "月干", "日干", "时干")[tou.first()]},显眼处"
+                            else -> "地支(${listOf("年支", "月支", "日支", "时支")[benQi.first()]}),隐藏处"
+                        }
+                        val shangBan = tou.firstOrNull()?.let { it <= 1 } ?: (benQi.first() <= 1)
+                        val weight = forces[elementOf(cat, dayEl)]!! >= 2.5
+                        risks += LiuQinItem(
+                            "${name}为忌·${if (weight) "疤痕" else "痣纹"}",
+                            "${name}（$pos${if (shangBan) "，年月=身体上半、右" else "，日时=身体下半、左"}）为忌无制化——${nature}；" +
+                                "危害${if (weight) "重则留疤痕" else "轻则为痣纹"}（例：枭重面部火烧疤/枭绝地仅额上一痣式）。",
+                        )
+                    }
+                }
+            }
         }
 
         // ── 伤灾倾向（第三章：五行激烈相战）──
