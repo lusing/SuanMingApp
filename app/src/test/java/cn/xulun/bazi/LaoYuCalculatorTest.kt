@@ -43,6 +43,25 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例九 乾造 丁亥甲辰丁巳庚戌 罗网交加双伤夹日+辛未冲根刑聚被捕`() {
+        val bazi = chartOf(
+            HeavenlyStem.DING, EarthlyBranch.HAI,
+            HeavenlyStem.JIA, EarthlyBranch.CHEN,
+            HeavenlyStem.DING, EarthlyBranch.SI,
+            HeavenlyStem.GENG, EarthlyBranch.XU,
+            1900, 1950,
+        )
+        assertEquals2("丁亥 甲辰 丁巳 庚戌", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 辰戌罗网交加且为忌+双伤夹日柱土旺木折——牢狱信息明显
+        assertTrue(r.baseRisks.any { it.dim.contains("罗网") || it.dim.contains("双伤") })
+        // 己亥运1991辛未：戌未相刑+两亥冲巳冲去日主之根+泄身过重——壬辰月被捕判3年
+        val y91 = r.years.firstOrNull { it.year == 1991 }
+        assertNotNull(y91)
+        assertTrue(y91!!.text.contains("被捕") || y91.text.contains("入狱"))
+    }
+
+    @Test
     fun `例八 乾造 丙午乙未丁丑辛亥 枭食同柱+壬戌刑开墓门抢劫入狱`() {
         val bazi = chartOf(
             HeavenlyStem.BING, EarthlyBranch.WU,

@@ -31,6 +31,8 @@ object LaoYuCalculator {
         setOf(HeavenlyStem.BING, HeavenlyStem.REN), setOf(HeavenlyStem.DING, HeavenlyStem.GUI),
     )
 
+    private fun br2Of(b: EarthlyBranch): EarthlyBranch = EarthlyBranch.entries[(b.ordinal + 6) % 12]
+
     fun analyze(bazi: BaziResult, daYun: DaYunInfo?): LaoYuResult {
         val day = bazi.dayPillar.stem
         val dayEl = day.element
@@ -110,6 +112,25 @@ object LaoYuCalculator {
             risks += LiuQinItem(
                 "食多变伤·喜与官斗",
                 "食多食旺变为伤官之性而得令，支逢冲则愈冲愈旺——伤官心性自恃聪明、胆大冒险、喜与官斗，易目无法纪，下场不佳（例八式）。",
+            )
+        }
+
+        // 辰戌罗网交加且为忌（rule9）+双伤夹日柱（例九式）
+        if (bazi.branches.containsAll(listOf(EarthlyBranch.CHEN, EarthlyBranch.XU)) &&
+            (weak || f[shiEl]!! >= f[dayEl]!!)
+        ) {
+            risks += LiuQinItem(
+                "罗网交加",
+                "辰戌罗网交加且为忌神——牢狱信息（rule9，例九式：辰为湿土晦火，泄日干之根基）。",
+            )
+        }
+        if (branchHiddenStems.getValue(bazi.branches[1]).firstOrNull()?.element == shiEl &&
+            branchHiddenStems.getValue(bazi.branches[3]).firstOrNull()?.element == shiEl &&
+            f[shiEl]!! >= 3.0
+        ) {
+            risks += LiuQinItem(
+                "双伤夹日柱",
+                "月时支双伤官夹日柱——${shiEl.chinese}旺${yinEl.chinese}折，损去日干原神；身弱伤官旺——喜欢冒险心存侥幸，易引发犯罪（例九式）。",
             )
         }
 
@@ -278,6 +299,16 @@ object LaoYuCalculator {
                 ) {
                     triggers += "岁支${yb.chinese}（日干之墓）逢三刑刑开墓门+岁干${ys.chinese}官星透干（伤官见官）"
                     notes += "无法无天，因不法行为（抢劫之类）而入狱（例八壬戌判两年式）"
+                    severe = true
+                }
+
+                // 冲根+刑聚+泄身过重——胆大妄为被捕入狱（例九辛未式）
+                val xingDui2 = sanXingGroups.any { g -> g.count { it in all } >= 2 }
+                val chongRiGen = br2Of(yun.pillar.branch) == bazi.dayPillar.branch || br2Of(yb) == bazi.dayPillar.branch ||
+                    bazi.branches.count { it == br2Of(bazi.dayPillar.branch) } >= 2
+                if (xingDui2 && chongRiGen && f[shiEl]!! >= f[dayEl]!!) {
+                    triggers += "刑聚（${sanXingGroups.first { g -> g.count { it in all } >= 2 }.joinToString("") { it.chinese }}）+冲去日主之根+泄身过重（${shiEl.chinese}${f[shiEl]}晦${dayEl.chinese}${f[dayEl]}）"
+                    notes += "胆大妄为做事不计后果——被捕入狱（例九辛未壬辰月判三年式）"
                     severe = true
                 }
 
