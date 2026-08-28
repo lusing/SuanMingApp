@@ -43,6 +43,25 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例五 杨先生 癸卯庚申乙酉丙子 官杀混杂伤官见官+庚辰岁运自刑入狱`() {
+        val bazi = chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.MAO,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN,
+            HeavenlyStem.YI, EarthlyBranch.YOU,
+            HeavenlyStem.BING, EarthlyBranch.ZI,
+            1950, 2000,
+        )
+        assertEquals2("癸卯 庚申 乙酉 丙子", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 月日支官杀混杂+月时干伤官见官+官杀旺制身——原局牢狱信息
+        assertTrue(r.baseRisks.any { it.dim.contains("混杂") || it.dim.contains("伤官见官") })
+        // 丙辰运庚辰年：岁运干伤官见官+辰辰自刑加大官杀混杂克身过重——入狱
+        val y00 = r.years.firstOrNull { it.year == 2000 }
+        assertNotNull(y00)
+        assertTrue(y00!!.text.contains("入狱") || y00.text.contains("牢狱"))
+    }
+
+    @Test
     fun `例二 陈先生 庚戌丙戌乙酉丁亥 伤官见官黑道+壬午冲战入狱`() {
         val bazi = chartOf(
             HeavenlyStem.GENG, EarthlyBranch.XU,

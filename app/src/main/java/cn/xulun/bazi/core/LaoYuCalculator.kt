@@ -92,6 +92,18 @@ object LaoYuCalculator {
             )
         }
 
+        // 官杀混杂而旺制身+伤官见官——原局牢狱信息（例五式）
+        val guanShaZhi = bazi.branches.count {
+            branchHiddenStems.getValue(it).firstOrNull()?.element == guanEl
+        }
+        val shangJianGuan = shangTouIdx.isNotEmpty() && guanTouIdx.isNotEmpty()
+        if (guanShaZhi >= 2 && shangJianGuan && f[guanEl]!! >= f[dayEl]!!) {
+            risks += LiuQinItem(
+                "官杀混杂+伤官见官",
+                "月日支官杀混杂，干上伤官见官，且官杀旺而制身——原局有牢狱之灾的信息（例五杨先生式）。",
+            )
+        }
+
         // 偏财贴身与日干相战+财支与官支相刑+透食神——为钱财违犯法律铤而走险（例四式）
         val pianCaiGan = bazi.stems.indices.filter { it != 2 }
             .firstOrNull { tenGodOfStem(day, bazi.stems[it]) == TenGod.PIAN_CAI }
@@ -183,6 +195,19 @@ object LaoYuCalculator {
                 if (shiShengPianCai && suiChong && (haiDui || xingDui) && f[dayEl]!! >= f[dayEl.controls]!! + 1.0) {
                     triggers += "食伤生偏财+岁支${yb.chinese}冲动+刑害聚+比劫亢旺（${f[dayEl]}）克财（${f[dayEl.controls]}）"
                     notes += "冒险求财意识突然加强——不法行为惹火烧身，招致牢狱之灾而失去人身自由（例四庚辰盗用商标式）"
+                    severe = true
+                }
+
+                // 岁运干伤官见官+岁运支自刑（辰午酉亥同字）+官杀旺克身过重——入狱（例五庚辰式）
+                val yunShangSuiGuan =
+                    (tenGodOfStem(day, yun.pillar.stem) == TenGod.SHANG_GUAN && tenGodOfStem(day, ys) in setOf(TenGod.ZHENG_GUAN, TenGod.QI_SHA)) ||
+                        (tenGodOfStem(day, ys) == TenGod.SHANG_GUAN && tenGodOfStem(day, yun.pillar.stem) in setOf(TenGod.ZHENG_GUAN, TenGod.QI_SHA))
+                val ziXing = yb == yun.pillar.branch && yb in setOf(
+                    EarthlyBranch.CHEN, EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.HAI,
+                )
+                if (yunShangSuiGuan && ziXing && f[guanEl]!! >= f[dayEl]!!) {
+                    triggers += "岁运干伤官见官（${yun.pillar.stem.chinese}${ys.chinese}）+岁运支${yb.chinese}${yun.pillar.branch.chinese}自刑加大官杀混杂而克身过重"
+                    notes += "此年入狱（例五庚辰式）"
                     severe = true
                 }
 
