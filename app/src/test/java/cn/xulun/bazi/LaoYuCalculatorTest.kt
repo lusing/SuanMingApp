@@ -43,6 +43,26 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例七 乾造 辛巳丙申庚戌丁丑 官杀混杂+局无财众劫抢财戊寅判无期`() {
+        val bazi = chartOf(
+            HeavenlyStem.XIN, EarthlyBranch.SI,
+            HeavenlyStem.BING, EarthlyBranch.SHEN,
+            HeavenlyStem.GENG, EarthlyBranch.XU,
+            HeavenlyStem.DING, EarthlyBranch.CHOU,
+            1900, 1950,
+        )
+        assertEquals2("辛巳 丙申 庚戌 丁丑", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 天干官杀混杂易有官灾+日干墓库在局+局无财比劫旺——财现众劫抢财
+        assertTrue(r.baseRisks.any { it.dim.contains("官杀混杂") })
+        assertTrue(r.baseRisks.any { it.dim.contains("无财") || it.dim.contains("众劫") || it.dim.contains("墓库") })
+        // 辛卯运戊寅年：岁支寅财值岁+寅巳申三刑——群凶劫财引发战局，因财判无期
+        val y98 = r.years.firstOrNull { it.year == 1998 }
+        assertNotNull(y98)
+        assertTrue(y98!!.text.contains("官灾") || y98.text.contains("重判"))
+    }
+
+    @Test
     fun `例五 杨先生 癸卯庚申乙酉丙子 官杀混杂伤官见官+庚辰岁运自刑入狱`() {
         val bazi = chartOf(
             HeavenlyStem.GUI, EarthlyBranch.MAO,

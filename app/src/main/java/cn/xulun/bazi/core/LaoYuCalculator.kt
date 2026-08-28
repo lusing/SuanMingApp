@@ -92,6 +92,35 @@ object LaoYuCalculator {
             )
         }
 
+        // 天干官杀混杂易有官灾+日干墓库在局身弱入墓信息（例七式）
+        val guanTou = tou(TenGod.ZHENG_GUAN)
+        val shaTou = tou(TenGod.QI_SHA)
+        if (guanTou && shaTou) {
+            risks += LiuQinItem(
+                "天干官杀混杂",
+                "天干官杀混杂——易有官灾（例七式：丙辛合而不化自成体系，官杀并透）。",
+            )
+        }
+        val riGanMu = mapOf(
+            Element.METAL to EarthlyBranch.CHOU, Element.WOOD to EarthlyBranch.WEI,
+            Element.WATER to EarthlyBranch.CHEN, Element.FIRE to EarthlyBranch.XU,
+            Element.EARTH to EarthlyBranch.CHEN,
+        )[dayEl]
+        if (riGanMu != null && bazi.branches.contains(riGanMu)) {
+            risks += LiuQinItem(
+                "日干墓库在局",
+                "日干（${dayEl.chinese}行）之墓库${riGanMu.chinese}在局——如遇身弱，有日干入墓的信息（rule10 之基）。",
+            )
+        }
+
+        // 局无财而比劫旺——财星出现则众劫抢财，因财色引发官非（rule13，例七式）
+        if (f[dayEl.controls]!! <= 0.5 && f[dayEl]!! >= 3.0) {
+            risks += LiuQinItem(
+                "局无财而比劫旺",
+                "原局不见财而身旺——本有发财之象；但财星一现即引发众劫凶性、不顾一切敛财——因财引发官灾（rule13，例七式）。",
+            )
+        }
+
         // 官杀混杂而旺制身+伤官见官——原局牢狱信息（例五式）
         val guanShaZhi = bazi.branches.count {
             branchHiddenStems.getValue(it).firstOrNull()?.element == guanEl
@@ -208,6 +237,17 @@ object LaoYuCalculator {
                 if (yunShangSuiGuan && ziXing && f[guanEl]!! >= f[dayEl]!!) {
                     triggers += "岁运干伤官见官（${yun.pillar.stem.chinese}${ys.chinese}）+岁运支${yb.chinese}${yun.pillar.branch.chinese}自刑加大官杀混杂而克身过重"
                     notes += "此年入狱（例五庚辰式）"
+                    severe = true
+                }
+
+                // 众劫抢财引发战局（例七戊寅式）：原局无财+比劫旺+岁支财星值岁+刑冲并现
+                if (f[dayEl.controls]!! <= 0.5 && f[dayEl]!! >= 3.0 &&
+                    branchHiddenStems.getValue(yb).firstOrNull()?.element == dayEl.controls &&
+                    (sanXingGroups.any { g -> g.count { it in all } >= 3 } ||
+                        bazi.branches.contains(EarthlyBranch.entries[(yb.ordinal + 6) % 12]))
+                ) {
+                    triggers += "岁支${yb.chinese}（财星）值岁而原局无财+比劫旺（${f[dayEl]}）——群凶劫财，刑冲并现引发战局"
+                    notes += "因财之事招官灾重判（例七戊寅年判无期式）"
                     severe = true
                 }
 
