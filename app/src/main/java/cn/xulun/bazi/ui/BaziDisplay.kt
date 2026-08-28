@@ -46,6 +46,7 @@ import cn.xulun.bazi.ui.components.HeHuaSection
 import cn.xulun.bazi.ui.components.JieChongSection
 import cn.xulun.bazi.ui.components.LiuQinSection
 import cn.xulun.bazi.ui.components.HealthSection
+import cn.xulun.bazi.ui.components.HealthYunSection
 import cn.xulun.bazi.ui.components.HunYinSection
 import cn.xulun.bazi.ui.components.MarriageSection
 import cn.xulun.bazi.ui.components.PillarCard
@@ -170,6 +171,9 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         }
         MarriageSection(result = MarriageCalculator.analyze(result, gender))
         HealthSection(result = cn.xulun.bazi.core.HealthCalculator.analyze(result))
+        daYun?.let { dy ->
+            HealthYunSection(result = cn.xulun.bazi.core.HealthYunCalculator.analyze(result, dy))
+        }
         daYun?.let { dy ->
             HunYinSection(result = cn.xulun.bazi.core.HunYinCalculator.analyze(result, gender, dy))
         }
