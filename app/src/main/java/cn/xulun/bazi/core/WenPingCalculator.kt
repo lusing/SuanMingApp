@@ -9,6 +9,7 @@ import cn.xulun.bazi.model.GodCategory
 import cn.xulun.bazi.model.HeavenlyStem
 import cn.xulun.bazi.model.StudyDiploma
 import cn.xulun.bazi.model.StudyDiplomaItem
+import cn.xulun.bazi.model.StudyDiplomaYear
 import cn.xulun.bazi.model.TenGod
 import cn.xulun.bazi.model.TeShuKind
 import cn.xulun.bazi.model.branchHiddenStems
@@ -112,6 +113,8 @@ object WenPingCalculator {
         var highSignal = false
         var lowSignal = false
         var mediumHigh = false
+        var badYearsList: List<StudyDiplomaYear> = emptyList()
+        var goodYearsList: List<StudyDiplomaYear> = emptyList()
         val yinDangLing = bazi.monthPillar.branch.element == yinEl
         // 杀印相生结构（局级——化杀生身，不随喜忌分支走；财运行杀印循环不作损印论，例三/例十式）
         val shaYin = shaRevealed && (yinDangLing || f[yinEl]!! >= 2.0) && f[guanEl]!! >= 2.0
@@ -129,6 +132,101 @@ object WenPingCalculator {
             mediumHigh = true
             basisParts += "印星当令为用而少行财运，财星坏印（破印耗身）——不利考学（例十三专科式）"
         }
+        // 学龄关键期（15-25 岁）流年干支双体克印——印主智慧被杂，不利文途（例十六退学式）；
+        // 印为用即扫（从格分支亦适用）；印为忌则克印年反吉不取
+        val keYinEl = Element.entries.first { it.controls == yinEl }
+        val birthYear = bazi.birthDateTime.year
+        val keYinYears: List<StudyDiplomaYear> =
+            if (GodCategory.YIN in d.fav)
+                daYun?.yuns.orEmpty().flatMap { yun -> yun.liuNian }.filter { ln ->
+                    val age = ln.year - birthYear
+                    age in 15..25 &&
+                        ln.pillar.stem.element.controls == yinEl &&
+                        branchHiddenStems.getValue(ln.pillar.branch).first().element.controls == yinEl
+                }.map { ln ->
+                    StudyDiplomaYear(
+                        ln.year,
+                        "${ln.year} ${ln.pillar.fullName}",
+                        "流年干支双体${keYinEl.chinese}克${yinEl.chinese}（${yinEl.chinese}主智慧）——岁运${yinEl.chinese}被${keYinEl.chinese}杂，不利文途，防退学/考试失利（例十六式）。",
+                    )
+                }
+            else emptyList()
+        badYearsList = keYinYears
+        if (keYinYears.isNotEmpty()) {
+            lowSignal = true
+            basisParts += "学龄关键期" + keYinYears.joinToString("、") { it.label } +
+                "流年干支双体${keYinEl.chinese}克${yinEl.chinese}——${yinEl.chinese}主智慧被${keYinEl.chinese}杂，不利文途（例十六退学式）"
+        }
+
+        // ── 利文途流年：学龄关键期岁运并入全局，干支两系统皆和而不战——高考必中式（例十七/例十八）──
+        fun ganHe(yunStem: HeavenlyStem, lnStem: HeavenlyStem): Boolean {
+            val gf = Element.entries.associateWith { 0.0 }.toMutableMap()
+            (bazi.stems + listOf(yunStem, lnStem)).forEach { gf[it.element] = gf[it.element]!! + 1.0 }
+            val sorted = Element.entries.filter { gf[it]!! >= 1.0 }.sortedByDescending { gf[it]!! }
+            if (sorted.size < 2) return true
+            val a = sorted[0]; val b2 = sorted[1]
+            if (a.generates == b2 || b2.generates == a) return true
+            val strong = if (a.controls == b2) a else b2
+            val weak = if (strong == a) b2 else a
+            val tong = Element.entries.firstOrNull { strong.generates == it && it.generates == weak }
+            if (tong != null && gf[tong]!! >= 1.0) return true
+            // 泄化：弱方贪生（癸水有甲木泄化——水木火土相生，例十八）
+            return gf[weak.generates]!! >= 1.0
+        }
+        fun zhiHe(yunBr: EarthlyBranch, lnBr: EarthlyBranch): Boolean {
+            val all = bazi.branches + listOf(yunBr, lnBr)
+            val bf = Element.entries.associateWith { 0.0 }.toMutableMap()
+            bazi.branches.forEach { bf[it.element] = bf[it.element]!! + 1.0 }
+            bf[bazi.monthPillar.branch.element] = bf[bazi.monthPillar.branch.element]!! + 2.0
+            listOf(yunBr, lnBr).forEach { bf[it.element] = bf[it.element]!! + 1.0 }
+            if (listOf(
+                    setOf(EarthlyBranch.YIN, EarthlyBranch.SI, EarthlyBranch.SHEN),
+                    setOf(EarthlyBranch.CHOU, EarthlyBranch.XU, EarthlyBranch.WEI),
+                ).any { g -> g.count { it in all } >= 3 }
+            ) return false
+            val liuHe = listOf(
+                setOf(EarthlyBranch.ZI, EarthlyBranch.CHOU), setOf(EarthlyBranch.YIN, EarthlyBranch.HAI),
+                setOf(EarthlyBranch.MAO, EarthlyBranch.XU), setOf(EarthlyBranch.CHEN, EarthlyBranch.YOU),
+                setOf(EarthlyBranch.SI, EarthlyBranch.SHEN), setOf(EarthlyBranch.WU, EarthlyBranch.WEI),
+            )
+            val hePairs = liuHe.count { p -> p.count { it in all } >= 2 }
+            // 冲战：运支/岁支与原局支（或彼此）六冲——须解（墓库收敛/六合对）方和（例十八卯酉冲得丑墓库收敛）
+            fun br2Of(b: EarthlyBranch) = EarthlyBranch.entries[(b.ordinal + 6) % 12]
+            val chongTargets = listOf(yunBr, lnBr).flatMap { b -> bazi.branches.filter { it == br2Of(b) } } +
+                (if (br2Of(yunBr) == lnBr) listOf(lnBr) else emptyList())
+            if (chongTargets.isNotEmpty()) {
+                if (hePairs >= 2) return true
+                val tombOf = mapOf(
+                    Element.METAL to EarthlyBranch.CHOU, Element.WOOD to EarthlyBranch.WEI,
+                    Element.WATER to EarthlyBranch.CHEN, Element.FIRE to EarthlyBranch.XU,
+                    Element.EARTH to EarthlyBranch.CHEN,
+                )
+                // 岁支/运支为被冲行之墓库——收敛化战（例十八丑为酉金之墓）
+                return chongTargets.any { t -> listOf(yunBr, lnBr).contains(tombOf[t.element]) }
+            }
+            if (hePairs >= 2) return true
+            val sorted = Element.entries.filter { bf[it]!! >= 1.0 }.sortedByDescending { bf[it]!! }
+            if (sorted.size < 2) return true
+            val a = sorted[0]; val b2 = sorted[1]
+            if (a.generates == b2 || b2.generates == a) return true
+            val strong = if (a.controls == b2) a else b2
+            val weak = if (strong == a) b2 else a
+            val tong = Element.entries.firstOrNull { strong.generates == it && it.generates == weak }
+            return tong != null && bf[tong]!! >= 1.0
+        }
+        val goodYears = daYun?.yuns.orEmpty().filter { it.startAge < 26 }.flatMap { yun ->
+            yun.liuNian.filter { ln ->
+                (ln.year - birthYear) in 15..25 && ln.year !in keYinYears.map { it.year } &&
+                    ganHe(yun.pillar.stem, ln.pillar.stem) && zhiHe(yun.pillar.branch, ln.pillar.branch)
+            }.map { ln ->
+                StudyDiplomaYear(
+                    ln.year,
+                    "${ln.year} ${ln.pillar.fullName}",
+                    "流年与大运（${yun.pillar.fullName}）并入全局，干支两系统皆和而不战——依次相生构成和局，此年利文途，高考必中（例十七/例十八式）。",
+                )
+            }
+        }
+        goodYearsList = goodYears
         // 原局印星绝无、全赖运印，而运支印星又被原局冲克，运干亦非印非生印（无源无助）——用神不力（例十五初中式）；
         // 运干支皆印则印运连片有助（例一辛酉庚申冲卯仍博士）；原局印有力则运印被冲不伤根本（例十）。
         val yinZhiChong = f[yinEl]!! <= 0.5 && youngYuns.any { y ->
@@ -357,6 +455,8 @@ object WenPingCalculator {
             basis = basisParts.joinToString("；"),
             favorable = fav,
             unfavorable = unf,
+            badYears = badYearsList,
+            goodYears = goodYearsList,
         )
     }
 

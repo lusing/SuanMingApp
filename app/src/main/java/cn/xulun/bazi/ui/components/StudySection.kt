@@ -85,6 +85,18 @@ fun StudySection(result: StudyResult, modifier: Modifier = Modifier) {
                     Text(it.text, fontSize = 11.sp, color = Color(0xFF616161), modifier = Modifier.padding(top = 1.dp))
                 }
             }
+            if (dip.goodYears.isNotEmpty()) {
+                Text("利文途流年（干支和局——高考必中式）", fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 8.dp))
+                dip.goodYears.forEach {
+                    Text("${it.label}——${it.text}", fontSize = 11.sp, color = SeedRed, modifier = Modifier.padding(top = 2.dp))
+                }
+            }
+            if (dip.badYears.isNotEmpty()) {
+                Text("不利文途流年", fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 8.dp))
+                dip.badYears.forEach {
+                    Text("${it.label}——${it.text}", fontSize = 11.sp, color = Color(0xFF8D6E63), modifier = Modifier.padding(top = 2.dp))
+                }
+            }
 
             // 学业神煞
             SectionLabel("学业神煞", Modifier.padding(top = 14.dp))

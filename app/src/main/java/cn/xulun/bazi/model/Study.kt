@@ -49,6 +49,14 @@ data class StudyDiplomaItem(
     val favorable: Boolean,
 )
 
+/** 不利文途的流年应期条目。 */
+data class StudyDiplomaYear(
+    val year: Int,
+    /** 干支标签，如 1988 戊辰 */
+    val label: String,
+    val text: String,
+)
+
 /** 文凭推断结果（用神+印星为标志，少运定高低）。 */
 data class StudyDiploma(
     /** 级别结论：高学历（硕博之才）/学历较高/学历中等/学历不高 */
@@ -57,6 +65,10 @@ data class StudyDiploma(
     val basis: String,
     val favorable: List<StudyDiplomaItem>,
     val unfavorable: List<StudyDiplomaItem>,
+    /** 不利文途的流年应期（学龄关键期 15-25 岁，岁干支双体克印——智慧被杂） */
+    val badYears: List<StudyDiplomaYear> = emptyList(),
+    /** 利文途的流年应期（学龄关键期 15-25 岁，岁运并入全局干支皆和——高考必中式） */
+    val goodYears: List<StudyDiplomaYear> = emptyList(),
 )
 
 /** 学业分析总结果 */

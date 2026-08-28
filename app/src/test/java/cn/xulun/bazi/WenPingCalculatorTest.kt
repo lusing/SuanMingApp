@@ -301,6 +301,60 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `例十六 袁女士 戊申乙丑乙巳壬午 1988戊辰双体土克水 退学`() {
+        val bazi = chartOf(
+            HeavenlyStem.WU, EarthlyBranch.SHEN,
+            HeavenlyStem.YI, EarthlyBranch.CHOU,
+            HeavenlyStem.YI, EarthlyBranch.SI,
+            HeavenlyStem.REN, EarthlyBranch.WU,
+            1900, 2000,
+        )
+        assertEquals2("戊申 乙丑 乙巳 壬午", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.FEMALE))
+        val dip = r.diploma
+        // 水主智慧，1988戊辰流年双体之土克水——岁运水被土杂，不利文途而退学
+        assertTrue(dip.level, dip.level.contains("学历不高"))
+        val bad = dip.badYears.firstOrNull { it.year == 1988 }
+        assertNotNull(bad)
+        assertTrue(bad!!.text.contains("不利文途") || bad.text.contains("退学"))
+    }
+
+    @Test
+    fun `例十七 苏先生 癸丑丙辰癸未戊午 甲寅运1993癸酉和局 高考必中`() {
+        val bazi = chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.CHOU,
+            HeavenlyStem.BING, EarthlyBranch.CHEN,
+            HeavenlyStem.GUI, EarthlyBranch.WEI,
+            HeavenlyStem.WU, EarthlyBranch.WU,
+            1950, 2000,
+        )
+        assertEquals2("癸丑 丙辰 癸未 戊午", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        val dip = r.diploma
+        val good = dip.goodYears.firstOrNull { it.year == 1993 }
+        assertNotNull(good)
+        assertTrue(good!!.text.contains("高考") || good.text.contains("和局"))
+    }
+
+    @Test
+    fun `例十八 张女士 甲午己巳己卯癸酉 丁卯运1973癸丑墓库收敛化战 保送`() {
+        val bazi = chartOf(
+            HeavenlyStem.JIA, EarthlyBranch.WU,
+            HeavenlyStem.JI, EarthlyBranch.SI,
+            HeavenlyStem.JI, EarthlyBranch.MAO,
+            HeavenlyStem.GUI, EarthlyBranch.YOU,
+            1950, 2000,
+        )
+        assertEquals2("甲午 己巳 己卯 癸酉", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.FEMALE))
+        val dip = r.diploma
+        // 卯酉冲战局，岁支丑为酉金墓库收敛化战为和——干有甲木泄化水，前途之喜
+        val good = dip.goodYears.firstOrNull { it.year == 1973 }
+        assertNotNull(good)
+        assertTrue(good!!.text.contains("和局") || good.text.contains("化战"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,
