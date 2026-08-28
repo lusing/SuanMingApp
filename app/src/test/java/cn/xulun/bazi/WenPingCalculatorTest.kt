@@ -415,6 +415,26 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `天赋例四 孙先生 乙巳甲申丁巳甲辰 时柱佩印+1983癸亥岁运生印佩印之年`() {
+        val bazi = chartOf(
+            HeavenlyStem.YI, EarthlyBranch.SI,
+            HeavenlyStem.JIA, EarthlyBranch.SHEN,
+            HeavenlyStem.DING, EarthlyBranch.SI,
+            HeavenlyStem.JIA, EarthlyBranch.CHEN,
+            1950, 2000,
+        )
+        assertEquals2("乙巳 甲申 丁巳 甲辰", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        val dip = r.diploma
+        // 时柱伤官佩印（辰伤官本气+甲印透）——读书天赋
+        assertTrue(dip.talent.contains("伤官佩印"))
+        // 1983癸亥（壬午运）：岁运壬癸水生甲木印而伤官可用——伤官佩印之年，考试发挥+被好学校录取（本科）
+        val y = dip.talentYears.firstOrNull { it.year == 1983 }
+        assertNotNull(y)
+        assertTrue(y!!.text.contains("伤官佩印") || y.text.contains("录取"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,

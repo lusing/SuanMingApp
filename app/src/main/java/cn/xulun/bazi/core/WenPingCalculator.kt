@@ -278,6 +278,11 @@ object WenPingCalculator {
                     yinNian && (shangRevealed || shangBenQi) ->
                         "印星当值而原局有伤官配合——印主学校，印星旺而食伤不弱，升学考试易被录取到好学校（例一黄女士1987本科式）"
                     yinNian -> "印星当值而无伤官配合——上进心不足，比较懒散，对学习不利"
+                    // 岁运之行生印星而原局伤官有根可用——伤官印星同年到位，佩印之年（例四1983本科式）
+                    shangBenQi && sealRevealed &&
+                        listOf(ys.element, yun.pillar.stem.element).any { it.generates == yinEl } ->
+                        "岁运${ys.element.chinese}${yun.pillar.stem.element.chinese}生印星${yinEl.chinese}而原局伤官有根可用——伤官佩印之年：" +
+                            "考试（伤官）正常发挥，且能被较好的学校（正印）录取（例四孙先生1983本科式）"
                     else -> null
                 }
                 text?.let {
