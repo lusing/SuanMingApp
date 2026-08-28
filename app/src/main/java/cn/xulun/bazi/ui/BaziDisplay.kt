@@ -6,17 +6,11 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
@@ -33,9 +27,7 @@ import cn.xulun.bazi.core.ShenShaCalculator
 import cn.xulun.bazi.core.StudyCalculator
 import cn.xulun.bazi.core.TiaoHouCalculator
 import cn.xulun.bazi.core.WealthCalculator
-import cn.xulun.bazi.core.QuYunCalculator
 import cn.xulun.bazi.core.YongShenCalculator
-import cn.xulun.bazi.core.YunRelationCalculator
 import cn.xulun.bazi.core.WuXingFlowCalculator
 import cn.xulun.bazi.model.BaziResult
 import cn.xulun.bazi.model.DaYunInfo
@@ -52,7 +44,6 @@ import cn.xulun.bazi.ui.components.HealthYunSection
 import cn.xulun.bazi.ui.components.HunYinSection
 import cn.xulun.bazi.ui.components.MarriageSection
 import cn.xulun.bazi.ui.components.PillarCard
-import cn.xulun.bazi.ui.components.QuYunSection
 import cn.xulun.bazi.ui.components.ShenShaSection
 import cn.xulun.bazi.ui.components.StudySection
 import cn.xulun.bazi.ui.components.TiaoHouSection
@@ -67,7 +58,6 @@ import cn.xulun.bazi.ui.components.ShuiQuYongSection
 import cn.xulun.bazi.ui.components.TuQuYongSection
 import cn.xulun.bazi.ui.components.WuXingFlowSection
 import cn.xulun.bazi.ui.components.YongShenSection
-import cn.xulun.bazi.ui.components.YunRelationSection
 import cn.xulun.bazi.ui.theme.CreamSurface
 import cn.xulun.bazi.ui.theme.elementColor
 
@@ -91,8 +81,6 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
     val shenShaByPillar: List<List<String>> = listOf("年", "月", "日", "时").map { zi ->
         shenSha.items.filter { it.pillarLabel.startsWith(zi) }.map { it.name }
     }
-    // 选定的大运/流年；随原局切换自动清空
-    var selection by remember(result) { mutableStateOf<YunSelection?>(null) }
 
     Column(modifier = modifier) {
         Card(
@@ -167,14 +155,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         YongShenSection(result = yongShen)
         TiaoHouSection(result = tiaoHou)
         if (daYun != null) {
-            DaYunSection(
-                info = daYun,
-                dayMaster = dayMaster,
-                selection = selection,
-                onSelect = { sel ->
-                    selection = if (selection == sel) null else sel
-                },
-            )
+            DaYunSection(info = daYun, dayMaster = dayMaster)
         }
         HeHuaSection(result = heHua)
         DiZhiRelationSection(result = diZhiRelation)
@@ -194,30 +175,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
         }
         LiuQinSection(result = cn.xulun.bazi.core.LiuQinCalculator.analyze(result, gender))
         StudySection(result = StudyCalculator.analyze(result, daYun))
-        selection?.let { sel ->
-            val extras: List<Pair<cn.xulun.bazi.model.Pillar, String>> = when (sel) {
-                is YunSelection.DaYun -> listOf(sel.pillar to "大运")
-                is YunSelection.LiuNian -> listOf(sel.yun.pillar to "大运", sel.pillar to "流年")
-            }
-            val (yunPillar, yunLabel) = when (sel) {
-                is YunSelection.DaYun -> sel.pillar to "大运"
-                is YunSelection.LiuNian -> sel.pillar to "流年"
-            }
-            QuYunSection(
-                result = QuYunCalculator.analyze(result, yongShen, yunPillar),
-                yunLabel = yunLabel,
-            )
-            YunRelationSection(
-                result = YunRelationCalculator.analyze(result, extras),
-                selection = sel,
-            )
-        }
-        val flowPillars: List<cn.xulun.bazi.model.Pillar> = when (val s = selection) {
-            is YunSelection.DaYun -> listOf(s.pillar)
-            is YunSelection.LiuNian -> listOf(s.yun.pillar, s.pillar)
-            null -> emptyList()
-        }
-        WuXingFlowSection(result = WuXingFlowCalculator.analyze(result, flowPillars))
+        WuXingFlowSection(result = WuXingFlowCalculator.analyze(result, emptyList()))
         BingYaoSection(result = cn.xulun.bazi.core.BingYaoCalculator.analyze(result))
         when (dayMaster.element) {
             cn.xulun.bazi.model.Element.WOOD -> MuQuYongSection(result = cn.xulun.bazi.core.MuQuYongCalculator.analyze(result))
@@ -250,8 +208,6 @@ private fun NayinChip(label: String, pillar: cn.xulun.bazi.model.Pillar) {
 private fun DaYunSection(
     info: DaYunInfo,
     dayMaster: cn.xulun.bazi.model.HeavenlyStem,
-    selection: YunSelection?,
-    onSelect: (YunSelection) -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -261,7 +217,7 @@ private fun DaYunSection(
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
-                text = "大运 · ${if (info.forward) "顺行" else "逆行"}（点选大运或流年查看运岁关系）",
+                text = "大运 · ${if (info.forward) "顺行" else "逆行"}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -271,18 +227,14 @@ private fun DaYunSection(
                 color = androidx.compose.ui.graphics.Color(0xFF757575),
                 modifier = Modifier.padding(top = 4.dp),
             )
-            LazyRow(
+            Column(
                 modifier = Modifier
+                    .fillMaxWidth()
                     .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(info.yuns, key = { it.startYear }) { yun ->
-                    DaYunCard(
-                        yun = yun,
-                        dayMaster = dayMaster,
-                        selection = selection,
-                        onSelect = onSelect,
-                    )
+                info.yuns.forEach { yun ->
+                    DaYunCard(yun = yun, dayMaster = dayMaster)
                 }
             }
         }
