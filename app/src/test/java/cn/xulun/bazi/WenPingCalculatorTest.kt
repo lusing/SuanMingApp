@@ -375,6 +375,46 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `天赋例二 王女士 戊戌癸亥甲寅丁卯 伤官无根不佩印+水旺智+1983癸亥利高考`() {
+        val bazi = chartOf(
+            HeavenlyStem.WU, EarthlyBranch.XU,
+            HeavenlyStem.GUI, EarthlyBranch.HAI,
+            HeavenlyStem.JIA, EarthlyBranch.YIN,
+            HeavenlyStem.DING, EarthlyBranch.MAO,
+            1950, 2000,
+        )
+        assertEquals2("戊戌 癸亥 甲寅 丁卯", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.FEMALE))
+        val dip = r.diploma
+        // 印星当令而伤官处死地无本气——不构成伤官佩印；水旺主智，智商不错
+        assertTrue(dip.talent.contains("不构成伤官佩印"))
+        assertTrue(dip.talent.contains("水旺") || dip.talent.contains("水主智"))
+        // 辛酉运1983癸亥：水旺正印之年引动原局癸印——利高考（考上大学）
+        val good = dip.goodYears.firstOrNull { it.year == 1983 }
+        assertNotNull(good)
+    }
+
+    @Test
+    fun `天赋例三 肖先生 壬子庚戌丙戌丙申 食神强旺+1991辛未食神心性主导`() {
+        val bazi = chartOf(
+            HeavenlyStem.REN, EarthlyBranch.ZI,
+            HeavenlyStem.GENG, EarthlyBranch.XU,
+            HeavenlyStem.BING, EarthlyBranch.XU,
+            HeavenlyStem.BING, EarthlyBranch.SHEN,
+            1950, 2000,
+        )
+        assertEquals2("壬子 庚戌 丙戌 丙申", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        val dip = r.diploma
+        // 原局食神特别强旺+文昌申在局——读书天赋相当不错
+        assertTrue(dip.talent.contains("食神"))
+        // 1991辛未：岁支伤官而原局食神强旺（戌2未1食神强于伤官）——食神心性主导，高考发挥优异（清华式）
+        val y = dip.talentYears.firstOrNull { it.year == 1991 }
+        assertNotNull(y)
+        assertTrue(y!!.text.contains("食神心性") || y.text.contains("充分发挥"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,

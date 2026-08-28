@@ -234,13 +234,19 @@ object WenPingCalculator {
         val shiShenOf = { stem: HeavenlyStem -> tenGodOfStem(day, stem) == TenGod.SHI_SHEN }
         val shangGanOf = { stem: HeavenlyStem -> tenGodOfStem(day, stem) == TenGod.SHANG_GUAN }
         val talentParts = mutableListOf<String>()
-        // 伤官佩印（印力≥2 适当制约即可——例一黄女士火印2）
-        if ((shangRevealed || shangBenQi) && (sealRevealed || f[yinEl]!! >= 2.0)) {
+        // 伤官佩印（伤官须有本气根方能发挥作用——例二王女士丁透处死地无本气则不构成；印力≥2 适当制约即可）
+        if (shangBenQi && (sealRevealed || f[yinEl]!! >= 2.0)) {
             talentParts += "伤官佩印——伤官得印星适当制约，聪明才智与勤奋并用的读书天赋（例一黄女士式）"
+        } else if (shangRevealed && !shangBenQi && yinDangLing) {
+            talentParts += "伤官透而无本气根（处死地）——伤官无力发挥作用，不构成伤官佩印（例二王女士式）"
         }
         // 食神有力（食神透干或文昌在局）——文昌即食神
         val shiShenTou = bazi.stems.indices.filter { it != 2 }.any { tenGodOfStem(day, bazi.stems[it]) == TenGod.SHI_SHEN }
-        if (shiShenTou || wenChangIn) {
+        if (f[shiEl]!! >= 3.0) {
+            talentParts += "食神特别强旺（${shiEl.chinese}行力${f[shiEl]}）" +
+                (if (wenChangIn) "，文昌${day.wenChang.chinese}在局（文昌即食神）" else "") +
+                "——读书天赋相当不错（例三肖先生式）"
+        } else if (shiShenTou || wenChangIn) {
             talentParts += "食神" + (if (wenChangIn) "（文昌${day.wenChang.chinese}在局——文昌即食神）" else "透干") +
                 "——食伤为智商，读书天赋之星"
         }
@@ -264,6 +270,9 @@ object WenPingCalculator {
                     (ybBenQi != null && tenGodOfStem(day, ybBenQi).category() == GodCategory.YIN)
                 val text = when {
                     isShiShenNian -> "食神当值——有上进的激情，比较勤奋，有利于提高学习成绩"
+                    isShangNian && f[shiEl]!! >= 3.0 ->
+                        // 岁支伤官而原局食神强旺（戌2未1食神强于伤官）——食神心性居主导（例三辛未清华式）
+                        "岁支伤官而原局食神强旺——食神心性居主导地位，聪明才智充分发挥，对学习和考试都非常有利（例三辛未考清华式）；岁干辛金生壬水，印星之力亦得加强"
                     isShangNian && yinPeiShang -> "伤官当值而原局印星配合（伤官佩印之年）——聪明勤奋，利读书"
                     isShangNian && f[yinEl]!! < 1.0 -> "伤官旺而无印制——贪玩甚至惹是生非，对学习不感兴趣，成绩易滑坡，师长宜耐心教育引导"
                     yinNian && (shangRevealed || shangBenQi) ->
@@ -398,7 +407,7 @@ object WenPingCalculator {
         if (f[Element.METAL]!! + f[Element.WATER]!! >= 5.0 && f[Element.FIRE]!! >= 1.0) {
             fav += item("金水相涵有火暖", "金水相涵有火暖——聪明机智，文章振发。")
         }
-        if (shangYouLi && f[yinEl]!! >= 3.0 && GodCategory.SHI in d.fav) {
+        if (shangBenQi && f[yinEl]!! >= 3.0 && GodCategory.SHI in d.fav) {
             fav += item(
                 "伤官佩印为喜用",
                 "伤官泄秀而印星旺（印力${f[yinEl]}）制衡有度，伤官佩印——文章锦秀，声名显达" +
