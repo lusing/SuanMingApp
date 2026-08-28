@@ -43,6 +43,29 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例十三 乾造 壬辰戊申癸巳甲寅 伤官越印攻官入狱+印还原获救`() {
+        val bazi = chartOf(
+            HeavenlyStem.REN, EarthlyBranch.CHEN,
+            HeavenlyStem.WU, EarthlyBranch.SHEN,
+            HeavenlyStem.GUI, EarthlyBranch.SI,
+            HeavenlyStem.JIA, EarthlyBranch.YIN,
+            1950, 2000,
+        )
+        assertEquals2("壬辰 戊申 癸巳 甲寅", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 寅巳申三刑入命+伤官双体官透身弱——伤官见官定有官灾
+        assertTrue(r.baseRisks.any { it.dim.contains("伤官见官·身弱") || it.dim.contains("官灾") })
+        // 1998戊寅：两寅冲申印被制，伤官越印攻官——牢狱灾难免
+        val y98 = r.years.firstOrNull { it.year == 1998 }
+        assertNotNull(y98)
+        assertTrue(y98!!.text.contains("牢狱"))
+        // 2004甲申：印星还原——可获救出狱
+        val y04 = r.years.firstOrNull { it.year == 2004 }
+        assertNotNull(y04)
+        assertTrue(y04!!.text.contains("获救") || y04.text.contains("出狱"))
+    }
+
+    @Test
     fun `例十二 乾造 癸丑甲寅己卯戊辰 三会杀局受牵连入牢+甲戌天合地合出狱`() {
         val bazi = chartOf(
             HeavenlyStem.GUI, EarthlyBranch.CHOU,

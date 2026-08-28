@@ -134,6 +134,21 @@ object LaoYuCalculator {
             )
         }
 
+        // 伤官双体有力+官透+身弱——伤官见官定有官灾（例十三式）；三刑入命提示职务多变+触犯刑法
+        val shangShuangTi = shangTouIdx.isNotEmpty() &&
+            bazi.branches.any { branchHiddenStems.getValue(it).firstOrNull()?.element == dayEl.generates &&
+                bazi.branches.count { it.element == dayEl.generates } >= 1 } &&
+            bazi.stems.indices.filter { it != 2 }.any { i ->
+                tenGodOfStem(day, bazi.stems[i]) == TenGod.SHANG_GUAN &&
+                    bazi.branches[i].element == dayEl.generates
+            }
+        if (shangShuangTi && guanTouIdx.isNotEmpty() && (weak || f[dayEl]!! <= f[guanEl]!!)) {
+            risks += LiuQinItem(
+                "伤官见官·身弱定官灾",
+                "伤官双体（干支一体）临旺而官星得地透干，身弱——伤官见官定有官灾（例十三式：伤官临旺心性聪明胆大敢冒险；日支临财贪财敛财）。三刑入命者职业职务多变，另有触犯刑法之信息。",
+            )
+        }
+
         // 三会官杀方局齐+身轻杀旺无制——受牵连/陷害型官非（例十二式）
         val sanHuiGuan = when (guanEl) {
             Element.WOOD -> bazi.branches.containsAll(listOf(EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN))
@@ -407,6 +422,20 @@ object LaoYuCalculator {
                     if (tianHeZhu && diHeRi) {
                         triggers += "岁干${ys.chinese}合日干${day.chinese}+岁支${yb.chinese}合日支${bazi.dayPillar.branch.chinese}——与日柱天合地合"
                         notes += "绊住官杀攻身之力大减，身旺能胜财官——借流年之力得以重见天日（出狱，例十二甲戌式）"
+                    }
+                }
+
+                // 印被冲制+伤官越印攻官——身弱伤官见官牢狱难免（例十三戊寅式）；印还原岁——获救出狱
+                if (shangShuangTi && guanTouIdx.isNotEmpty()) {
+                    val yinZhiZhi = bazi.branches.filter { it.element == yinEl }
+                    val chongYin = yinZhiZhi.isNotEmpty() && (br2Of(yb) in yinZhiZhi || bazi.branches.contains(yb) && br2Of(yb) in yinZhiZhi)
+                    if (chongYin) {
+                        triggers += "岁支${yb.chinese}冲印${yinZhiZhi.joinToString("") { it.chinese }}——印星被制，伤官越过印星攻击正官"
+                        notes += "身弱伤官见官，牢狱灾难免（例十三戊寅式：权重位高一夜沦为阶下囚——提前辞职离官场可免）"
+                        severe = true
+                    } else if (yb.element == yinEl) {
+                        triggers += "岁支${yb.chinese}为印星还原"
+                        notes += "印星得力获生机——可获救出狱（例十三甲申乙酉式）"
                     }
                 }
 
