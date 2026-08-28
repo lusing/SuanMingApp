@@ -435,6 +435,27 @@ class WenPingCalculatorTest {
     }
 
     @Test
+    fun `天赋例五 马先生 甲寅甲戌癸巳癸亥 水旺伤官众天资聪慧+1993癸酉印年通关录取`() {
+        val bazi = chartOf(
+            HeavenlyStem.JIA, EarthlyBranch.YIN,
+            HeavenlyStem.JIA, EarthlyBranch.XU,
+            HeavenlyStem.GUI, EarthlyBranch.SI,
+            HeavenlyStem.GUI, EarthlyBranch.HAI,
+            1950, 2000,
+        )
+        assertEquals2("甲寅 甲戌 癸巳 癸亥", bazi.fullBazi)
+        val r = StudyCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        val dip = r.diploma
+        // 水和伤官众多——天资聪慧，读书好料
+        assertTrue(dip.talent.contains("天资聪慧") || dip.talent.contains("伤官强旺"))
+        assertTrue(dip.talent.contains("水旺") || dip.talent.contains("水主智"))
+        // 1993癸酉（丙子运）：印星值年而水通关金不克木，伤官得用——被大学录取
+        val y = dip.talentYears.firstOrNull { it.year == 1993 }
+        assertNotNull(y)
+        assertTrue(y!!.text.contains("录取"))
+    }
+
+    @Test
     fun `文凭级别附时代提示`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.WEI,

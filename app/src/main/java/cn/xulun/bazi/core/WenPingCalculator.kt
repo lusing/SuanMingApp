@@ -250,6 +250,10 @@ object WenPingCalculator {
             talentParts += "食神" + (if (wenChangIn) "（文昌${day.wenChang.chinese}在局——文昌即食神）" else "透干") +
                 "——食伤为智商，读书天赋之星"
         }
+        // 伤官强旺（无印制亦聪明——伤官即才智）
+        if (f[shiEl]!! >= 3.0) {
+            talentParts += "伤官强旺（${shiEl.chinese}行力${f[shiEl]}）——天资聪慧，读书好料（例五马先生式）"
+        }
         // 水旺主智
         if (f[Element.WATER]!! >= 3.0) {
             talentParts += "命局水旺（力${f[Element.WATER]}）——水主智，智商不错"
@@ -276,7 +280,9 @@ object WenPingCalculator {
                     isShangNian && yinPeiShang -> "伤官当值而原局印星配合（伤官佩印之年）——聪明勤奋，利读书"
                     isShangNian && f[yinEl]!! < 1.0 -> "伤官旺而无印制——贪玩甚至惹是生非，对学习不感兴趣，成绩易滑坡，师长宜耐心教育引导"
                     yinNian && (shangRevealed || shangBenQi) ->
-                        "印星当值而原局有伤官配合——印主学校，印星旺而食伤不弱，升学考试易被录取到好学校（例一黄女士1987本科式）"
+                        "印星当值而原局有伤官配合——印主学校" +
+                            (if (f[biEl]!! >= 2.0) "；${biEl.chinese}通关而印不克伤官，伤官得用临场发挥好" else "，印星旺而食伤不弱") +
+                            "——升学考试易被录取到好学校（例一1987/例五1993式）"
                     yinNian -> "印星当值而无伤官配合——上进心不足，比较懒散，对学习不利"
                     // 岁运之行生印星而原局伤官有根可用——伤官印星同年到位，佩印之年（例四1983本科式）
                     shangBenQi && sealRevealed &&
