@@ -129,6 +129,24 @@ object LaoYuCalculator {
             )
         }
 
+        // 众劫侮官（比劫众+官支被冲）+羊刃枭神强旺（例十一式）
+        val guanZhiChong = bazi.branches.any { tb ->
+            branchHiddenStems.getValue(tb).firstOrNull()?.element == guanEl &&
+                bazi.branches.any { it == br2Of(tb) }
+        }
+        if (f[dayEl]!! >= 3.0 && guanZhiChong) {
+            risks += LiuQinItem(
+                "众劫侮官",
+                "比劫众（${dayEl.chinese}力${f[dayEl]}）而官星之支被冲——众劫侮官，藐视法度，违法乱纪；劫财坐刃为忌——易受朋友牵连（例十一式）。",
+            )
+        }
+        if (f[yinEl]!! >= 2.0 && bazi.branches.count { it.element == dayEl } >= 2) {
+            risks += LiuQinItem(
+                "羊刃枭神强旺",
+                "印枭当值而比劫禄刃齐会——羊刃枭神强旺：做事性格急躁、考虑不周、凭一时感情冲动；枭神七杀入命——阴险狡诈，易入黑道、偷鸡摸狗（例十一式）。",
+            )
+        }
+
         // 辰戌罗网交加且为忌（rule9）+双伤夹日柱（例九式）
         if (bazi.branches.containsAll(listOf(EarthlyBranch.CHEN, EarthlyBranch.XU)) &&
             (weak || f[shiEl]!! >= f[dayEl]!!)
@@ -341,6 +359,15 @@ object LaoYuCalculator {
                 if (yunGuanSha && f[dayEl]!! >= 5.0 && yunShiShang && shuangRen) {
                     triggers += "运干${effYuns.joinToString("") { it.pillar.stem.chinese }}与原局杀透官杀混杂+身旺（${f[dayEl]}）欺官欺法+运支伤官当值胆大妄为+岁支${yb.chinese}与原局同字（双刃合用争合）"
                     notes += "年纪尚轻却因财色犯罪入狱（例十丁巳式）"
+                    severe = true
+                }
+
+                // 岁运并临为忌神破格+湿土晦火——牢狱之兆（例十一丁丑式）
+                if (yun.pillar.stem == ys && yun.pillar.branch == yb && dayEl == Element.FIRE &&
+                    (yb == EarthlyBranch.CHOU || yb == EarthlyBranch.CHEN)
+                ) {
+                    triggers += "岁运并临${ys.chinese}${yb.chinese}为忌神破格——湿土晦火之光"
+                    notes += "名誉有损，有牢狱之兆（例十一丁丑式：伙同抢劫仅三百余元亦被判重刑）"
                     severe = true
                 }
 

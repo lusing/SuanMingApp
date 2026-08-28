@@ -43,6 +43,25 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例十一 乾造 甲寅乙亥丁巳丙午 众劫侮官+丁丑岁运并临湿土晦火入狱`() {
+        val bazi = chartOf(
+            HeavenlyStem.JIA, EarthlyBranch.YIN,
+            HeavenlyStem.YI, EarthlyBranch.HAI,
+            HeavenlyStem.DING, EarthlyBranch.SI,
+            HeavenlyStem.BING, EarthlyBranch.WU,
+            1950, 2000,
+        )
+        assertEquals2("甲寅 乙亥 丁巳 丙午", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 巳亥冲+众劫侮官——藐视法度；羊刃枭神强旺——急躁+阴险易入黑道
+        assertTrue(r.baseRisks.any { it.dim.contains("侮官") || it.dim.contains("羊刃枭神") })
+        // 丁丑运丁丑年：岁运并临为忌破格+湿土晦火——伙同抢劫三百余元判12年
+        val y97 = r.years.firstOrNull { it.year == 1997 }
+        assertNotNull(y97)
+        assertTrue(y97!!.text.contains("牢狱"))
+    }
+
+    @Test
     fun `例十 李先生 乙未丙戌己酉己巳 身旺无制+甲申运丁巳双刃财色入狱`() {
         val bazi = chartOf(
             HeavenlyStem.YI, EarthlyBranch.WEI,
