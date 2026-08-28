@@ -333,7 +333,8 @@ object LaoYuCalculator {
         val allYuns = daYun?.yuns.orEmpty()
         val years = allYuns.mapIndexedNotNull { yi, yun ->
             val prevYun = allYuns.getOrNull(yi - 1)
-            val effYuns = listOfNotNull(prevYun, yun)
+            val nextYun = allYuns.getOrNull(yi + 1)
+            val effYuns = listOfNotNull(prevYun, yun, nextYun)
             yun.liuNian.mapNotNull { ln ->
                 val yb = ln.pillar.branch
                 val ys = ln.pillar.stem
@@ -534,6 +535,71 @@ object LaoYuCalculator {
                     triggers += "运支${yun.pillar.branch.chinese}（通关之力）被岁支${yb.chinese}刑害而毁+${sanXingGroups.first { g -> g.count { it in all } >= 2 }.joinToString("") { it.chinese }}相刑——土水、水火大战重现"
                     notes += "加之官杀混杂——牢狱之苦难免（例十七丙戌农历九月入狱判四年式）"
                     severe = true
+                }
+
+                // 原局三刑+岁干伤官见官+罗网相见——官非刑拘（例十八丁亥式）
+                val natSanXing = sanXingGroups.any { g -> g.count { it in bazi.branches } >= 3 }
+                val luoWangXiangJian = (yb == EarthlyBranch.CHEN && bazi.branches.contains(EarthlyBranch.XU)) ||
+                    (yb == EarthlyBranch.XU && bazi.branches.contains(EarthlyBranch.CHEN)) ||
+                    effYuns.any { it.pillar.branch == EarthlyBranch.CHEN } && bazi.branches.contains(EarthlyBranch.XU) ||
+                    effYuns.any { it.pillar.branch == EarthlyBranch.XU } && bazi.branches.contains(EarthlyBranch.CHEN)
+                val shangJianGuanSui = (shangTouIdx.isNotEmpty() &&
+                    tenGodOfStem(day, ys) in setOf(TenGod.ZHENG_GUAN, TenGod.QI_SHA)) ||
+                    tenGodOfStem(day, ys) == TenGod.SHANG_GUAN
+                if (natSanXing && shangJianGuanSui && shaTou && luoWangXiangJian) {
+                    triggers += "原局三刑被引发+岁干${ys.chinese}${tenGodOfStem(day, ys).chinese}（伤官见官）+罗网相见（辰戌）"
+                    notes += "土水混杂、官杀混杂——此年官非难免（例十八丁亥斗殴被刑事拘留式）"
+                    severe = true
+                }
+
+                // 龙蛇混杂（辰巳）+官杀混杂支——触法停职（例十九己巳式）
+                if ((yb == EarthlyBranch.SI && bazi.branches.contains(EarthlyBranch.CHEN)) ||
+                    (yb == EarthlyBranch.CHEN && bazi.branches.contains(EarthlyBranch.SI))
+                ) {
+                    val guanZhi = bazi.branches.any { branchHiddenStems.getValue(it).firstOrNull()?.element == guanEl }
+                    if (guanZhi || shaTou) {
+                        triggers += "龙蛇混杂（罗网相见：辰巳）+官杀混杂"
+                        notes += "做事糊涂、不计后果，触犯法律——被停职查处（例十九己巳式）"
+                    }
+                }
+
+                // 日柱伏吟+自刑字——灾祸难免（例十九庚午式）
+                if (ys == day && yb == bazi.dayPillar.branch &&
+                    yb in setOf(EarthlyBranch.CHEN, EarthlyBranch.WU, EarthlyBranch.YOU, EarthlyBranch.HAI)
+                ) {
+                    triggers += "日柱伏吟（${ys.chinese}${yb.chinese}）+${yb.chinese}${yb.chinese}自刑"
+                    notes += "灾煞重逢、杀枭并见——灾祸难免（被开除，例十九庚午式）"
+                    severe = true
+                }
+
+                // 官星值岁摆脱伤官之制——官非了结获自由（例十九壬午式）
+                if ((tenGodOfStem(day, ys) in setOf(TenGod.ZHENG_GUAN, TenGod.QI_SHA) ||
+                    branchHiddenStems.getValue(yb).firstOrNull()?.let { tenGodOfStem(day, it) in setOf(TenGod.ZHENG_GUAN, TenGod.QI_SHA) } == true) &&
+                    (shangTouIdx.isNotEmpty() || effYuns.any { tenGodOfStem(day, it.pillar.stem) == TenGod.SHANG_GUAN })
+                ) {
+                    triggers += "岁${ys.chinese}${yb.chinese}官星当值摆脱制约"
+                    notes += "官非牢狱得以了结——获得自由（例十九壬午式）"
+                }
+
+                // 双三合忌局齐+刑害聚——众凶会集刑狱（例二十丙子式）
+                run {
+                    val sanHe = listOf(
+                        setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                        setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                        setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                        setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                    )
+                    val effAll = bazi.branches + effYuns.map { it.pillar.branch } + listOf(yb)
+                    val qiJu = sanHe.count { (g, _) -> g.all { it in effAll } }
+                    val xingHai = (setOf(yb, EarthlyBranch.MAO).size == 2 && yb == EarthlyBranch.ZI && bazi.branches.contains(EarthlyBranch.MAO)) ||
+                        (yb == EarthlyBranch.MAO && bazi.branches.contains(EarthlyBranch.ZI)) ||
+                        (yb == EarthlyBranch.ZI && bazi.branches.contains(EarthlyBranch.WEI)) ||
+                        (yb == EarthlyBranch.WEI && bazi.branches.contains(EarthlyBranch.ZI))
+                    if (qiJu >= 2 && xingHai && (weak || f[guanEl]!! + f[dayEl.controls]!! >= f[dayEl]!!)) {
+                        triggers += "岁运局凑成${sanHe.filter { (g, _) -> g.all { it in effAll } }.joinToString("、") { it.second.chinese }}两局（忌神狼狈为奸）+岁支${yb.chinese}刑害聚"
+                        notes += "众凶会集——刑狱难免（关押数月，例二十丙子式；将星为忌亦如灾煞致祸）"
+                        severe = true
+                    }
                 }
 
                 // 干支两系统皆战（混战）——续灾（例一戊寅式）

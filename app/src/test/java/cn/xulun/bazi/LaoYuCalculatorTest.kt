@@ -43,6 +43,67 @@ class LaoYuCalculatorTest {
     }
 
     @Test
+    fun `例二十 坤造 甲辰丁卯己未壬申 丙子水木二局忌神刑害聚关押`() {
+        val bazi = chartOf(
+            HeavenlyStem.JIA, EarthlyBranch.CHEN,
+            HeavenlyStem.DING, EarthlyBranch.MAO,
+            HeavenlyStem.JI, EarthlyBranch.WEI,
+            HeavenlyStem.REN, EarthlyBranch.SHEN,
+            1950, 2000,
+        )
+        assertEquals2("甲辰 丁卯 己未 壬申", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.FEMALE))
+        // 1996丙子：申子辰+亥卯未水木二局忌神为奸+子卯刑子未害——众凶会集关押三月
+        val y96 = r.years.firstOrNull { it.year == 1996 }
+        assertNotNull(y96)
+        assertTrue(y96!!.text.contains("刑狱") || y96.text.contains("关押"))
+    }
+
+    @Test
+    fun `例十九 曲先生 戊申庚申庚午庚辰 己巳停职庚午开除壬午获自由`() {
+        val bazi = chartOf(
+            HeavenlyStem.WU, EarthlyBranch.SHEN,
+            HeavenlyStem.GENG, EarthlyBranch.SHEN,
+            HeavenlyStem.GENG, EarthlyBranch.WU,
+            HeavenlyStem.GENG, EarthlyBranch.CHEN,
+            1950, 2000,
+        )
+        assertEquals2("戊申 庚申 庚午 庚辰", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 己巳1989：龙蛇混杂（辰巳罗网）+官杀混杂——触法停职
+        val y89 = r.years.firstOrNull { it.year == 1989 }
+        assertNotNull(y89)
+        assertTrue(y89!!.text.contains("停职") || y89.text.contains("触犯"))
+        // 庚午1990：日柱伏吟+午午自刑——灾祸难免（开除）
+        val y90 = r.years.firstOrNull { it.year == 1990 }
+        assertNotNull(y90)
+        assertTrue(y90!!.text.contains("开除") || y90.text.contains("灾祸"))
+        // 壬午2002：官星当值摆脱制约——官非了结获得自由
+        val y02 = r.years.firstOrNull { it.year == 2002 }
+        assertNotNull(y02)
+        assertTrue(y02!!.text.contains("自由") || y02.text.contains("了结"))
+    }
+
+    @Test
+    fun `例十八 李先生 癸丑己未庚午丙戌 三刑罗网伤官见官丁亥官非刑拘`() {
+        val bazi = chartOf(
+            HeavenlyStem.GUI, EarthlyBranch.CHOU,
+            HeavenlyStem.JI, EarthlyBranch.WEI,
+            HeavenlyStem.GENG, EarthlyBranch.WU,
+            HeavenlyStem.BING, EarthlyBranch.XU,
+            1950, 2000,
+        )
+        assertEquals2("癸丑 己未 庚午 丙戌", bazi.fullBazi)
+        val r = LaoYuCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.MALE))
+        // 原局丑戌未三刑+杀枭伤凶神重逢——官非牢狱信息明显
+        assertTrue(r.baseRisks.any { it.dim.contains("三刑") })
+        // 丙辰运丁亥年：三刑引发+伤官见官+罗网相见——斗殴被刑事拘留
+        val y07 = r.years.firstOrNull { it.year == 2007 }
+        assertNotNull(y07)
+        assertTrue(y07!!.text.contains("官非") || y07.text.contains("拘留"))
+    }
+
+    @Test
     fun `例十七 黄先生 丁巳壬子癸丑癸丑 通关酉被丙戌刑害战局重现入狱`() {
         val bazi = chartOf(
             HeavenlyStem.DING, EarthlyBranch.SI,
