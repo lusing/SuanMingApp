@@ -138,9 +138,10 @@ object GuanYunCalculator {
                 guanBranches.forEach { gb ->
                     when {
                         br2(yb) == gb -> yinDong += "${yb.chinese}冲${gb.chinese}——官星被冲引动"
-                        liuHePairs.any { yb in it && gb in it } -> yinDong += "${yb.chinese}合${gb.chinese}——官星被合引动"
-                        sanHeGroups.any { yb in it && gb in it } -> yinDong += "${yb.chinese}与${gb.chinese}三合——官局成引"
-                        sanXingGroups.any { yb in it && gb in it } -> yinDong += "${yb.chinese}刑${gb.chinese}——官星被刑引动"
+                        // 同字非合（亥合亥/辰合辰乃自合谬误——同支再现为「当值」另判）
+                        yb != gb && liuHePairs.any { yb in it && gb in it } -> yinDong += "${yb.chinese}合${gb.chinese}——官星被合引动"
+                        yb != gb && sanHeGroups.any { yb in it && gb in it } -> yinDong += "${yb.chinese}与${gb.chinese}三合——官局成引"
+                        yb != gb && sanXingGroups.any { yb in it && gb in it } -> yinDong += "${yb.chinese}刑${gb.chinese}——官星被刑引动"
                         yb.element == guanEl && gb.element == guanEl -> yinDong += "${yb.chinese}同类引动${gb.chinese}"
                     }
                 }
@@ -149,6 +150,26 @@ object GuanYunCalculator {
 
                 val guanYinDong = yinDong.isNotEmpty()
                 val guanXi = GodCategory.GUAN in d.fav
+
+                // 官杀混杂无合解（例八1994甲戌式——原局透官而岁透异性杀/反之，两不相绊则仕途滞塞；
+                // 一方被合绊则去留取清——甲己合绊杀而岁官透反清纯，不入此档）
+                val guanShaZa = run {
+                    val yuanTou = bazi.stems.filterIndexed { i, s ->
+                        i != 2 && (tenGodOfStem(day, s) == TenGod.ZHENG_GUAN || tenGodOfStem(day, s) == TenGod.QI_SHA)
+                    }
+                    val suiGuan = tenGodOfStem(day, ys)
+                    val suiTouGuan = suiGuan == TenGod.ZHENG_GUAN || suiGuan == TenGod.QI_SHA
+                    if (yuanTou.isEmpty() || !suiTouGuan) return@run false
+                    val yangSet = yuanTou.map { it.yang }.toSet()
+                    val hun = yangSet.contains(!ys.yang)
+                    if (!hun) return@run false
+                    // 干被五合绊住（他柱之干或运干为五合对；日干不算——官合日主反为有情）
+                    fun heBan(s: HeavenlyStem): Boolean =
+                        listOf(bazi.stems[0], bazi.stems[1], bazi.stems[3], yun.pillar.stem).any { t ->
+                            t != s && (t.ordinal - s.ordinal + 10) % 10 == 5
+                        }
+                    !heBan(ys) && yuanTou.none { heBan(it) }
+                }
 
                 val kind: GuanYunKind
                 val text: String
@@ -168,6 +189,13 @@ object GuanYunCalculator {
                         triggers += yinDong
                         kind = GuanYunKind.BIAN_ZHI
                         text = "原局官星微极而从势（从则无克伐之忧，顺势者昌反有官当），今官星值岁运欲还原叛势——力弱触发旺神之怒反遭重克：贬职罢官之年（例六辛官从火、申年通根叛火被免职式）。"
+                    }
+                    // 滞塞:官杀混杂无合解（例八1994甲戌式——甲透无合解混杂，与领导不融洽）
+                    guanShaZa -> {
+                        triggers += "${ys.chinese}透与原局官杀混杂而无合解"
+                        kind = GuanYunKind.PING
+                        text = "岁干${ys.chinese}（官杀）透而与原局官杀阴阳并见、无合绊取清——官杀混杂之年：" +
+                            "仕途滞塞，防与领导不睦、同僚倾轧，宜低调度过（例八1994甲戌式）。"
                     }
                     // 晋升:官星引动+官为用+和局(流年官星支当值/被引动,全命局干支相生或对峙不战)
                     guanYinDong && guanXi && heJu(bazi, yun, ln) -> {
