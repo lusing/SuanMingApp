@@ -103,18 +103,47 @@ object FuMuCalculator {
         }
 
         // ── 真从：从象不伤，反主有地位 ──
-        if (fatherCong) {
+        // 从得不真（例十五式引申）：星缺位（正偏俱不透无本气根）而其行有力≥2——行在星虚，
+        // 从得不真即克该亲；为忌则缘薄之极（虐待档：坤造甲戌辛未戊午戊午 母星火缺位而午午有力且为忌——幼年受母虐待实锚）
+        val yinBuTou = bazi.stems.indices.none {
+            it != 2 && (tenGodOfStem(day, bazi.stems[it]) == TenGod.ZHENG_YIN || tenGodOfStem(day, bazi.stems[it]) == TenGod.PIAN_YIN)
+        }
+        val motherDeBuZhen = motherCong && yinForce >= 2.0 && yinBuTou
+        val caiBuTou = bazi.stems.indices.none {
+            it != 2 && (tenGodOfStem(day, bazi.stems[it]) == TenGod.ZHENG_CAI || tenGodOfStem(day, bazi.stems[it]) == TenGod.PIAN_CAI)
+        }
+        val fatherDeBuZhen = fatherCong && caiForce >= 2.0 && caiBuTou
+        if (fatherCong && !fatherDeBuZhen) {
             fav += LiuQinItem(
                 "父星真从",
                 "父星（${caiEl.chinese}）无透干无本气根，从得真——从象不伤父母，" +
                     "反主父为有名望、有能力、有地位之人，父母康健高寿之象（财从反不伤财）。",
             )
         }
-        if (motherCong) {
+        if (motherCong && !motherDeBuZhen) {
             fav += LiuQinItem(
                 "母星真从",
                 "母星（${yinEl.chinese}）无透干无本气根，从得真——从象不伤，" +
                     "反主母为有地位、有能力之人，父母康健高寿之象。",
+            )
+        }
+        if (motherDeBuZhen) {
+            unfav += LiuQinItem(
+                "母星从得不真" + (if (GodCategory.YIN in d.unf) "·为忌" else ""),
+                "母星（${yinEl.chinese}）正偏皆不透干、无本气根，而印行之力达${yinForce}——星缺位而行有力，从得不真" +
+                    "（例十五式：从得不真即克该亲）" +
+                    (if (GodCategory.YIN in d.unf)
+                        "；印又为忌神——母缘薄之极：生而不慈、幼年难得母爱，甚者受母虐待之应。"
+                    else "——母缘偏薄，母女聚少离多。"),
+            )
+        }
+        if (fatherDeBuZhen) {
+            unfav += LiuQinItem(
+                "父星从得不真" + (if (GodCategory.CAI in d.unf) "·为忌" else ""),
+                "父星（${caiEl.chinese}）正偏皆不透干、无本气根，而财行之力达${caiForce}——星缺位而行有力，从得不真" +
+                    (if (GodCategory.CAI in d.unf)
+                        "；财又为忌神——父缘薄之极，早年与父缘尽之应。"
+                    else "——父缘偏薄，父子聚少离多。"),
             )
         }
 
@@ -225,6 +254,23 @@ object FuMuCalculator {
                 unfav += LiuQinItem("年柱干支相克", "年柱干支相克——父母感情不和。")
             ysEl == ybEl ->
                 fav += LiuQinItem("年柱干支比和", "年柱干支比和——父母虽恩爱但多口舌。")
+        }
+
+        // ── 父母离异·随喜用之亲（年柱相克+财印一缺位一忌旺——强弱悬殊缘尽；坤造甲戌辛未戊午戊午实锚：随父） ──
+        val nianZhuKe = ysEl.controls == ybEl || ybEl.controls == ysEl
+        if (nianZhuKe && fatherCong && GodCategory.YIN in d.unf && yinForce >= 2.0 && GodCategory.CAI in d.fav) {
+            unfav += LiuQinItem(
+                "父母离异·随父",
+                "年柱干支相克，而财（父）星缺位从绝、印（母）星旺而为忌——父母强弱悬殊、缘分已尽：" +
+                    "父母离异之应，命主随父生活（父星为喜用——与父缘深，得父抚养）。",
+            )
+        }
+        if (nianZhuKe && motherCong && GodCategory.CAI in d.unf && caiForce >= 2.0 && GodCategory.YIN in d.fav) {
+            unfav += LiuQinItem(
+                "父母离异·随母",
+                "年柱干支相克，而印（母）星缺位从绝、财（父）星旺而为忌——父母强弱悬殊、缘分已尽：" +
+                    "父母离异之应，命主随母生活（母星为喜用——与母缘深，得母抚养）。",
+            )
         }
 
         // ── 父母星喜忌与缘深缘薄 ──

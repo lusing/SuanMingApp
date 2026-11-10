@@ -162,4 +162,20 @@ class FuMuCalculatorTest {
         )
         assertTrue(f.unfavorable.any { it.text.contains("父寿长于母") })
     }
+@Test
+    fun `例24 甲戌辛未戊午戊午 坤 母星从得不真为忌受母虐 父母离异随父`() {
+        val f = fuMu(
+            HeavenlyStem.JIA, EarthlyBranch.XU,
+            HeavenlyStem.XIN, EarthlyBranch.WEI,
+            HeavenlyStem.WU, EarthlyBranch.WU,
+            HeavenlyStem.WU, EarthlyBranch.WU,
+            female = true,
+        )
+        // 母星丙丁俱不透而火行有力(午午2.0)——从得不真+忌神：母缘薄之极受虐待
+        assertTrue(f.unfavorable.any { it.dim.contains("从得不真") && it.text.contains("虐待") })
+        // 从得不真则吉断不取（不再断"母星真从——父母康健高寿"）
+        assertTrue(f.favorable.none { it.dim == "母星真从" })
+        // 年柱甲戌相克+父星水从绝+印忌旺——父母离异随父
+        assertTrue(f.unfavorable.any { it.dim.contains("离异") && it.dim.contains("随父") && it.text.contains("随父") })
+    }
 }
