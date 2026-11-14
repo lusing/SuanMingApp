@@ -51,6 +51,14 @@ object XiongDiCalculator {
         fun benQiBiPillars(): List<Int> = bazi.branches.indices.filter {
             branchHiddenStems.getValue(bazi.branches[it]).firstOrNull()?.element == biEl
         }
+
+        /**
+         * 建禄月令不论兄弟（师传档五十：庚戌己卯乙卯戊寅——月支卯是乙自己的禄，
+         * 非兄弟之位——同胞三人排行老大）。月支为日主禄支时，该支不记兄弟数、
+         * 亦不作「月柱藏比劫非老大」之断。
+         */
+        val luBranchMain = ssItems.firstOrNull { it.name == "禄神" }?.branch
+        val jianLuMonth = luBranchMain != null && bazi.monthPillar.branch == luBranchMain
         /** 支藏比劫（任意藏干，含中余气——排行/墓门用）。 */
         val biHiddenAnywhere = bazi.branches.any { br ->
             branchHiddenStems.getValue(br).any { it.element == biEl }
@@ -101,11 +109,17 @@ object XiongDiCalculator {
             basis.append("从格——日干从什么就以什么为手足，按从势合并单元计数")
                 .append("（六合/干五合之对合并为1数，日主与印行之干不计）得${units}数")
         } else {
-            var n = 1 /*日主*/ + biStems + biBenQi.size
-            basis.append("日主1+干比劫${biStems}+支本气比劫${biBenQi.size}")
-            // 羊刃支（劫财在地支）亦作一数
+            // 建禄月令：月支（日主自己的禄）不记兄弟数（师传档五十）
+            val biBenQiCounted = if (jianLuMonth) biBenQi.filter { it != 1 } else biBenQi
+            if (jianLuMonth && biBenQi.size != biBenQiCounted.size) {
+                basis.append("建禄月令${bazi.monthPillar.branch.chinese}（自己的禄）不论兄弟——月支不计")
+            }
+            var n = 1 /*日主*/ + biStems + biBenQiCounted.size
+            basis.append("日主1+干比劫${biStems}+支本气比劫${biBenQiCounted.size}")
+            // 羊刃支（劫财在地支）亦作一数——建禄月令者刃藏支不计（透计藏不计，师传档五十：
+            // 卯月乙日刃寅不加——同胞三人；对照教材例二亥月癸日刃亥照加——5个正好）
             val renBranch = ssItems.firstOrNull { it.name == "羊刃" }?.branch
-            if (renBranch != null && bazi.branches.contains(renBranch)) {
+            if (renBranch != null && bazi.branches.contains(renBranch) && !jianLuMonth) {
                 n += 1
                 basis.append("；羊刃${renBranch.chinese}（劫财之刃）加1")
             }
@@ -153,11 +167,11 @@ object XiongDiCalculator {
             count = n.coerceAtLeast(0)
         }
 
-        // ── 排行：年/月柱见比劫（含月支藏比肩）→ 非老大 ──
+        // ── 排行：年/月柱见比劫（含月支藏比肩）→ 非老大；建禄月令自己的禄不论（师传档五十）──
         val ranking: String? = run {
             val yearBi = biStemsAt(bazi, 0, biEl) || branchHiddenStems.getValue(bazi.branches[0]).firstOrNull()?.element == biEl
-            val monthBi = biStemsAt(bazi, 1, biEl) ||
-                branchHiddenStems.getValue(bazi.branches[1]).any { it.element == biEl }
+            val monthBi = !jianLuMonth && (biStemsAt(bazi, 1, biEl) ||
+                branchHiddenStems.getValue(bazi.branches[1]).any { it.element == biEl })
             when {
                 yearBi -> "年柱见比劫——自己不是老大"
                 monthBi -> "月柱（月令）藏比劫——自己不是老大"

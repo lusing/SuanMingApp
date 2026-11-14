@@ -229,6 +229,18 @@ object HealthCalculator {
             )
         }
 
+        // ── 天罗地网多见——身体缠疾（师传档四十一：辰戌巳亥三见以上，罗网缠身应疾不应牢）──
+        val luoWangN = bazi.branches.count {
+            it == cn.xulun.bazi.model.EarthlyBranch.CHEN || it == cn.xulun.bazi.model.EarthlyBranch.XU ||
+                it == cn.xulun.bazi.model.EarthlyBranch.SI || it == cn.xulun.bazi.model.EarthlyBranch.HAI
+        }
+        if (luoWangN >= 3) {
+            risks += LiuQinItem(
+                "天罗地网缠身",
+                "辰戌巳亥（罗网支）在局${luoWangN}见——罗网缠身，一生多身体纠缠之疾：经络关节慢病、精神情志之扰，运岁再逢罗网支叠见则发（应疾不应牢）。",
+            )
+        }
+
         val summary = "五行对应：木肝胆/火心小肠/土脾胃/金肺大肠/水肾膀胱（阳干腑阴干脏）。" +
             "原局储藏一生疾病信息，发病须待岁运引发——逢受损五行之克泄耗冲刑的岁运宜防，通关之行到位则缓解。"
         return HealthResult(items = items, risks = risks, summary = summary)

@@ -549,6 +549,13 @@ object HunYinCalculator {
                 )
             }
         }
+        // ── 日坐阴阳差错——婚育有损（师传档四十四：辛酉日妻婚前堕两胎；教材七~十二节例十癸亥日、例十一丙午日两婚不睦）──
+        if (ShenShaCalculator.analyze(bazi).items.any { it.name == "阴阳差错" }) {
+            unfav += LiuQinItem(
+                "日坐阴阳差错",
+                "日柱阴阳差错——婚育有损之基：婚姻反复不睦、外家是非，甚者婚前堕胎流产、婚育多折之应（辛酉日式）。",
+            )
+        }
         // ── 多婚多妻妾 ──
         run {
             if (!male) {
