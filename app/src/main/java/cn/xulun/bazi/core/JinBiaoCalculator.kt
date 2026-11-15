@@ -359,6 +359,8 @@ object JinBiaoCalculator {
         val kunLun = kunLunEl != null && kunLunSource != null &&
             (bazi.stems.any { it.element == kunLunSource } ||
                 bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == kunLunSource } }) &&
+            // 案廿八裁：局克日主不为顺——火局克庚是杀攻身非顺势；印有气不随杀走（正常八格杀重用印）
+            kunLunEl.controls != dayEl &&
             // 案廿七裁：得局之五行恰为日主之印、坐下印本气、官杀旺克身——杀重用印优先于昆仑
             // （辰贴申必生金、申子辰会局被夺——拱局辩证；印在坐下化旺杀即有情）
             !(kunLunEl == yinEl && bazi.dayPillar.branch.element == yinEl && guanS >= GUAN_WANG)
@@ -527,6 +529,12 @@ object JinBiaoCalculator {
                         ) {
                             append("；拱局辩证：辰贴申必生金——土生金是谁也改变不了的规矩，会局被夺不以局论（杀旺取坐下印为用）；寒木向阳——有火时层次更高，但非必需：没有水命主就被旺杀克死，有水即成格，没火一样当官（调候不用刻意考虑）")
                         }
+                        // 案廿八：印为湿土晦火养金——财贴印本是病，然财生官、官生印，土不受木克＝有情（当官富贵）
+                        if (yinEl == Element.EARTH && guanEl == Element.FIRE &&
+                            (EarthlyBranch.CHEN in bazi.branches || EarthlyBranch.CHOU in bazi.branches)
+                        ) {
+                            append("；印为湿土（辰）——晦火养金。${caiEl.chinese}贴${yinEl.chinese}本是财坏印之病，然${caiEl.chinese}生${guanEl.chinese}、${guanEl.chinese}生${yinEl.chinese}——这个土就不受木的克了：这就叫有情，有情就要当官富贵。有情豁免：不需虑印之旺衰、亦不虑印化不化得了——符合格局即可，只要印用神不被财破坏；若无有情因素，则须虑印之旺弱——印被破坏即是贫穷命")
+                        }
                         append(
                             if (yinS < FOLLOW_MIN_SCORE) "；印弱（党力${format(yinS)}）——印可配官煞，官杀生印为喜"
                             else "；印党力 ${format(yinS)} 得力可化",
@@ -657,12 +665,21 @@ object JinBiaoCalculator {
         val bingZhi = bingS2 > 0.0 && yaoS >= bingS2 && yaoS >= FOLLOW_MIN_SCORE && yaoEl !in wayJiEls
         val quanZhuo = strength == DayStrength.STRONG && !ruoJi && !wangJi && guanFei && shiFei && caiFei
         // ── 清枯（案十四）：身弱全赖印，而日主无本气根、印被克者有根有力、生印之官又过旺蒸之 ──
-        // （火炎土焦——燥土不生金，「生金有点难，但也只能用土，最起码土帮我扛了一下火」）——病太大一点救都没有
+        // （火炎土焦——燥土不生金，「生金有点难，但也只能用土，最起码土帮我扛了一下火」）——病太大一点救都没有。
+        // 案廿八豁免：克印之支尽入官局被化（寅入寅午戌火局——寅随火走不克辰，反生官生印＝有情）则不清枯。
         val keYinEl = Element.entries.first { it.controls == yinEl }
+        val guanSanHe = listOf(
+            setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU),
+            setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
+            setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN),
+            setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI),
+        ).firstOrNull { trio -> trio.all { it in bazi.branches } && trio.first().let { _ -> true } }
+        val keYinBound = guanSanHe != null &&
+            bazi.branches.filter { it.element == keYinEl }.all { it in guanSanHe }
         val qingKu = choice.way == JinBiaoQuYongWay.HUA_SHA && strength == DayStrength.WEAK &&
             !hasBenQiRoot(bazi, biEl) &&
             partyScore(bazi, keYinEl) >= FOLLOW_MIN_SCORE && hasBenQiRoot(bazi, keYinEl) &&
-            guanS >= GUAN_WANG
+            guanS >= GUAN_WANG && !keYinBound
         val qingZhuo = when {
             qingKu -> JinBiaoQingZhuo.QING_KU
             quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO

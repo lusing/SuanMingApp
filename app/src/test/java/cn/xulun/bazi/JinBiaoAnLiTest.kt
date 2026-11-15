@@ -944,6 +944,28 @@ class JinBiaoAnLiTest {
         assertTrue("壬戌运戌土止水——非吉（干支分论偏凶）", jb.yuns[1].verdict != JinBiaoVerdict.JI)
     }
 
+    // ── 案廿八 · 戊午 丙辰 庚寅 丙戌（合成盘，乾）——杀重用印·湿土晦火·财病化有情 ──
+
+    @Test
+    fun `案廿八 乾 戊午丙辰庚寅丙戌 火局克庚不昆仑 杀重用印湿土晦火 寅病化有情当官富贵`() {
+        val bazi = BaziResult(
+            Pillar(HeavenlyStem.WU, EarthlyBranch.WU), Pillar(HeavenlyStem.BING, EarthlyBranch.CHEN),
+            Pillar(HeavenlyStem.GENG, EarthlyBranch.YIN), Pillar(HeavenlyStem.BING, EarthlyBranch.XU),
+            LocalDateTime.of(1978, 4, 20, 19, 0),
+        )
+        val daYun = DaYunInfo(true, "合成（顺行自丙辰）", LocalDateTime.of(1982, 4, 20, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.DING, EarthlyBranch.SI), 4, 1982, emptyList()),
+            DaYun(Pillar(HeavenlyStem.GENG, EarthlyBranch.SHEN), 34, 2012, emptyList()),
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("火局克庚——杀旺身弱非昆仑（局克日主不为顺）", jb.quYongWay != JinBiaoQuYongWay.KUN_LUN)
+        assertTrue("印辰有气不随杀走——杀重用印格，用神取印（土）",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.EARTH)
+        assertTrue("湿土晦火养金＋寅病经火化有情＋豁免旺衰",
+            jb.quYongBasis.contains("湿土") && jb.quYongBasis.contains("不受木的克") && jb.quYongBasis.contains("有情豁免"))
+        assertTrue("财不透干经官通关——清（当官富贵）", jb.qingZhuo == JinBiaoQingZhuo.QING)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
