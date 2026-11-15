@@ -447,7 +447,7 @@ class JinBiaoAnLiTest {
         // 金镖门：寅午戌三合坐刃身旺，但丑中癸＝官有根气、庚财透干来生——条件②破，非去寡
         val jb = JinBiaoCalculator.analyze(bazi, daYun)
         assertTrue("身旺用官（配财），用神取官杀（水）", jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.WATER)
-        assertTrue("取用依据含案八实证（帮官好运/制化差）", jb.quYongBasis.contains("案八") && jb.quYongBasis.contains("帮助官的运"))
+        assertTrue("取用依据含财滋弱杀与帮官杀好运", jb.quYongBasis.contains("财滋弱杀") && jb.quYongBasis.contains("帮官杀之运"))
 
         // 事实锚定：辛酉庚申财生官——帮官之运好运；己未之后食制印化比劫皆违官——差运
         assertTrue("辛酉庚申财运皆吉", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
@@ -802,6 +802,29 @@ class JinBiaoAnLiTest {
         val jb = JinBiaoCalculator.analyze(bazi, daYun)
         assertTrue("巳午未三会火局叛向——甲木无援从儿，顺火之势", jb.quYongWay == JinBiaoQuYongWay.SUI_SHI && jb.yongShenElement == Element.FIRE)
         assertTrue("壬申水运——犯火之旺：死", jb.yuns[0].verdict == JinBiaoVerdict.XIONG && jb.yuns[0].items.any { it.action.contains("犯火之旺") })
+    }
+
+    // ── 案廿二 · 己酉 丙寅 庚申 庚辰（1969-02-14 辰时）——财滋弱杀·财被劫大运解病 ──
+
+    @Test
+    fun `案廿二 己酉丙寅庚申庚辰 财滋弱杀 财被劫杀弱无妨 北方水运解病一样富贵`() {
+        val bazi = chart(1969, 2, 14, 7)
+        assertTrue(bazi.fullBazi.startsWith("己酉 丙寅 庚申 庚辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("乙丑(1972)", "甲子(1982)", "癸亥(1992)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("土金两旺身强、丙杀露而无食伤——有财有官杀优先用杀（财滋弱杀）",
+            jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.FIRE)
+        assertTrue("财被劫（寅申冲）杀弱无妨——大运解病一样富贵，勿断贫",
+            jb.quYongBasis.contains("勿见杀弱财弱断贫") && jb.quYongBasis.contains("解病"))
+
+        // 北方水运泄金生木通关解病——一样发富发贵；西方金地加重金克木之病——差
+        assertTrue("甲子癸亥水运药神到——吉", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("辛酉庚申金地助病——凶", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
     }
 
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──

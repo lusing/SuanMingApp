@@ -338,6 +338,11 @@ object JinBiaoCalculator {
         }
 
         // ── 取用 ──
+        // 案廿二：比劫克财之病（财被劫）——财滋弱杀局之病在比劫，食伤反为通关药神（泄比生财）
+        val caiZhuBing = biS >= caiS || bazi.branches.any { br ->
+            br.element == biEl && LIU_CHONG[br] != null && LIU_CHONG.getValue(br).let { p -> p.element == caiEl && p in bazi.branches }
+        }
+
         // ── 昆仑得局（命二/命三）：地支一五行得局（本气≥3支，或三合成局）＋配生源＋日主无自根而漂——不以日主论，顺其势 ──
         val branchCount = Element.entries.associateWith { el -> bazi.branches.count { it.element == el } }
         val sanHeJuEl = listOf(
@@ -544,14 +549,13 @@ object JinBiaoCalculator {
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
                     "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
                 )
-                // 五理②用官（案八/案十实证）：身旺而官在局有力（官废则不能用——案十二）——弱中变旺者官虽被泄克仍用官，喜财生官
+                // 五理②/第七讲·财滋弱杀（案八/案十/案廿二）：身旺而官在局（官废不能用——案十二）——有财有官杀优先用杀
                 guanS >= FOLLOW_MIN_SCORE && !guanFei -> Choice(
                     JinBiaoQuYongWay.PEI_CAI, guanEl,
                     buildString {
-                        append("正格五理·官煞依乎财（案八/案十）：身旺（${if (ruoZhongBianWang) "弱中变旺——坐贴身印比、月令敌党之支被日支泄克转衰" else "通根得气"}），官在局（党力${format(guanS)}）——命主用官")
-                        if (caiS >= FOLLOW_MIN_SCORE) append("，喜财（党力${format(caiS)}）生官——官星指着财来生，有财就是好格局")
-                        else append("；财弱（党力${format(caiS)}）——官星指着财来生，行财运为应")
-                        append("；走帮助官的运（财运、官杀运）都算好运，走违背官杀、制化官杀的运就要差")
+                        append("财滋弱杀格（案廿二）：身旺（${if (ruoZhongBianWang) "弱中变旺——坐贴身印比、月令敌党之支被日支泄克转衰" else "土金两旺通根得气"}），官杀露而弱（党力${format(guanS)}）${if (shiS < FOLLOW_MIN_SCORE) "、无食伤" else ""}——有财有官杀优先用杀，命主用官")
+                        append("；财配置（党力${format(caiS)}）${if (caiZhuBing) "——原局${biEl.chinese}克${caiEl.chinese}财被劫，然杀弱无关系、财弱也无妨：只要大运解病（如${shiEl.chinese}运泄${biEl.chinese}生${caiEl.chinese}通关）一样发富发贵，勿见杀弱财弱断贫" else "——官星指着财来生，有财就是好格局"}")
+                        append("；杀强反不宜（要克身）；走帮官杀之运好运，走加重${biEl.chinese}病之运差")
                     },
                 )
                 shiS >= FOLLOW_MIN_SCORE -> Choice(
@@ -696,7 +700,12 @@ object JinBiaoCalculator {
                 put(yinEl, "印泄官生身——身旺食伤亦旺，好运")
             }
             // 五理②用官（案八）：财生官——帮官之运好运
-            if (choice.way == JinBiaoQuYongWay.PEI_CAI) put(caiEl, "财生官——帮官之运，好运")
+            if (choice.way == JinBiaoQuYongWay.PEI_CAI && !caiZhuBing) put(caiEl, "财生官——帮官之运，好运")
+            // 案廿二：财被劫病局——食伤为通关药神（泄比劫生财滋杀），北方运解病一样富贵
+            if (choice.way == JinBiaoQuYongWay.PEI_CAI && caiZhuBing) {
+                put(caiEl, "财星到——滋弱杀，好运")
+                put(shiEl, "泄${biEl.chinese}生${caiEl.chinese}——解${biEl.chinese}克${caiEl.chinese}之病（药神通关），一样发富发贵")
+            }
             // 昆仑得局（命三）：生源、本势、顺泄皆顺——金水木
             if (choice.way == JinBiaoQuYongWay.KUN_LUN) {
                 put(kunLunSource!!, "${kunLunSource.chinese}生${kunLunEl!!.chinese}——顺其势，好运")
@@ -738,10 +747,13 @@ object JinBiaoCalculator {
             }
             // 第五讲·去寡：不用之官尽可去——官星得地（得运）反一事无成
             if (choice.way == JinBiaoQuYongWay.QU_GUA) put(guanEl, "官星得地得禄——顺着官杀，一世无成（不用之官尽可去）")
-            // 五理②用官（案八）：制化官杀之运——违背官，差运
-            if (choice.way == JinBiaoQuYongWay.PEI_CAI) {
+            // 五理②用官（案八）：制化官杀之运——违背官，差运（财被劫病局之食伤为药，不入此档）
+            if (choice.way == JinBiaoQuYongWay.PEI_CAI && !caiZhuBing) {
                 put(shiEl, "食伤制官——违背官杀，差运")
                 put(yinEl, "印泄官化官——违背官杀，差运")
+            }
+            if (choice.way == JinBiaoQuYongWay.PEI_CAI && caiZhuBing) {
+                put(yinEl, "印生${biEl.chinese}助病——差运")
             }
             // 案九：身旺泄秀而印为病——土金运（印比）病来即差（金虽生水，然身更旺、发泄受阻）
             if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI && yinS >= YIN_HUAI) {
@@ -821,7 +833,10 @@ object JinBiaoCalculator {
             if (ruoJi) append("此为弱极从势之命，行比劫印地必凶（反常之判，勿以普通身弱喜扶论）。")
             if (ruoJi && !zhengDou) append("随势而走：走财走官走食伤皆顺皆吉（富贵显达、高人一等）；唯走印比帮身运帮之反害，必大凶或贫穷。")
             if (choice.way == JinBiaoQuYongWay.QU_GUA) append("此为去寡之命——不用之官尽可去：违背官杀之运好运（把官杀坏得越严重越好），顺着官杀之运一世无成；日主已旺，不可用水激之。")
-            if (choice.way == JinBiaoQuYongWay.PEI_CAI) append("此为身旺用官之命：帮助官的运（财生官、官杀得地）都算好运，违背官杀、制化官杀之运（食制、印化）就要差。")
+            if (choice.way == JinBiaoQuYongWay.PEI_CAI) {
+                if (caiZhuBing) append("此为财滋弱杀格（财被劫病局）：杀弱无关系、财弱也无妨——大运解${biEl.chinese}克${caiEl.chinese}之病（${shiEl.chinese}运通关）即一样发富发贵；杀强反不宜，要克身。")
+                else append("此为身旺用官之命：帮助官的运（财生官、官杀得地）都算好运，违背官杀、制化官杀之运（食制、印化）就要差。")
+            }
             if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI && yinS >= YIN_HUAI) {
                 append("印为格局之病（生身助旺＋贴身克用神）：土金运病来即差——贫穷之运；亥子丑水运帮用神则发富；财运去病（克印）发泄更畅，甲寅之属尤佳。")
             }
