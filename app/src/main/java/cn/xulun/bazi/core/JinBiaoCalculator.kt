@@ -383,10 +383,10 @@ object JinBiaoCalculator {
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
                     "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
                 )
-                // 第五讲·去寡：日主通根得气身旺＋官杀无根气＋财无根不生官＋有食伤——官反以去之为美
-                guanS < FOLLOW_MIN_SCORE && caiS < FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                // 第五讲·去寡（案六细化）：局中须有寡官（虚透或余气藏）＋日主通根身旺＋官财皆无本气根＋有食伤——官反以去之为美
+                guanS > 0.0 && !hasBenQiRoot(bazi, guanEl) && !hasBenQiRoot(bazi, caiEl) && shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.QU_GUA, shiEl,
-                    "推命经第二段·去寡：日主通根得气身旺，官杀无根气（官党力${format(guanS)}）、财无根不生官（财党力${format(caiS)}）、有食伤（党力${format(shiS)}）——" +
+                    "推命经第二段·去寡：日主通根得气身旺，官杀无本气根（党力${format(guanS)}，虚透凭余气亦寡）、财无本气根不生官（党力${format(caiS)}）、有食伤（党力${format(shiS)}）——" +
                         "官星之寡反以去之为美，用神取食伤（去官之星）；走官运补官反差运，走去官之运反好运（与官配财之分水岭在财之根气）",
                 )
                 yinS >= YIN_HUAI -> Choice(
@@ -865,9 +865,9 @@ object JinBiaoCalculator {
         items.any { it.element in ctx.daXiongEls } -> JinBiaoVerdict.XIONG
         // 中平档：解围局官/食、化煞生印未合局
         items.any { it.pingOverride || it.element in ctx.zhongPingEls } -> JinBiaoVerdict.PING
-        // 吉档：全帮扶，或顺泄/化煞合局之作吉覆写
+        // 吉档：全帮扶，或顺泄/化煞合局之作吉覆写（作吉元素视同帮扶）
         items.all { it.stance == JinBiaoStance.BANG || it.favorOverride || it.element in ctx.favorEls } -> JinBiaoVerdict.JI
-        items.all { it.stance == JinBiaoStance.SUN || it.favorOverride || it.element in ctx.favorEls } -> JinBiaoVerdict.XIONG
+        items.all { it.stance == JinBiaoStance.SUN } -> JinBiaoVerdict.XIONG
         else -> JinBiaoVerdict.GAN_ZHI_FEN
     }
 
