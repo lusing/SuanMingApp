@@ -458,6 +458,37 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎定食神格", geju.name == "食神格")
     }
 
+    // ── 案九 · 乾造 壬申 戊申 庚辰 甲申（1992-09-01 申时）——有泄路非旺极，用壬泄刚煞，戊土为病 ──
+
+    @Test
+    fun `案九 乾 壬申戊申庚辰甲申 非旺极有泄路 用壬泄刚煞 戊土为病 水运发富甲寅去病`() {
+        val bazi = chart(1992, 9, 1, 15)
+        assertTrue(bazi.fullBazi.startsWith("壬申 戊申 庚辰 甲申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("己酉(1994)", "庚戌(2004)", "辛亥(2014)"),
+        )
+
+        // 金镖门：壬透通根申中壬（秋水通源、透干通根者不废）——有泄路，非旺极不从；无官必用食伤泄刚煞
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("壬水有劲有泄路——非旺极非弱极", !jb.wangJi && !jb.ruoJi)
+        assertTrue("用神取食伤（水）", jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含泄刚煞与地支不载", jb.quYongBasis.contains("泄刚煞") && jb.quYongBasis.contains("地支不载"))
+        assertTrue("断语含印为格局之病", jb.duanYu.contains("印为格局之病"))
+
+        // 土金运病来皆差；水运帮用神发富；财运去病更佳
+        assertTrue("己酉庚戌土金运皆凶", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("壬子水运帮用神发富", jb.yuns[3].verdict == JinBiaoVerdict.JI)
+        assertTrue("甲寅乙卯财运去病更佳", listOf(5, 6).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("财运标注去病", jb.yuns[5].items.any { it.action.contains("去病") })
+
+        // 老引擎对照（双引擎铁律）：建禄格成格——相神壬食伤生财，两派同取壬水
+        val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
+        assertTrue("老引擎定建禄格", geju.name.contains("建禄"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

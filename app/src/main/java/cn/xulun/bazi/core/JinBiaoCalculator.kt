@@ -262,20 +262,27 @@ object JinBiaoCalculator {
         fun hostileScoreAdj(el: Element): Double {
             var s = 0.0
             bazi.stems.forEachIndexed { i, st -> if (i != 2 && st.element == el) s += W_TOU_GAN }
+            // 案九辩证：透干通根者不废——壬透则申中壬为根（秋水通源）；不透之藏敌（案三戌中辛巳中庚）方随旺神走
+            val touGan = bazi.stems.any { it.element == el }
             bazi.branches.forEach { br ->
                 val hostYinBi = br.element == yinEl || br.element == biEl
-                if (!hostYinBi) {
+                if (!hostYinBi || touGan) {
                     if (br.element == el) s += W_BEN_QI
                     else if (branchHiddenStems.getValue(br).any { it.element == el }) s += W_CANG_GAN
                 }
             }
             val mb = bazi.monthPillar.branch
-            if (mb.element == el && mb.element != yinEl && mb.element != biEl) s += W_YUE_LING
+            if (mb.element == el && (mb.element != yinEl && mb.element != biEl || touGan)) s += W_YUE_LING
             return s
         }
         val caiSAdj = hostileScoreAdj(caiEl)
         val guanSAdj = hostileScoreAdj(guanEl)
         val shiSAdj = hostileScoreAdj(shiEl)
+        // 案九：财之地载（本气根或藏于非印比本气之支）；金旺土生金支全金局时辰不载甲
+        val caiZai = hasBenQiRoot(bazi, caiEl) || bazi.branches.any { br ->
+            br.element != biEl && br.element != yinEl &&
+                branchHiddenStems.getValue(br).any { it.element == caiEl }
+        }
         val wangJi = strength == DayStrength.STRONG && guanSAdj == 0.0 && caiSAdj == 0.0 && shiSAdj == 0.0
         // 强极：命局印比叠叠（印亦成势），印比二人同心，可顺而不可逆
         val qiangJi = wangJi && yinS >= QIANG_JI_YIN
@@ -403,9 +410,10 @@ object JinBiaoCalculator {
                     "正格五理·官煞依乎财（案八）：身旺通根，官杀（党力${format(guanS)}）地支有根气、财（党力${format(caiS)}）透而生官——" +
                         "身旺官杀混杂来克我反好，又财来生，命主用官；走帮助官的运（财运、官杀运）都算好运，走违背官杀、制化官杀的运就要差",
                 )
-                yinS >= YIN_HUAI -> Choice(
+                // 五理①财坏印：印坏事须财有力可倚——财地支不载（案九：金旺支全金局，辰不载甲）则不可为用
+                yinS >= YIN_HUAI && caiZai -> Choice(
                     JinBiaoQuYongWay.HUAI_YIN, caiEl,
-                    "正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用——必用财星坏印（财党力 ${format(caiS)}）",
+                    "正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用——必用财星坏印（财党力 ${format(caiS)}，地支有载）",
                 )
                 guanS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.PEI_CAI, guanEl,
@@ -413,8 +421,15 @@ object JinBiaoCalculator {
                 )
                 shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.SHI_SHENG_CAI, shiEl,
-                    "正格续理·身旺食生财：身旺无官杀必泄体得衡——食伤泄秀生财（食伤党力 ${format(shiS)}、财党力 ${format(caiS)}）；" +
-                        (if (caiS < FOLLOW_MIN_SCORE) "虽财不现，食伤够旺亦必发泄，也是好命" else "食神生出财来，命局得到平衡"),
+                    buildString {
+                        append("正格续理·身旺食生财（案九）：身旺无官杀必泄体得衡——用神取食伤（党力 ${format(shiS)}）泄刚煞之气")
+                        if (yinS >= YIN_HUAI) {
+                            append("；印星两坏（生身助旺＋贴身克用神）——印为格局之病，病去或用神强旺方能好")
+                            if (!caiZai) append("；财地支不载（金旺土生金、支全金局）——用财无出息，不如用食伤（秋水通源，壬水有劲）")
+                        }
+                        append("；财党力 ${format(caiS)}")
+                        if (caiS < FOLLOW_MIN_SCORE) append("——虽财不现，食伤够旺亦必发泄，也是好命")
+                    },
                 )
                 else -> {
                     val best = listOf(
@@ -482,6 +497,14 @@ object JinBiaoCalculator {
             }
             // 五理②用官（案八）：财生官——帮官之运好运
             if (choice.way == JinBiaoQuYongWay.PEI_CAI) put(caiEl, "财生官——帮官之运，好运")
+            // 案九：身旺泄秀——财为泄口；印病时财运兼去病之神（甲克戊）
+            if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI) {
+                put(
+                    caiEl,
+                    if (yinS >= YIN_HUAI) "财克印去病——去戊土之病，发泄更畅，好运（甲寅之属尤佳）"
+                    else "食神生财——泄秀得衡，好运",
+                )
+            }
             // 案四：弱极随势无争妒——财官食相生一体，随财杀而走皆吉
             if (ruoJi && !zhengDou) {
                 when (choice.way) {
@@ -513,6 +536,11 @@ object JinBiaoCalculator {
             if (choice.way == JinBiaoQuYongWay.PEI_CAI) {
                 put(shiEl, "食伤制官——违背官杀，差运")
                 put(yinEl, "印泄官化官——违背官杀，差运")
+            }
+            // 案九：身旺泄秀而印为病——土金运（印比）病来即差（金虽生水，然身更旺、发泄受阻）
+            if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI && yinS >= YIN_HUAI) {
+                put(yinEl, "印为病——病来即差（贫穷之运）")
+                put(biEl, "身更旺——发泄受阻，差运")
             }
         }
         // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
@@ -569,6 +597,9 @@ object JinBiaoCalculator {
             if (ruoJi && !zhengDou) append("随势而走：走财走官走食伤皆顺皆吉（富贵显达、高人一等）；唯走印比帮身运帮之反害，必大凶或贫穷。")
             if (choice.way == JinBiaoQuYongWay.QU_GUA) append("此为去寡之命——不用之官尽可去：违背官杀之运好运（把官杀坏得越严重越好），顺着官杀之运一世无成；日主已旺，不可用水激之。")
             if (choice.way == JinBiaoQuYongWay.PEI_CAI) append("此为身旺用官之命：帮助官的运（财生官、官杀得地）都算好运，违背官杀、制化官杀之运（食制、印化）就要差。")
+            if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI && yinS >= YIN_HUAI) {
+                append("印为格局之病（生身助旺＋贴身克用神）：土金运病来即差——贫穷之运；亥子丑水运帮用神则发富；财运去病（克印）发泄更畅，甲寅之属尤佳。")
+            }
             if (qiangJi) {
                 append("此为强极印比同心之命，可顺而不可逆：只要运行印比，人生定可亨通显达（好八字）；若走财官之地，触怒强神大凶。")
                 if (yinDeJu) {
