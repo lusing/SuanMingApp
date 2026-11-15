@@ -516,6 +516,9 @@ object JinBiaoCalculator {
                     JinBiaoQuYongWay.HUA_SHA, yinEl,
                     buildString {
                         append("杀重用印格（五理③·身衰遇官煞，枭印乃可化）：官党力 ${format(guanS)} 旺克我、身弱——必用印化杀生印出格局。杀重之时要化之以德，不能用食神强制杀：「身弱制杀以威，不若化之以德」")
+                        if (bazi.dayPillar.branch.element == yinEl) {
+                            append("；**坐下有印（${bazi.dayPillar.branch.chinese}）——不用坐下午火的话，这么旺的杀就要克死日主；有坐下印就得了贵**：天干杀来克也没关系，坐下印持续生即可。坐下有印就叫有情——别处之气皆向我坐下生拱（杀生印），外界有情就加分，不用管印之旺弱，一样得贵——这叫情分；原命财杀旺，一定要走帮身运才能好".replace("**", ""))
+                        }
                         append(
                             if (yinS < FOLLOW_MIN_SCORE) "；印弱（党力${format(yinS)}）——印可配官煞，官杀生印为喜"
                             else "；印党力 ${format(yinS)} 得力可化",
@@ -1021,13 +1024,22 @@ object JinBiaoCalculator {
             if (act != null) damages += "${PillarBranchLabels[i]}${br.chinese}$act"
         }
 
-        // 根被冲
+        // 根被冲——案廿六护栏：冲对之间有通关之支卡中（子午冲得寅卡中：水生木木生火）属友情，
+        // 冲化为生反向我生拱——情分加分，不作冲伤
         bazi.branches.forEachIndexed { i, br ->
             val chongPartner = LIU_CHONG[br]
             if (chongPartner != null && br.element == yongEl &&
                 bazi.branches.any { it == chongPartner }
             ) {
-                damages += "${br.chinese}用神之根被${chongPartner.chinese}冲"
+                val tongGuan = bazi.branches.any { mid ->
+                    mid != br && mid != chongPartner &&
+                        chongPartner.element.generates == mid.element && mid.element.generates == br.element
+                }
+                if (tongGuan) {
+                    supports += "根${br.chinese}与${chongPartner.chinese}之冲有通关之支卡中（属友情）——冲化为生，情分加分"
+                } else {
+                    damages += "${br.chinese}用神之根被${chongPartner.chinese}冲"
+                }
             }
         }
         // 用神透干被合绊

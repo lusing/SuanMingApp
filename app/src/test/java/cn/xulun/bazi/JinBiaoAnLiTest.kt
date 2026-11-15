@@ -897,6 +897,29 @@ class JinBiaoAnLiTest {
         assertTrue("戊戌比劫夺财凶", jb.yuns[6].verdict == JinBiaoVerdict.XIONG)
     }
 
+    // ── 案廿六 · 戊子 甲寅 戊午 甲寅（合成盘，乾）——杀重用印·坐下有情 ──
+
+    @Test
+    fun `案廿六 乾 戊子甲寅戊午甲寅 杀重用印坐下印有情 子午冲寅隔属友情`() {
+        val bazi = BaziResult(
+            Pillar(HeavenlyStem.WU, EarthlyBranch.ZI), Pillar(HeavenlyStem.JIA, EarthlyBranch.YIN),
+            Pillar(HeavenlyStem.WU, EarthlyBranch.WU), Pillar(HeavenlyStem.JIA, EarthlyBranch.YIN),
+            LocalDateTime.of(2008, 2, 15, 3, 0),
+        )
+        val daYun = DaYunInfo(true, "合成（顺行自甲寅）", LocalDateTime.of(2012, 2, 15, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.DING, EarthlyBranch.SI), 4, 2012, emptyList()),  // 丁巳火印帮身
+            DaYun(Pillar(HeavenlyStem.GENG, EarthlyBranch.SHEN), 14, 2022, emptyList()), // 庚申金党杀
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("官杀党力10压倒性、印比3.5——杀重身弱不翻（护栏）", jb.strength == DayStrength.WEAK)
+        assertTrue("杀重用印格——用神取坐下印（午火）",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.FIRE)
+        assertTrue("取用依据含化之以德与坐下有情", jb.quYongBasis.contains("化之以德") && jb.quYongBasis.contains("情分"))
+        assertTrue("子午之冲有寅卡中属友情——冲化为生不作冲伤",
+            jb.health.supports.any { it.contains("情分") } && jb.health.damages.none { it.contains("冲") })
+        assertTrue("丁巳火运帮身吉、庚申金党杀凶", jb.yuns[0].verdict == JinBiaoVerdict.JI && jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
