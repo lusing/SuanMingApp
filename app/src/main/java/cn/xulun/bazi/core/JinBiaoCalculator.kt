@@ -47,6 +47,8 @@ object JinBiaoCalculator {
     private const val YIN_QING = 2.0            // 旺极局印党力低于此值 → 印轻（方可行食伤）
     private const val QIANG_JI_YIN = 4.0        // 印党力高于此值且财官食全无 → 强极（印比叠叠同心）
     private const val CHEN_XU_HOSTILE = 8.0     // 案四：土日主辰根作虚之敌势门槛（东方木地土虚、水库随水）
+    private const val GUAN_WANG = 4.0           // 第四讲：官党力≥此值＝官旺（身强须食制，身弱必印化）
+    private const val YIN_HUAI = 4.0            // 第四讲：身强局印党力≥此值＝印起坏作用（须财坏印）
     // 案三补丁：得局＝印旺于比（印为最强方）即可化煞生印；比不弱于印则未得局、走官必大凶
 
     /** 党力计分：透干 2/字 + 支本气 1.5 + 藏干 0.5 + 月令本气再 3（日主天干自身不计） */
@@ -349,27 +351,63 @@ object JinBiaoCalculator {
                     }
                 },
             )
-            // 普通身弱：印比扶身，取有力者
-            strength == DayStrength.WEAK -> {
-                val useYin = yinS >= biS
-                Choice(
-                    JinBiaoQuYongWay.FU_SHEN, if (useYin) yinEl else biEl,
-                    "身弱扶身：印绶党力 ${format(yinS)}、比劫党力 ${format(biS)}——取" +
-                        (if (useYin) "印绶（生身）" else "比劫（助身）") + "为用（有力者优先）",
+            // 第四讲·正格五理③／⑥＋基线：身弱取用
+            strength == DayStrength.WEAK -> when {
+                guanS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.HUA_SHA, yinEl,
+                    buildString {
+                        append("正格五理·身衰遇官煞，枭印乃可化：官党力 ${format(guanS)} 有力——必用印化杀生印出格局")
+                        append(
+                            if (yinS < FOLLOW_MIN_SCORE) "；印弱（党力${format(yinS)}）——印可配官煞，官杀生印为喜"
+                            else "；印党力 ${format(yinS)} 得力可化",
+                        )
+                        if (yinS == 0.0) append("；局中印不现，以虚神论（运岁补入之时为应）")
+                    },
                 )
+                shiS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.FU_SHEN, yinEl,
+                    "正格续理·身衰伤配印：身衰须帮身，食伤（党力 ${format(shiS)}）泄体——喜印星制服食伤且生身，两得其用（印党力 ${format(yinS)}），此为有格局",
+                )
+                else -> {
+                    val useYin = yinS >= biS
+                    Choice(
+                        JinBiaoQuYongWay.FU_SHEN, if (useYin) yinEl else biEl,
+                        "身弱扶身：印绶党力 ${format(yinS)}、比劫党力 ${format(biS)}——取" +
+                            (if (useYin) "印绶（生身）" else "比劫（助身）") + "为用（有力者优先）",
+                    )
+                }
             }
-            // 身强：克泄耗取有力者（基线，细则待师传）
-            strength == DayStrength.STRONG -> {
-                val best = listOf(
-                    Triple("官杀", guanEl, guanS),
-                    Triple("财星", caiEl, caiS),
-                    Triple("食伤", shiEl, shiS),
-                ).maxBy { it.third }
-                Choice(
-                    JinBiaoQuYongWay.YI_SHEN, best.second,
-                    "身强抑泄：官党力 ${format(guanS)}、财党力 ${format(caiS)}、食伤党力 ${format(shiS)}——" +
-                        "取${best.first}为用（有力者优先；身强取用细则待师传档）",
+            // 第四讲·正格五理①②④⑥＋基线：身强取用
+            strength == DayStrength.STRONG -> when {
+                guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.ZHI_SHA, shiEl,
+                    "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
                 )
+                yinS >= YIN_HUAI -> Choice(
+                    JinBiaoQuYongWay.HUAI_YIN, caiEl,
+                    "正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用——必用财星坏印（财党力 ${format(caiS)}）",
+                )
+                guanS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.PEI_CAI, guanEl,
+                    "正格五理·官煞依乎财：身旺官弱（官党力 ${format(guanS)}）用官——配财生官，有财就是好格局（财党力 ${format(caiS)}）",
+                )
+                shiS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.SHI_SHENG_CAI, shiEl,
+                    "正格续理·身旺食生财：身旺无官杀必泄体得衡——食伤泄秀生财（食伤党力 ${format(shiS)}、财党力 ${format(caiS)}）；" +
+                        (if (caiS < FOLLOW_MIN_SCORE) "虽财不现，食伤够旺亦必发泄，也是好命" else "食神生出财来，命局得到平衡"),
+                )
+                else -> {
+                    val best = listOf(
+                        Triple("官杀", guanEl, guanS),
+                        Triple("财星", caiEl, caiS),
+                        Triple("食伤", shiEl, shiS),
+                    ).maxBy { it.third }
+                    Choice(
+                        JinBiaoQuYongWay.YI_SHEN, best.second,
+                        "身强抑泄：官党力 ${format(guanS)}、财党力 ${format(caiS)}、食伤党力 ${format(shiS)}——" +
+                            "取${best.first}为用（基线，细则待师传档）",
+                    )
+                }
             }
             // 中和：暂取月令主力（基线，细则待师传）
             else -> {
@@ -472,6 +510,16 @@ object JinBiaoCalculator {
         // ── 断语（一律锚定用神，禁泛断） ──
         val jiYuns = yunPings.orEmpty().filter { it.verdict == JinBiaoVerdict.JI }.map { it.yunName }
         val xiongYuns = yunPings.orEmpty().filter { it.verdict == JinBiaoVerdict.XIONG }.map { it.yunName }
+        // 第四讲·五理⑤：二者如替换，定是贫穷汉——原局结构即呈反用之象者
+        val tiHuanPin: String? = when {
+            !ruoJi && !wangJi && strength == DayStrength.WEAK &&
+                shiS >= FOLLOW_MIN_SCORE && guanS >= FOLLOW_MIN_SCORE && yinS < 1.0 ->
+                "五理之五·二者如替换：身弱不用印化杀、原局反以食伤强制动杀（食${format(shiS)}官${format(guanS)}而印仅${format(yinS)}）——克泄交加、弃日主于不顾，定是贫穷汉。"
+            !ruoJi && !wangJi && strength == DayStrength.STRONG &&
+                guanS >= FOLLOW_MIN_SCORE && yinS >= FOLLOW_MIN_SCORE && shiS < 1.0 ->
+                "五理之五·二者如替换：身强反赖印化杀（官${format(guanS)}印${format(yinS)}而食伤仅${format(shiS)}）——身愈强官愈弱，定是贫穷汉。"
+            else -> null
+        }
         val duanYu = buildString {
             append("日主${strength.chinese}")
             if (ruoJi) append("（弱极·${ruoJiType!!.chinese}）")
@@ -502,6 +550,7 @@ object JinBiaoCalculator {
                 append("凶运：${xiongYuns.joinToString("、")}。")
                 if (ruoJi) append("弱极行比劫印运勿看流年，必大凶无疑——轻则破大财，重则牢狱、死亡之灾（应事随八字五行而异）。")
             }
+            if (tiHuanPin != null) append(tiHuanPin)
         }
 
         return JinBiaoResult(

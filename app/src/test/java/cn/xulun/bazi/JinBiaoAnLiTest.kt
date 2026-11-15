@@ -410,6 +410,8 @@ class JinBiaoAnLiTest {
         // 金镖门引擎（新口径独立断盘）
         val jb = JinBiaoCalculator.analyze(bazi, daYun)
         assertTrue("金镖门断语一律锚定用神", jb.duanYu.contains("用神"))
+        assertTrue("身衰遇官煞枭印乃可化——与老引擎印化七杀同断（五理③）",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.METAL)
         assertTrue("大运流年逐年评断齐备", jb.yuns.isNotEmpty() && jb.yuns.flatMap { it.years }.any { it.year == 2007 })
         assertTrue("模块注记双引擎对照要求", jb.note.contains("老引擎"))
 
@@ -444,12 +446,23 @@ class JinBiaoAnLiTest {
             } else {
                 when (r.strength) {
                     DayStrength.WEAK ->
-                        assertTrue("$name 身弱扶身——用神必为印比", r.quYongWay == JinBiaoQuYongWay.FU_SHEN && category in setOf("比劫", "印绶"))
+                        assertTrue(
+                            "$name 身弱取用——印比扶身或枭印化杀",
+                            r.quYongWay in setOf(JinBiaoQuYongWay.FU_SHEN, JinBiaoQuYongWay.HUA_SHA) &&
+                                category in setOf("比劫", "印绶"),
+                        )
                     DayStrength.STRONG ->
                         if (r.wangJi) {
                             assertTrue("$name 旺极随旺神——用神必为比劫", r.quYongWay == JinBiaoQuYongWay.SUI_WANG && category == "比劫")
                         } else {
-                            assertTrue("$name 身强抑泄——用神必为财官食", r.quYongWay == JinBiaoQuYongWay.YI_SHEN && category in setOf("财星", "官杀", "食伤"))
+                            assertTrue(
+                                "$name 身强取用——五理路径皆财官食",
+                                r.quYongWay in setOf(
+                                    JinBiaoQuYongWay.YI_SHEN, JinBiaoQuYongWay.ZHI_SHA,
+                                    JinBiaoQuYongWay.PEI_CAI, JinBiaoQuYongWay.HUAI_YIN,
+                                    JinBiaoQuYongWay.SHI_SHENG_CAI,
+                                ) && category in setOf("财星", "官杀", "食伤"),
+                            )
                         }
                     DayStrength.BALANCED ->
                         assertTrue("$name 中和取月令", r.quYongWay == JinBiaoQuYongWay.ZHONG_HE)
