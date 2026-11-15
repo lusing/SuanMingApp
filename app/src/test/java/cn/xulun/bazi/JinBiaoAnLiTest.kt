@@ -569,20 +569,30 @@ class JinBiaoAnLiTest {
     // ── 案十/案十一 · 清浊章案例（第六讲） ──
 
     @Test
-    fun `案十 癸酉甲子丙寅乙未 非昆仑正常分析 身弱印化 酉金被官化相生有情 清命`() {
+    fun `案十 癸酉甲子丙寅乙未 弱中变旺用官喜财生 半浊半清 庚申发财己未病运`() {
         val bazi = chart(1993, 12, 11, 13)
         assertTrue(bazi.fullBazi.startsWith("癸酉 甲子 丙寅 乙未"))
-        val jb = JinBiaoCalculator.analyze(bazi, null)
-        assertTrue("子月官旺金生——三步法看季节判身弱（地支水不得局，非昆仑无顺逆）", jb.strength == DayStrength.WEAK)
-        assertTrue("身衰遇官煞枭印乃可化——用神取印（木，甲乙透寅根得力）",
-            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WOOD)
-        assertTrue("天干无金、地支酉金被官水化之——转而相生有情，病不为病：清命",
-            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("相生有情"))
-        assertTrue("清命断语——走什么运都不怕", jb.duanYu.contains("清命") && jb.duanYu.contains("都不怕"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("癸亥(1995)", "壬戌(2005)", "辛酉(2015)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("坐寅贴身印＋甲通根未，官被寅泄未克转衰——弱中变旺", jb.strength == DayStrength.STRONG && jb.strengthBasis.contains("弱中变旺"))
+        assertTrue("旺则首选财官——用神取官（子水），喜酉金财生官", jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.WATER)
+        assertTrue("未土克用神＋火克喜神财——双浊源，半浊半清（非清命）",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("兼病"))
 
-        // 老引擎对照：正官格身弱——强弱同判
+        // 事实锚定：庚申运家业丰裕（申冲去寅、助起官星）发财——金水帮官皆吉
+        assertTrue("癸亥辛酉庚申金水运皆吉", listOf(0, 2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        // 己未起火土病运皆凶（未克子水用神、丁得根克酉金喜神）
+        assertTrue("己未戊午丁巳丙辰火土皆凶", listOf(4, 5, 6, 7).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("断语含多成多败（跟清命不一样）", jb.duanYu.contains("多成多败"))
+
+        // 老引擎对照：正官格
         val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
-        assertTrue("老引擎定正官格且身弱", geju.name == "正官格" && geju.strength == DayStrength.WEAK)
+        assertTrue("老引擎定正官格", geju.name == "正官格")
     }
 
     @Test

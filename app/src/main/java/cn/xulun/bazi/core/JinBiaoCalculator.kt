@@ -355,6 +355,22 @@ object JinBiaoCalculator {
             (bazi.stems.any { it.element == kunLunSource } ||
                 bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == kunLunSource } })
 
+        // ── 弱中变旺（案十定则）：弱基调而日主坐贴身印比本气／月干印比透，
+        //    且月令敌党之支被「印比之支」贴身泄克（官被泄克转衰——财克印不算，印伤更弱）——弱中变旺。
+        //    非弱极／非旺极时翻转（案四弱极不受此扰；档五十一财克印月仍身弱用印）。
+        val dayBranchEl = bazi.dayPillar.branch.element
+        var ruoZhongBianWang = false
+        if (!ruoJi && !wangJi && strength == DayStrength.WEAK &&
+            monthElAdj != yinEl && monthElAdj != biEl &&
+            (dayBranchEl == yinEl || dayBranchEl == biEl ||
+                bazi.monthPillar.stem.element == yinEl || bazi.monthPillar.stem.element == biEl) &&
+            ((monthElAdj.generates == dayBranchEl && (dayBranchEl == yinEl || dayBranchEl == biEl)) ||
+                (dayBranchEl.controls == monthElAdj && (dayBranchEl == yinEl || dayBranchEl == biEl)))
+        ) {
+            strength = DayStrength.STRONG
+            ruoZhongBianWang = true
+        }
+
         data class Choice(val way: JinBiaoQuYongWay, val el: Element, val basis: String)
 
         val choice: Choice = when {
@@ -460,25 +476,22 @@ object JinBiaoCalculator {
                         "财无透干无本气根不生官（党力${format(caiS)}）、食伤有力（党力${format(shiS)}）——去官发富贵，用神取食伤（去官之星）；" +
                         "违背官杀之运好运、坏官越重越好；顺着官杀（生官／官星得地得运）则一世无成",
                 )
-                // 五理④制杀：官有本气根之真旺、而财不滋官（无财则官无可倚）——伤食显其威
-                guanS >= GUAN_WANG && hasBenQiRoot(bazi, guanEl) && caiS < FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                // 五理④制杀：官有本气根之真旺、而财不滋官（无财则官无可倚）——伤食显其威；
+                // 弱中变旺局之官已被泄克转衰——衰官不制而用之（案十）
+                !ruoZhongBianWang && guanS >= GUAN_WANG && hasBenQiRoot(bazi, guanEl) &&
+                    caiS < FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
                     "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
                 )
-                // 五理②用官（案八实证）：身旺官杀有根气（藏干有字）而财来生——官杀混杂克我反好，命主用官
-                guanS >= FOLLOW_MIN_SCORE && caiS >= FOLLOW_MIN_SCORE -> Choice(
-                    JinBiaoQuYongWay.PEI_CAI, guanEl,
-                    "正格五理·官煞依乎财（案八）：身旺通根，官杀（党力${format(guanS)}）地支有根气、财（党力${format(caiS)}）透而生官——" +
-                        "身旺官杀混杂来克我反好，又财来生，命主用官；走帮助官的运（财运、官杀运）都算好运，走违背官杀、制化官杀的运就要差",
-                )
-                // 五理①财坏印：印坏事须财有力可倚——财地支不载（案九：金旺支全金局，辰不载甲）则不可为用
-                yinS >= YIN_HUAI && caiZai -> Choice(
-                    JinBiaoQuYongWay.HUAI_YIN, caiEl,
-                    "正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用——必用财星坏印（财党力 ${format(caiS)}，地支有载）",
-                )
+                // 五理②用官（案八/案十实证）：身旺而官在局有力——弱中变旺者官虽被泄克仍用官，喜财生官
                 guanS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.PEI_CAI, guanEl,
-                    "正格五理·官煞依乎财：身旺官弱（官党力 ${format(guanS)}）用官——配财生官，有财就是好格局（财党力 ${format(caiS)}）",
+                    buildString {
+                        append("正格五理·官煞依乎财（案八/案十）：身旺（${if (ruoZhongBianWang) "弱中变旺——坐贴身印比、月令敌党之支被日支泄克转衰" else "通根得气"}），官在局（党力${format(guanS)}）——命主用官")
+                        if (caiS >= FOLLOW_MIN_SCORE) append("，喜财（党力${format(caiS)}）生官——官星指着财来生，有财就是好格局")
+                        else append("；财弱（党力${format(caiS)}）——官星指着财来生，行财运为应")
+                        append("；走帮助官的运（财运、官杀运）都算好运，走违背官杀、制化官杀的运就要差")
+                    },
                 )
                 shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.SHI_SHENG_CAI, shiEl,
@@ -491,6 +504,11 @@ object JinBiaoCalculator {
                         append("；财党力 ${format(caiS)}")
                         if (caiS < FOLLOW_MIN_SCORE) append("——虽财不现，食伤够旺亦必发泄，也是好命")
                     },
+                )
+                // 五理①财坏印（殿后）：无官可用、食伤亦无力，而印坏事且财地支有载——用财星坏印
+                yinS >= YIN_HUAI && caiZai -> Choice(
+                    JinBiaoQuYongWay.HUAI_YIN, caiEl,
+                    "正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用而官食俱不可用——必用财星坏印（财党力 ${format(caiS)}，地支有载）",
                 )
                 else -> {
                     val best = listOf(
@@ -538,7 +556,13 @@ object JinBiaoCalculator {
         val bingHua = !bazi.stems.any { it.element == bingEl } &&
             partyScore(bazi, tongGuanEl) >= GUAN_WANG &&
             bingEl.generates == tongGuanEl && tongGuanEl.generates == yongEl
-        val bingZhi = yaoS >= bingS2 && yaoS >= FOLLOW_MIN_SCORE && bingS2 > 0.0
+        // 案十定则：假药非药——克病神者若本身即此局忌神（如用官局之印泄官、泄秀局之印比），不得计为药
+        val wayJiEls: Set<Element> = when (choice.way) {
+            JinBiaoQuYongWay.PEI_CAI -> setOf(shiEl, yinEl)
+            JinBiaoQuYongWay.SHI_SHENG_CAI -> if (yinS >= YIN_HUAI) setOf(yinEl, biEl) else emptySet()
+            else -> emptySet()
+        }
+        val bingZhi = bingS2 > 0.0 && yaoS >= bingS2 && yaoS >= FOLLOW_MIN_SCORE && yaoEl !in wayJiEls
         val qingZhuo = when {
             bingS2 == 0.0 -> JinBiaoQingZhuo.QING
             bingHua -> JinBiaoQingZhuo.QING
@@ -546,8 +570,16 @@ object JinBiaoCalculator {
             hasBenQiRoot(bazi, bingEl) && bingS2 >= 1.5 * yongS2 -> JinBiaoQingZhuo.MAN_ZHUO
             else -> JinBiaoQingZhuo.BAN_QING
         }
+        // 案十：用官局双浊源——克用神者（如未土克官）之外，克喜神财者（比劫丁火之类）亦是浊
+        val jianBing: String? = if (choice.way == JinBiaoQuYongWay.PEI_CAI) {
+            val bing2El = Element.entries.first { it.controls == caiEl }
+            if (partyScore(bazi, bing2El) >= 1.0) "兼病：${bing2El.chinese}（比劫）克喜神财${caiEl.chinese}——与${bingEl.chinese}同列为浊（一克用神一克喜神）" else null
+        } else {
+            null
+        }
         val qingZhuoBasis = buildString {
             append("病神＝${bingEl.chinese}（克${yongEl.chinese}用神，党力${format(bingS2)}）；用神党力${format(yongS2)}${if (yongDeLi) "（得力）" else "（不得力）"}")
+            if (jianBing != null) append("；$jianBing")
             when (qingZhuo) {
                 JinBiaoQingZhuo.QING -> append(
                     if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）"
@@ -555,7 +587,7 @@ object JinBiaoCalculator {
                     else "——病神被药${yaoEl.chinese}所制（药力${format(yaoS)}），此为清（贵命）",
                 )
                 JinBiaoQingZhuo.MAN_ZHUO -> append("——病神本气得根、力量太大（≥用神1.5倍）毁坏用神，满盘浊气——差命穷命，走什么运也好不了")
-                JinBiaoQingZhuo.BAN_QING -> append("——病在而力未制，半浊半清——普通人之命：多成多败，好两年坏两年（帮用去病之运好、帮病之运差）")
+                JinBiaoQingZhuo.BAN_QING -> append("——病在而力未制（药为假药或力不足），半浊半清——普通人之命：多成多败，好两年坏两年（帮用去病之运好、帮病之运差），跟清命不一样")
             }
         }
 
@@ -740,7 +772,9 @@ object JinBiaoCalculator {
         return JinBiaoResult(
             kouJing = "盲派金镖门 · 用神中心论——帮扶用神则吉，耗泄克破用神则凶；十神代五行，立场以用神为中心",
             strength = strength,
-            strengthBasis = "金镖门三步法：月令${monthBranch.chinese}经合会调整属${monthElAdj.chinese}党→${strength.chinese}（八步法参考：${strengthResult.verdict.chinese}，生助占比${pct(aShare)}）",
+            strengthBasis = "金镖门三步法：月令${monthBranch.chinese}经合会调整属${monthElAdj.chinese}党→" +
+                (if (ruoZhongBianWang) "弱基调；然坐贴身印比、月令敌党之支被泄克转衰——弱中变旺（身旺）" else strength.chinese) +
+                "（八步法参考：${strengthResult.verdict.chinese}，生助占比${pct(aShare)}）",
             ruoJi = ruoJi,
             ruoJiType = ruoJiType,
             ruoJiBasis = ruoJiBasis,
