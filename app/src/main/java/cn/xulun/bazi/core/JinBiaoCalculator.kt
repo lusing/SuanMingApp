@@ -555,6 +555,9 @@ object JinBiaoCalculator {
                     buildString {
                         append("财滋弱杀格（案廿二）：身旺（${if (ruoZhongBianWang) "弱中变旺——坐贴身印比、月令敌党之支被日支泄克转衰" else "土金两旺通根得气"}），官杀露而弱（党力${format(guanS)}）${if (shiS < FOLLOW_MIN_SCORE) "、无食伤" else ""}——有财有官杀优先用杀，命主用官")
                         append("；财配置（党力${format(caiS)}）${if (caiZhuBing) "——原局${biEl.chinese}克${caiEl.chinese}财被劫，然杀弱无关系、财弱也无妨：只要大运解病（如${shiEl.chinese}运泄${biEl.chinese}生${caiEl.chinese}通关）一样发富发贵，勿见杀弱财弱断贫" else "——官星指着财来生，有财就是好格局"}")
+                        if (biS >= 6.0 && EarthlyBranch.SI in bazi.branches && guanEl == Element.FIRE) {
+                            append("；地支${biEl.chinese}旺——巳随${biEl.chinese}走（作${biEl.chinese}根不作火根），${guanEl.chinese}杀真弱而通寅根：杀有根气故不能去杀（去杀须杀无一丝根气），必须财滋弱杀、禁制杀（制杀贫穷欠债）")
+                        }
                         append("；杀强反不宜（要克身）；走帮官杀之运好运，走加重${biEl.chinese}病之运差")
                     },
                 )
@@ -702,9 +705,11 @@ object JinBiaoCalculator {
             // 五理②用官（案八）：财生官——帮官之运好运
             if (choice.way == JinBiaoQuYongWay.PEI_CAI && !caiZhuBing) put(caiEl, "财生官——帮官之运，好运")
             // 案廿二：财被劫病局——食伤为通关药神（泄比劫生财滋杀），北方运解病一样富贵
+            // 案廿三：火运双用——杀通根＋克金护财（护卫寅木），当官
             if (choice.way == JinBiaoQuYongWay.PEI_CAI && caiZhuBing) {
                 put(caiEl, "财星到——滋弱杀，好运")
                 put(shiEl, "泄${biEl.chinese}生${caiEl.chinese}——解${biEl.chinese}克${caiEl.chinese}之病（药神通关），一样发富发贵")
+                put(guanEl, "杀得根＋克${biEl.chinese}护${caiEl.chinese}（双用：通根护财）——当官")
             }
             // 昆仑得局（命三）：生源、本势、顺泄皆顺——金水木
             if (choice.way == JinBiaoQuYongWay.KUN_LUN) {

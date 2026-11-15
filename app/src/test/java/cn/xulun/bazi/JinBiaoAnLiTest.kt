@@ -827,6 +827,30 @@ class JinBiaoAnLiTest {
         assertTrue("辛酉庚申金地助病——凶", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
     }
 
+    // ── 案廿三 · 丙申 庚寅 庚申 辛巳（1956-02-23 巳时）——财滋弱杀·火运双用当官 ──
+
+    @Test
+    fun `案廿三 丙申庚寅庚申辛巳 巳随金走杀真弱通寅根不去杀 火运双用当官 西方差`() {
+        val bazi = chart(1956, 2, 23, 9)
+        assertTrue(bazi.fullBazi.startsWith("丙申 庚寅 庚申 辛巳"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("辛卯(1959)", "壬辰(1969)", "癸巳(1979)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("两申贴克寅＋天干三金——身旺；巳随金走不作火根、丙杀真弱而通寅根",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.FIRE)
+        assertTrue("杀有根气不能去杀——必须财滋弱杀、禁制杀（制杀贫穷欠债）",
+            jb.quYongBasis.contains("巳随") && jb.quYongBasis.contains("禁制杀"))
+
+        // 火运双用（杀通根＋克金护寅）——当官；西方土金助病差
+        assertTrue("癸巳甲午火运皆吉", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("巳午火运标注双用当官", jb.yuns[2].items.any { it.action.contains("当官") } || jb.yuns[3].items.any { it.action.contains("当官") })
+        assertTrue("戊戌西方土金凶", jb.yuns[7].verdict == JinBiaoVerdict.XIONG)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
