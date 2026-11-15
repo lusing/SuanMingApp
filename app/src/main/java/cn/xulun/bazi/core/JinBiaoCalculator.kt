@@ -243,6 +243,9 @@ object JinBiaoCalculator {
                 if (hostBranches.isNotEmpty()) {
                     append("；印比仅藏于${hostBranches.joinToString("、") { "${it.chinese}（${catOf(it.element)}之支）" }}——寄于克耗泄之支，跟着走，借根无用")
                 }
+                if (sanHuiSanLiuHeNote.isNotEmpty()) {
+                    append("；${sanHuiSanLiuHeNote.joinToString("；")}")
+                }
                 append("——想靠印比帮身，靠不住")
             }
         } else {
@@ -449,8 +452,21 @@ object JinBiaoCalculator {
             rootlessEls = rootlessEls,
             daXiongText = daXiongNote, zhongPingText = zhongPingNote, favorText = favorNote,
         )
-        val yunPings = daYun?.yuns?.map { yun ->
-            pingYun(bazi.branches, yun.pillar, yun.startAge, yun.startYear, ctx)
+        // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
+        // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
+        val yunBranchesSeq = daYun?.yuns?.map { it.pillar.branch } ?: emptyList()
+        val bureauOverride = mutableMapOf<Int, Element>()
+        for (i in 0 until maxOf(0, yunBranchesSeq.size - 2)) {
+            val trio = setOf(yunBranchesSeq[i], yunBranchesSeq[i + 1], yunBranchesSeq[i + 2])
+            val juEl = SAN_HUI_JU.firstOrNull { (bs, _) -> trio.containsAll(bs) }?.second
+            if (juEl != null && (juEl == biEl || juEl == yinEl)) {
+                bureauOverride[i] = juEl
+                bureauOverride[i + 1] = juEl
+                bureauOverride[i + 2] = juEl
+            }
+        }
+        val yunPings = daYun?.yuns?.mapIndexed { idx, yun ->
+            pingYun(bazi.branches, yun.pillar, yun.startAge, yun.startYear, ctx, bureauOverride[idx])
         }
 
         // ── 断语（一律锚定用神，禁泛断） ──
@@ -650,15 +666,16 @@ object JinBiaoCalculator {
         val favorText: Map<Element, String>,
     )
 
-    /** 单步大运评断（含逐年流年；流年同用大运之档位口径，细分待壬寅专题）。 */
+    /** 单步大运评断（含逐年流年；流年同用大运之档位口径，细分待壬寅专题）。[zhiBureauEl]＝连行方局之印比覆写。 */
     private fun pingYun(
         chartBranches: List<EarthlyBranch>,
         pillar: Pillar,
         startAge: Int,
         startYear: Int,
         ctx: YunCtx,
+        zhiBureauEl: Element? = null,
     ): JinBiaoYunPing {
-        val items = ganZhiItems(chartBranches, pillar.stem, pillar.branch, ctx)
+        val items = ganZhiItems(chartBranches, pillar.stem, pillar.branch, ctx, zhiBureauEl)
         val years = (startYear..startYear + 9).map { year ->
             val ln = Pillar.fromCycleIndex(year - 4)
             val lnItems = ganZhiItems(chartBranches, ln.stem, ln.branch, ctx)
@@ -674,15 +691,18 @@ object JinBiaoCalculator {
         )
     }
 
-    /** 一柱干支对用神的作用条目（大运/流年通用）。 */
+    /** 一柱干支对用神的作用条目（大运/流年通用）。[zhiElOverride]＝连行方局帮身覆写（大运支专用）。 */
     private fun ganZhiItems(
         chartBranches: List<EarthlyBranch>,
         gan: HeavenlyStem,
         zhi: EarthlyBranch,
         ctx: YunCtx,
+        zhiElOverride: Element? = null,
     ): List<JinBiaoStanceItem> {
         val ganEl = gan.element
-        val zhiEl = zhi.element
+        val zhiEl = zhiElOverride ?: zhi.element
+        val bureauNote =
+            if (zhiElOverride != null && zhiElOverride != zhi.element) "·${zhi.chinese}随连行方局以${zhiElOverride.chinese}论（帮身方向）" else ""
 
         // 案三专题先记：八字重地支——干生支而干在局无根，干力全化于支（壬水全生寅木，壬寅以寅论）
         if (ganEl != zhiEl && ganEl.generates == zhiEl && ganEl in ctx.rootlessEls) {
@@ -699,7 +719,7 @@ object JinBiaoCalculator {
                     element = zhiEl,
                     stance = stance,
                     action = "${gan.chinese}无根全生${zhi.chinese}——干化于支（八字重地支）·${act}" +
-                        (note?.let { "·$it" } ?: ""),
+                        (note?.let { "·$it" } ?: "") + bureauNote,
                     favorOverride = huaSha?.first == true,
                     pingOverride = huaSha != null && huaSha.first == false,
                 ),
@@ -731,7 +751,7 @@ object JinBiaoCalculator {
                     chinese = chinese,
                     element = el,
                     stance = stance,
-                    action = act + (note?.let { "·$it" } ?: ""),
+                    action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
                     favorOverride = huaSha?.first == true,
                     pingOverride = huaSha != null && huaSha.first == false,
                 )

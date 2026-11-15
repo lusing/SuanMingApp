@@ -367,6 +367,38 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎定七杀格且身弱", geju.name == "七杀格" && geju.strength == DayStrength.WEAK)
     }
 
+    // ── 案五 · 乾造 己丑 丙子 丁亥 庚子（2009-12-08 子时）——亥子丑方局弱极随官，南方方局破败 ──
+
+    @Test
+    fun `案五 乾 己丑丙子丁亥庚子 丙火自顾不暇方局弱极 财官运高人一等 南方连行破败`() {
+        val bazi = chart(2009, 12, 8, 0)
+        assertTrue(bazi.fullBazi.startsWith("己丑 丙子 丁亥 庚子"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致（起运极早）",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("乙亥(2010)", "甲戌(2020)", "癸酉(2030)"),
+        )
+
+        // 金镖门：丙火透干无根气＋亥子丑北方方局＋庚金财生杀＋湿土晦火——丙火比劫自顾不暇，弱极
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("弱极·微浮印比自顾不暇（丙火无根被克）", jb.ruoJi && jb.ruoJiType == JinBiaoRuoJiType.WEI_FU)
+        assertTrue("判据含亥子丑方局叛向", jb.ruoJiBasis!!.contains("亥子丑"))
+        assertTrue("官旺随官，用神取杀（水）", jb.quYongWay == JinBiaoQuYongWay.SUI_GUAN && jb.yongShenElement == Element.WATER)
+
+        // 事实锚定：癸酉壬申财官运——比任何人都要高人一等、富贵发达
+        assertTrue("癸酉壬申财官运必发达", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+
+        // 南方巳午未连行方局（辛未庚午己巳）——未午巳皆随火作比劫论，破败
+        assertTrue("南方连行方局皆帮身破败", listOf(4, 5, 6).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("辛未运标注随连行方局论", jb.yuns[4].items.any { it.action.contains("随连行方局") })
+        assertTrue("乙亥甲戌印运帮之反害（顶多不死也必贫穷）", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+
+        // 老引擎对照（双引擎铁律）：七杀格身弱（成格，相神己食神制杀）
+        val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
+        assertTrue("老引擎定七杀格且身弱", geju.name == "七杀格" && geju.strength == DayStrength.WEAK)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
