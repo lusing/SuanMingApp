@@ -143,6 +143,8 @@ enum class JinBiaoQingZhuo(val chinese: String, val auspicious: Boolean?) {
     BAN_QING("半浊半清·多成多败", null),
     /** 案十二：官食财俱各有浊神克之，用神无着落——一事无成，比普通人还差 */
     QUAN_ZHUO("全浊·用神无着落，一事无成", false),
+    /** 案十四：用神在而被围死（蒸坏＋克坏）——一点救都没有，走好运只得温饱 */
+    QING_KU("清枯·病大无救，好运仅温饱", false),
 }
 
 /** 金镖门用神分析总结果 */

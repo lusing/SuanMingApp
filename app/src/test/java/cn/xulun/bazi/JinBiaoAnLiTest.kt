@@ -682,6 +682,31 @@ class JinBiaoAnLiTest {
         assertTrue("甲寅运寅亥合木用神到位——发财", jiaYin.verdict == JinBiaoVerdict.JI)
     }
 
+    // ── 案十四 · 丁卯 丁未 庚午 己卯（1987-07-20 卯时）——火炎土焦清枯，好运仅温饱 ──
+
+    @Test
+    fun `案十四 乾 丁卯丁未庚午己卯 木火两旺身弱只能用印 火炎土焦清枯 东方运一事无成`() {
+        val bazi = chart(1987, 7, 20, 5)
+        assertTrue(bazi.fullBazi.startsWith("丁卯 丁未 庚午 己卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("丙午(1991)", "乙巳(2001)", "甲辰(2011)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("木生火木克土木火两旺、庚无根——身弱", jb.strength == DayStrength.WEAK && !jb.ruoJi)
+        assertTrue("只能用印（土）——最起码土帮我扛了一下火",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.EARTH)
+        assertTrue("火炎土焦（燥土难生金）＋木克土——病太大一点救没有：清枯",
+            jb.qingZhuo == JinBiaoQingZhuo.QING_KU && jb.qingZhuoBasis.contains("火炎土焦"))
+        assertTrue("断语含温饱与一事无成", jb.duanYu.contains("温饱") && jb.duanYu.contains("一事无成"))
+
+        // 好运稍好（丙午官生印——温饱）；东方运（癸卯壬寅木地——干化于支）克用生忌，一事无成
+        assertTrue("丙午好运——稍好温饱", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("癸卯壬寅东方木运皆凶", listOf(3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

@@ -584,7 +584,15 @@ object JinBiaoCalculator {
         }
         val bingZhi = bingS2 > 0.0 && yaoS >= bingS2 && yaoS >= FOLLOW_MIN_SCORE && yaoEl !in wayJiEls
         val quanZhuo = strength == DayStrength.STRONG && !ruoJi && !wangJi && guanFei && shiFei && caiFei
+        // ── 清枯（案十四）：身弱全赖印，而日主无本气根、印被克者有根有力、生印之官又过旺蒸之 ──
+        // （火炎土焦——燥土不生金，「生金有点难，但也只能用土，最起码土帮我扛了一下火」）——病太大一点救都没有
+        val keYinEl = Element.entries.first { it.controls == yinEl }
+        val qingKu = choice.way == JinBiaoQuYongWay.HUA_SHA && strength == DayStrength.WEAK &&
+            !hasBenQiRoot(bazi, biEl) &&
+            partyScore(bazi, keYinEl) >= FOLLOW_MIN_SCORE && hasBenQiRoot(bazi, keYinEl) &&
+            guanS >= GUAN_WANG
         val qingZhuo = when {
+            qingKu -> JinBiaoQingZhuo.QING_KU
             quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO
             bingS2 == 0.0 -> JinBiaoQingZhuo.QING
             bingHua -> JinBiaoQingZhuo.QING
@@ -603,6 +611,7 @@ object JinBiaoCalculator {
             append("病神＝${bingEl.chinese}（克${yongEl.chinese}用神，党力${format(bingS2)}）；用神党力${format(yongS2)}${if (yongDeLi) "（得力）" else "（不得力）"}")
             if (jianBing != null) append("；$jianBing")
             when (qingZhuo) {
+                JinBiaoQingZhuo.QING_KU -> append("——用神${yongEl.chinese}（印）虽可取（帮身扛杀），然生印之${guanEl.chinese}过旺蒸之（火炎土焦，燥土难以生金——生金有点难，但也只能用土）、又被${keYinEl.chinese}克（党力${format(partyScore(bazi, keYinEl))}有根）——病太大，一点救都没有：**清枯之命**，走好运只得温饱，走克用生忌之运一事无成（贫穷清枯）".replace("**", ""))
                 JinBiaoQingZhuo.QUAN_ZHUO -> append("——官（${guanEl.chinese}）被${keGuan.chinese}克且财源被断、食（${shiEl.chinese}）被印克无本气根、财（${caiEl.chinese}）被比劫冲克——三者俱废，用神无着落：全浊，一事无成（学什么都不会、干什么都有人捣乱），比普通老百姓还差")
                 JinBiaoQingZhuo.QING -> append(
                     if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）"
@@ -787,6 +796,7 @@ object JinBiaoCalculator {
             }
             if (tiHuanPin != null) append(tiHuanPin)
             when (qingZhuo) {
+                JinBiaoQingZhuo.QING_KU -> append("此为清枯之命——用神被坏得太严重、一点救都没有：走好运的时候可能稍微好一点，能得个温饱；走克用神、生忌神之运（如东方木运克土生火）就要一事无成——贫穷清枯。")
                 JinBiaoQingZhuo.QUAN_ZHUO -> append("此为全浊之命——官食财俱各有浊神克之，用神无着落：一事无成（学什么学不会、干什么都有人捣乱），比普通老百姓还差——今天干乙木的事没成，明天干庚金的事，就是这样一种状态。")
                 JinBiaoQingZhuo.QING -> append("此为清命——用神有力、病神无（或已化已制）：贵命，走什么运都不怕，坏运来了也无病。")
                 JinBiaoQingZhuo.MAN_ZHUO -> append("此为满盘浊气之命——病神之力太大、毁坏用神：差命穷命，走什么运也好不了。")
