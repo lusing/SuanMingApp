@@ -327,6 +327,46 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎定建禄格且身强", geju.name.contains("建禄") && geju.strength == DayStrength.STRONG)
     }
 
+    // ── 案四 · 乾造 癸亥 癸亥 戊辰 甲寅（1983-12-06 寅时）——辰虚土随财杀，财官食皆吉唯帮身贫凶 ──
+
+    @Test
+    fun `案四 乾 癸亥癸亥戊辰甲寅 辰虚土寅亥化木弱极随财杀 帮身反害贫凶`() {
+        val bazi = chart(1983, 12, 6, 3)
+        assertTrue(bazi.fullBazi.startsWith("癸亥 癸亥 戊辰 甲寅"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("壬戌(1993)", "辛酉(2003)", "庚申(2013)", "己未(2023)"),
+        )
+
+        // 金镖门：寅亥合化木满盘财杀——辰为东方虚土（水库随水），敌势滔天辰根作废→帮扶归零
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("弱极·孤立无气（辰虚土＋寅亥化木）", jb.ruoJi && jb.ruoJiType == JinBiaoRuoJiType.GU_LI)
+        assertTrue("判据含寅亥合化木与辰虚土作废",
+            jb.ruoJiBasis!!.contains("寅亥合化木") && jb.ruoJiBasis.contains("辰为东方虚土"))
+        assertTrue("财旺独大——随财（杀一体），用神取财（水）",
+            jb.quYongWay == JinBiaoQuYongWay.SUI_CAI && jb.yongShenElement == Element.WATER)
+
+        // 随势皆吉：辛酉庚申（食生财顺）、乙卯（随财杀走官亦富贵）
+        assertTrue(
+            "走财走官走食伤皆顺皆吉",
+            listOf(1, 2, 7).all { jb.yuns[it].verdict == JinBiaoVerdict.JI },
+        )
+        assertTrue("官运标注随财杀亦富贵", jb.yuns[7].items.any { it.action.contains("随财杀") })
+
+        // 帮之反害：己未戊午丁巳丙辰（印比帮身）皆凶贫
+        assertTrue(
+            "走印比帮身运帮之反害，必大凶或贫穷",
+            listOf(3, 4, 5, 6).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG },
+        )
+        assertTrue("断语含随势而走与帮之反害", jb.duanYu.contains("随势而走") && jb.duanYu.contains("帮之反害"))
+
+        // 老引擎对照（双引擎铁律）：七杀格身弱（相神丙印化杀，成中有败）
+        val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
+        assertTrue("老引擎定七杀格且身弱", geju.name == "七杀格" && geju.strength == DayStrength.WEAK)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

@@ -46,6 +46,7 @@ object JinBiaoCalculator {
     private const val FOLLOW_MIN_SCORE = 2.0    // 从势党最低党力（财/官/食须有力方可随/解围）
     private const val YIN_QING = 2.0            // 旺极局印党力低于此值 → 印轻（方可行食伤）
     private const val QIANG_JI_YIN = 4.0        // 印党力高于此值且财官食全无 → 强极（印比叠叠同心）
+    private const val CHEN_XU_HOSTILE = 8.0     // 案四：土日主辰根作虚之敌势门槛（东方木地土虚、水库随水）
     // 案三补丁：得局＝印旺于比（印为最强方）即可化煞生印；比不弱于印则未得局、走官必大凶
 
     /** 党力计分：透干 2/字 + 支本气 1.5 + 藏干 0.5 + 月令本气再 3（日主天干自身不计） */
@@ -164,34 +165,62 @@ object JinBiaoCalculator {
         } else {
             null
         }
-        val supportSAdj = if (sanHuiJu != null) {
+        val supportSAdj = run {
             var s = 0.0
+            // 案四补丁：六合化敌之支（寅亥化木等）——成合两支之印比藏干随化走
+            val liuHeHuaBranches = mutableSetOf<EarthlyBranch>()
+            val liuHeHuaNote = mutableListOf<String>()
+            bazi.branches.forEach { b1 ->
+                val partner = LIU_HE[b1]
+                if (partner != null && partner in bazi.branches) {
+                    val key = listOf(b1.ordinal, partner.ordinal).sorted().joinToString(",")
+                    val canonical = mapOf(
+                        "0,1" to "子丑", "2,11" to "寅亥", "3,10" to "卯戌", "4,9" to "辰酉",
+                        "5,8" to "巳申", "6,7" to "午未",
+                    )[key]
+                    val huaEl = canonical?.let { LIU_HE_EL[it] }
+                    if (huaEl != null && (huaEl == caiEl || huaEl == guanEl || huaEl == shiEl)) {
+                        liuHeHuaBranches += b1
+                        if (liuHeHuaNote.none { it.startsWith(canonical) }) {
+                            liuHeHuaNote += "${canonical}合化${huaEl.chinese}——成合之支随化走"
+                        }
+                    }
+                }
+            }
+            // 案四补丁：土日主之辰根为东方虚土（辰是东方，东方属木，土要虚；又是水库随水）——
+            // 敌势滔天时辰根作废（换作戌土则是实实在在的强根，不作此论；坐午火明帮扶亦不作此论）
+            val hostileTotal = caiS + guanS + shiS
+            val chenXuVoid = dayEl == Element.EARTH && aShare < RUO_JI_SHARE && hostileTotal >= CHEN_XU_HOSTILE
             bazi.stems.forEachIndexed { i, st -> if (i != 2 && (st.element == yinEl || st.element == biEl)) s += W_TOU_GAN }
             bazi.branches.forEach { br ->
-                if (br !in juBranches) {
+                if (br !in juBranches && br !in liuHeHuaBranches && !(chenXuVoid && br == EarthlyBranch.CHEN)) {
                     if (br.element == yinEl || br.element == biEl) s += W_BEN_QI
                     else if (branchHiddenStems.getValue(br).any { it.element == yinEl || it.element == biEl }) s += W_CANG_GAN
                 }
             }
-            s
-        } else {
-            supportS
+            if (chenXuVoid && bazi.branches.contains(EarthlyBranch.CHEN)) {
+                liuHeHuaNote += "辰为东方虚土（水库随水）——敌势滔天（${format(hostileTotal)}），辰根作废"
+            }
+            Triple(s, liuHeHuaBranches, liuHeHuaNote)
         }
+        val sanHuiSanLiuHeNote = (sanHuiBetrayNote?.let { listOf(it) } ?: emptyList()) + supportSAdj.third
 
         val ruoJiType: JinBiaoRuoJiType?
         val ruoJiBasis: String?
-        if (strength == DayStrength.WEAK && supportSAdj == 0.0) {
+        if (strength == DayStrength.WEAK && supportSAdj.first == 0.0) {
             ruoJiType = JinBiaoRuoJiType.GU_LI
             ruoJiBasis = buildString {
-                if (sanHuiJu != null) {
-                    append("日元孤立无气：$sanHuiBetrayNote；局内印比之力作废，帮扶党力为 0——一点帮扶都没有")
-                    append("；印根随局叛，财坏印反成全从势——越是财坏印命主越好")
+                if (sanHuiJu != null || sanHuiSanLiuHeNote.isNotEmpty()) {
+                    append("日元孤立无气：")
+                    append(sanHuiSanLiuHeNote.joinToString("；"))
+                    append("；局内印比之力作废，帮扶党力为 0——一点帮扶都没有")
+                    append("；印根随势叛——财坏印反成全从势，越是耗泄克身命主越好")
                 } else {
                     append("日元孤立无气：四柱印比全无（党力0），一点根都没有，全是克耗泄")
                 }
             }
         } else if (strength == DayStrength.WEAK && !supportRooted &&
-            supportSAdj < WEI_FU_MAX_SCORE && aShare < RUO_JI_SHARE && attackerStrong
+            supportSAdj.first < WEI_FU_MAX_SCORE && aShare < RUO_JI_SHARE && attackerStrong
         ) {
             ruoJiType = JinBiaoRuoJiType.WEI_FU
             // 师注（案一）：藏根寄于财官食本气之支者「跟着走」——借根无用（戌中丁火随秋金走）
@@ -208,7 +237,7 @@ object JinBiaoCalculator {
                 }
             }
             ruoJiBasis = buildString {
-                append("微浮印比·自顾不暇：印比党力仅 ${format(supportSAdj)}（无本气根），生助占比 ${pct(aShare)}")
+                append("微浮印比·自顾不暇：印比党力仅 ${format(supportSAdj.first)}（无本气根），生助占比 ${pct(aShare)}")
                 if (caiS >= FOLLOW_MIN_SCORE) append("；印被财克（财党力 ${format(caiS)}）")
                 if (guanS >= FOLLOW_MIN_SCORE) append("；比劫被官杀克（官党力 ${format(guanS)}）")
                 if (hostBranches.isNotEmpty()) {
@@ -369,15 +398,34 @@ object JinBiaoCalculator {
         // 强极局（案三修订）：印星得局官杀运化煞生印，运支合入印局（三合/六合化印）则大发；
         //   财地若得食伤干通关或比劫干盖头——顺泄无直接冲克，贫寒不至大凶（大难不死必有后福）。
         // 弱极铁律（第三讲）：行比劫/印运必大凶（勿看流年——轻则破大财，重则牢狱死亡）。
+        // 争妒判据（案二）：弱极局食伤与官杀并存（各党力≥2）则打架，须财解围——非用之官/食运稍差无大碍；
+        // 无争妒（案四：财官相生一体）——走财走官走食伤皆顺皆吉，唯帮身反害。
+        val zhengDou = ruoJi && guanS >= FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE
         val zhongPingNote: Map<Element, String> = buildMap {
             if (choice.way == JinBiaoQuYongWay.CAI_JIE_WEI) {
                 put(guanEl, "解围局行此稍差无大碍")
                 put(shiEl, "解围局行此稍差无大碍")
             }
+            if (ruoJi && zhengDou && choice.way != JinBiaoQuYongWay.CAI_JIE_WEI) {
+                if (guanEl != yongEl) put(guanEl, "食官并立有争妒——行此稍差无大碍")
+                if (shiEl != yongEl) put(shiEl, "食官并立有争妒——行此稍差无大碍")
+            }
         }
         val favorNote: Map<Element, String> = buildMap {
             // 旺极顺泄：满盘比劫旺到极端，食伤顺泄不克——局中印轻则食伤运也是好运；印重则夺食不可行
             if (wangJi && !qiangJi && yinS < YIN_QING) put(shiEl, "旺极顺泄——局中印轻，食伤运也是好运")
+            // 案四：弱极随势无争妒——财官食相生一体，随财杀而走皆吉
+            if (ruoJi && !zhengDou) {
+                when (choice.way) {
+                    JinBiaoQuYongWay.SUI_CAI -> {
+                        put(guanEl, "随财杀——财生官一体，走官亦富贵显达")
+                        put(shiEl, "食生财——顺势亦吉")
+                    }
+                    JinBiaoQuYongWay.SUI_GUAN -> put(caiEl, "财生官——走财运必发达")
+                    JinBiaoQuYongWay.SUI_SHI -> put(caiEl, "从儿见财——顺势亦吉")
+                    else -> {}
+                }
+            }
         }
         val daXiongNote: Map<Element, String> = buildMap {
             if (ruoJi) {
@@ -420,6 +468,7 @@ object JinBiaoCalculator {
             if (health.damages.isNotEmpty()) append("，受${health.damages.size}处克泄耗")
             append("。")
             if (ruoJi) append("此为弱极从势之命，行比劫印地必凶（反常之判，勿以普通身弱喜扶论）。")
+            if (ruoJi && !zhengDou) append("随势而走：走财走官走食伤皆顺皆吉（富贵显达、高人一等）；唯走印比帮身运帮之反害，必大凶或贫穷。")
             if (qiangJi) {
                 append("此为强极印比同心之命，可顺而不可逆：只要运行印比，人生定可亨通显达（好八字）；若走财官之地，触怒强神大凶。")
                 if (yinDeJu) {
