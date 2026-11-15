@@ -497,6 +497,17 @@ object JinBiaoCalculator {
                         "逆者${keEl.chinese}（克${kunLunEl.chinese}止${kunLunEl.chinese}）与${kunLunEl.controls.chinese}（克${kunLunSource.chinese}逆金水之局）——顺来逆去贫之意，逆则贫命出灾",
                 )
             }
+            // 案廿四·财党杀攻身（财滋弱杀之反例）：身弱而财旺党杀克身、财先破有力之印、日主有根非从——非贫即夭
+            strength == DayStrength.WEAK && caiS >= GUAN_WANG && guanS >= FOLLOW_MIN_SCORE && yinS >= FOLLOW_MIN_SCORE &&
+                partyScore(bazi, Element.entries.first { it.controls == yinEl }) >= 1.5 * yinS &&
+                hasBenQiRoot(bazi, Element.entries.first { it.controls == yinEl }) &&
+                hasBenQiRoot(bazi, biEl) -> Choice(
+                JinBiaoQuYongWay.GONG_SHEN, biEl,
+                "财党杀攻身（案廿四·财滋弱杀反例）：财滋弱杀须日主身强用杀；此造身弱——旺财（党力${format(caiS)}）党杀攻身，" +
+                    "财先破印（${caiEl.chinese}克${yinEl.chinese}，印根被冲），财复滋杀（官党力${format(guanS)}）贴身克我，身衰撑不住——非贫即夭。" +
+                    "不能用杀（杀为忌，怕财滋杀）；坐下有根不属从格（从杀须日主无一丝根气）——只能比劫帮身或印化杀，而印已破难恃，" +
+                    "取比劫（${biEl.chinese}）敌杀撑身；印透之运能化杀稍安（然身太衰，重病难救）",
+            )
             // 第四讲·正格五理③／⑥＋基线：身弱取用
             strength == DayStrength.WEAK -> when {
                 guanS >= FOLLOW_MIN_SCORE -> Choice(
@@ -689,6 +700,8 @@ object JinBiaoCalculator {
                 put(guanEl, "解围局行此稍差无大碍")
                 put(shiEl, "解围局行此稍差无大碍")
             }
+            // 案廿四·财党杀攻身：杀地——干有印化则稍安（丙寅之属），无印则攻身
+            if (choice.way == JinBiaoQuYongWay.GONG_SHEN) put(guanEl, "杀攻身之地——干有印化则稍安（丙寅之属能化杀），仍险")
             if (ruoJi && zhengDou && choice.way != JinBiaoQuYongWay.CAI_JIE_WEI) {
                 if (guanEl != yongEl) put(guanEl, "食官并立有争妒——行此稍差无大碍")
                 if (shiEl != yongEl) put(shiEl, "食官并立有争妒——行此稍差无大碍")
@@ -771,6 +784,10 @@ object JinBiaoCalculator {
                 put(keEl, "克${yongEl.chinese}止${yongEl.chinese}——土止昆仑之水，触犯强旺之势，凶")
                 put(yongEl.controls, "克生源逆${yongEl.chinese}局——逆则贫命出灾（刑妻克子贫乏）")
             }
+            // 案廿四·财党杀攻身：财滋杀攻身——最忌
+            if (choice.way == JinBiaoQuYongWay.GONG_SHEN) {
+                put(caiEl, "财滋杀攻身——最忌（怕财来滋杀）")
+            }
             // 气象调候之反（案十六/案十八/案十九/案二十一）：寒/燥而调候神无根气——强走调候运反大凶
             if (hanJu && huoTou && !hanTiaoYouQi) {
                 put(Element.FIRE, "调候神丙火无根气（隔位之生、地支不载）——强走火运调候反一事无成（离婚克子之属）；反以不调候为美，顺其寒")
@@ -796,7 +813,7 @@ object JinBiaoCalculator {
         val bureauOverride = mutableMapOf<Int, Element>()
         for (i in 0 until maxOf(0, yunBranchesSeq.size - 2)) {
             val trio = setOf(yunBranchesSeq[i], yunBranchesSeq[i + 1], yunBranchesSeq[i + 2])
-            val juEl = SAN_HUI_JU.firstOrNull { (bs, _) -> trio.containsAll(bs) }?.second
+            val juEl = SAN_HUI_JU.firstOrNull { p -> trio.containsAll(p.first) }?.second
             if (juEl != null && (juEl == biEl || juEl == yinEl)) {
                 bureauOverride[i] = juEl
                 bureauOverride[i + 1] = juEl
@@ -838,6 +855,9 @@ object JinBiaoCalculator {
             if (ruoJi) append("此为弱极从势之命，行比劫印地必凶（反常之判，勿以普通身弱喜扶论）。")
             if (ruoJi && !zhengDou) append("随势而走：走财走官走食伤皆顺皆吉（富贵显达、高人一等）；唯走印比帮身运帮之反害，必大凶或贫穷。")
             if (choice.way == JinBiaoQuYongWay.QU_GUA) append("此为去寡之命——不用之官尽可去：违背官杀之运好运（把官杀坏得越严重越好），顺着官杀之运一世无成；日主已旺，不可用水激之。")
+            if (choice.way == JinBiaoQuYongWay.GONG_SHEN) {
+                append("此为财党杀攻身之命——旺财党杀攻身、财先破印：身衰撑不住，非贫即夭（重病之属——肾病严重放弃治疗，身太衰）；丙寅之类印透化杀之运能稍安，然难救本。")
+            }
             if (choice.way == JinBiaoQuYongWay.PEI_CAI) {
                 if (caiZhuBing) append("此为财滋弱杀格（财被劫病局）：杀弱无关系、财弱也无妨——大运解${biEl.chinese}克${caiEl.chinese}之病（${shiEl.chinese}运通关）即一样发富发贵；杀强反不宜，要克身。")
                 else append("此为身旺用官之命：帮助官的运（财生官、官杀得地）都算好运，违背官杀、制化官杀之运（食制、印化）就要差。")

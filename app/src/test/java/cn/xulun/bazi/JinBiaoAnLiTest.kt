@@ -851,6 +851,29 @@ class JinBiaoAnLiTest {
         assertTrue("戊戌西方土金凶", jb.yuns[7].verdict == JinBiaoVerdict.XIONG)
     }
 
+    // ── 案廿四 · 癸未 甲子 戊午 癸亥（2003-12-11 亥时，坤）——财党杀攻身·财滋弱杀反例 ──
+
+    @Test
+    fun `案廿四 坤 癸未甲子戊午癸亥 身弱财党杀攻身财破印 非贫即夭 丙寅化杀稍安`() {
+        val bazi = chart(2003, 12, 11, 21)
+        assertTrue(bazi.fullBazi.startsWith("癸未 甲子 戊午 癸亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("乙丑(2012)", "丙寅(2022)", "丁卯(2032)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("旺财党杀攻身＋财先破印＋坐下有根非从——财党杀攻身档",
+            jb.quYongWay == JinBiaoQuYongWay.GONG_SHEN && jb.yongShenElement == Element.EARTH)
+        assertTrue("取用依据含反例框架（身强用杀才行财滋弱杀）", jb.quYongBasis.contains("反例") && jb.quYongBasis.contains("非贫即夭"))
+        assertTrue("断语含肾病与非贫即夭", jb.duanYu.contains("非贫即夭") && jb.duanYu.contains("肾病"))
+
+        // 丙寅印透化杀——好运稍安（然身太衰难救本）；壬申财滋杀——最忌
+        assertTrue("丙寅运化杀稍安（中平）", jb.yuns[1].verdict == JinBiaoVerdict.PING)
+        assertTrue("壬申财地凶", jb.yuns[7].verdict == JinBiaoVerdict.XIONG)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
