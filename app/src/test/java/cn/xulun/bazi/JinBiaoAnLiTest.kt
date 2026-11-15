@@ -966,6 +966,27 @@ class JinBiaoAnLiTest {
         assertTrue("财不透干经官通关——清（当官富贵）", jb.qingZhuo == JinBiaoQingZhuo.QING)
     }
 
+    // ── 案廿九 · 癸亥 癸亥 丁卯 癸卯（1983-12-05 卯时，乾）——众杀混行一仁可化 ──
+
+    @Test
+    fun `案廿九 乾 癸亥癸亥丁卯癸卯 三癸两亥杀旺 坐下卯仁化杀有情 金运伤用运过即复`() {
+        val bazi = chart(1983, 12, 5, 5)
+        assertTrue(bazi.fullBazi.startsWith("癸亥 癸亥 丁卯 癸卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("壬戌(1992)", "辛酉(2002)", "庚申(2012)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("杀旺无疑、印化之以德、坐下卯——杀重用印格", jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WOOD)
+        assertTrue("众杀混行一仁可化＋运过即复入据", jb.quYongBasis.contains("众杀混行，一仁可化") && jb.quYongBasis.contains("运一过功能即复"))
+        assertTrue("坐下有情——官杀全往坐下来生拱，外界有情即富贵", jb.quYongBasis.contains("情分"))
+
+        // 庚申辛酉金克木用神被伤——事业很差（一事无成甚至贫夭）
+        assertTrue("辛酉庚申金运皆凶", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

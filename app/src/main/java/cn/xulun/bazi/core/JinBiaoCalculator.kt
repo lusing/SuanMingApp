@@ -523,6 +523,9 @@ object JinBiaoCalculator {
                         append("杀重用印格（五理③·身衰遇官煞，枭印乃可化）：官党力 ${format(guanS)} 旺克我、身弱——必用印化杀生印出格局。杀重之时要化之以德，不能用食神强制杀：「身弱制杀以威，不若化之以德」")
                         if (bazi.dayPillar.branch.element == yinEl) {
                             append("；坐下有印（${bazi.dayPillar.branch.chinese}）——没有此印，这么旺的杀就要克死日主；有坐下印就得了贵：天干杀来克也没关系，坐下印持续生即可。坐下有印就叫有情——别处之气皆向我坐下生拱（杀生印），外界有情就加分，不用管印之旺弱，一样得贵——这叫情分；原命财杀旺，一定要走帮身运才能好")
+                            if (guanS >= 10.0) {
+                                append("；众杀混行，一仁可化——纵无他印，独坐下一印亦化（官杀全往我坐下来生拱）；克印之运用神被伤——一事无成甚至贫夭，然运一过功能即复，再发富贵")
+                            }
                         }
                         if (bazi.branches.contains(EarthlyBranch.CHEN) && bazi.branches.contains(EarthlyBranch.SHEN) &&
                             bazi.branches.indexOf(EarthlyBranch.CHEN) + 1 == bazi.branches.indexOf(EarthlyBranch.SHEN)
