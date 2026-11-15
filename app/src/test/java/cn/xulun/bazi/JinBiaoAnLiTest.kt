@@ -279,12 +279,52 @@ class JinBiaoAnLiTest {
         // 事实锚定：第一步乙卯、第二步甲寅走财运没帮身——自然是好运（那个年代考上大学）
         assertTrue("卯寅两运必好运", jb.yuns[0].verdict == JinBiaoVerdict.JI && jb.yuns[1].verdict == JinBiaoVerdict.JI)
 
-        // 帮之反害：癸丑（丑印地）、辛亥庚戌（比劫）皆大凶
-        assertTrue("走帮身必大凶", listOf(2, 4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        // 帮之反害：癸丑（丑印地）、庚戌（比劫）皆大凶；辛亥运辛金无根全生亥水——干化于支以食论（案三补丁），中平
+        assertTrue("走帮身必大凶（癸丑丑印地、庚戌比劫）", listOf(2, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("辛亥运干化于支——以食伤论中平", jb.yuns[4].verdict == JinBiaoVerdict.PING &&
+            jb.yuns[4].items.any { it.action.contains("干化于支") })
 
         // 老引擎对照（双引擎铁律）
         val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
         assertTrue("老引擎定伤官格且身弱", geju.name == "伤官格" && geju.strength == DayStrength.WEAK)
+    }
+
+    // ── 案三 · 乾造 丙午 戊戌 戊午 丁巳（1966-10-26 巳时）——事实：金水运贫寒不死、寅运合印局大发 ──
+
+    @Test
+    fun `案三 乾 丙午戊戌戊午丁巳 强极印星得局 藏根作废 财地软档不死 寅卯运大发`() {
+        val bazi = chart(1966, 10, 26, 9)
+        assertTrue(bazi.fullBazi.startsWith("丙午 戊戌 戊午 丁巳"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("己亥(1971)", "庚子(1981)", "辛丑(1991)"),
+        )
+
+        // 金镖门：印比之支所藏财官食（戌中辛、巳中庚）跟着走作废——强极；印旺于比——印星得局
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("强极·印比同心", jb.wangJi && jb.wangJiType == JinBiaoWangJiType.YIN_BI_TONG_XIN)
+        assertTrue("判据含藏根作废", jb.wangJiBasis!!.contains("借根无用") && jb.wangJiBasis.contains("同心"))
+        assertTrue("得局——化煞生印、合印局则大发", jb.quYongBasis.contains("化煞生印") && jb.quYongBasis.contains("大发"))
+        assertTrue("随旺神用神取比劫（土）", jb.quYongWay == JinBiaoQuYongWay.SUI_WANG && jb.yongShenElement == Element.EARTH)
+
+        // 事实锚定：三步北方金水运家境贫寒但不至死亡（通关/盖头顺泄，大难不死必有后福）
+        assertTrue(
+            "己亥庚子财地软档——贫寒不顺，不至大凶",
+            listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG && jb.yuns[it].items.any { a -> a.action.contains("不至大凶") } },
+        )
+
+        // 事实锚定：壬寅运壬水无根全生寅木——干化于支以寅论，寅午戌合印局——发达发大财；癸卯卯戌合火——发财很大
+        assertTrue(
+            "壬寅癸卯官杀化煞合印局大发（寒门贵客）",
+            listOf(3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.JI && jb.yuns[it].items.any { a -> a.action.contains("大发") } },
+        )
+        assertTrue("壬寅运标注干化于支", jb.yuns[3].items.any { it.action.contains("干化于支") })
+
+        // 老引擎对照（双引擎铁律）：建禄格身强
+        val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
+        assertTrue("老引擎定建禄格且身强", geju.name.contains("建禄") && geju.strength == DayStrength.STRONG)
     }
 
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──

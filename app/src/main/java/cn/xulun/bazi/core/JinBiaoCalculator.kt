@@ -46,7 +46,7 @@ object JinBiaoCalculator {
     private const val FOLLOW_MIN_SCORE = 2.0    // 从势党最低党力（财/官/食须有力方可随/解围）
     private const val YIN_QING = 2.0            // 旺极局印党力低于此值 → 印轻（方可行食伤）
     private const val QIANG_JI_YIN = 4.0        // 印党力高于此值且财官食全无 → 强极（印比叠叠同心）
-    private const val YIN_DE_JU_RATIO = 2.0     // 强极局印党力≥比劫2倍 → 印星得局（方可化煞生印）
+    // 案三补丁：得局＝印旺于比（印为最强方）即可化煞生印；比不弱于印则未得局、走官必大凶
 
     /** 党力计分：透干 2/字 + 支本气 1.5 + 藏干 0.5 + 月令本气再 3（日主天干自身不计） */
     private const val W_TOU_GAN = 2.0
@@ -76,6 +76,18 @@ object JinBiaoCalculator {
         HeavenlyStem.BING to HeavenlyStem.XIN, HeavenlyStem.XIN to HeavenlyStem.BING,
         HeavenlyStem.DING to HeavenlyStem.REN, HeavenlyStem.REN to HeavenlyStem.DING,
         HeavenlyStem.WU to HeavenlyStem.GUI, HeavenlyStem.GUI to HeavenlyStem.WU,
+    )
+    private val LIU_HE = mapOf(
+        EarthlyBranch.ZI to EarthlyBranch.CHOU, EarthlyBranch.CHOU to EarthlyBranch.ZI,
+        EarthlyBranch.YIN to EarthlyBranch.HAI, EarthlyBranch.HAI to EarthlyBranch.YIN,
+        EarthlyBranch.MAO to EarthlyBranch.XU, EarthlyBranch.XU to EarthlyBranch.MAO,
+        EarthlyBranch.CHEN to EarthlyBranch.YOU, EarthlyBranch.YOU to EarthlyBranch.CHEN,
+        EarthlyBranch.SI to EarthlyBranch.SHEN, EarthlyBranch.SHEN to EarthlyBranch.SI,
+        EarthlyBranch.WU to EarthlyBranch.WEI, EarthlyBranch.WEI to EarthlyBranch.WU,
+    )
+    private val LIU_HE_EL = mapOf(
+        "子丑" to Element.EARTH, "寅亥" to Element.WOOD, "卯戌" to Element.FIRE,
+        "辰酉" to Element.METAL, "巳申" to Element.WATER, "午未" to Element.EARTH,
     )
 
     /** 五行 [x] 相对用神 [yong] 的立场与动作（第一讲吉凶总纲）。 */
@@ -210,15 +222,37 @@ object JinBiaoCalculator {
         }
         val ruoJi = ruoJiType != null
 
-        // ── 旺极/强极判定（第三讲续：四柱只有比劫（旺极）或只有印比（强极），一点克耗泄都没有） ──
-        val wangJi = strength == DayStrength.STRONG && guanS == 0.0 && caiS == 0.0 && shiS == 0.0
+        // ── 旺极/强极判定（第三讲续 + 案三补丁） ──
+        // 师注（案三）：印比本气之支所藏财官食「跟着走」——借根无用（戌中辛、巳中庚等于没有），
+        // 敌党分折减后再论财官食是否全无。
+        fun hostileScoreAdj(el: Element): Double {
+            var s = 0.0
+            bazi.stems.forEachIndexed { i, st -> if (i != 2 && st.element == el) s += W_TOU_GAN }
+            bazi.branches.forEach { br ->
+                val hostYinBi = br.element == yinEl || br.element == biEl
+                if (!hostYinBi) {
+                    if (br.element == el) s += W_BEN_QI
+                    else if (branchHiddenStems.getValue(br).any { it.element == el }) s += W_CANG_GAN
+                }
+            }
+            val mb = bazi.monthPillar.branch
+            if (mb.element == el && mb.element != yinEl && mb.element != biEl) s += W_YUE_LING
+            return s
+        }
+        val caiSAdj = hostileScoreAdj(caiEl)
+        val guanSAdj = hostileScoreAdj(guanEl)
+        val shiSAdj = hostileScoreAdj(shiEl)
+        val wangJi = strength == DayStrength.STRONG && guanSAdj == 0.0 && caiSAdj == 0.0 && shiSAdj == 0.0
         // 强极：命局印比叠叠（印亦成势），印比二人同心，可顺而不可逆
         val qiangJi = wangJi && yinS >= QIANG_JI_YIN
-        // 印星得局：印远旺于比（略有一两个比劫、剩下全是印）方可化煞生印；印比差不多或比还旺则官运必大凶
-        val yinDeJu = qiangJi && yinS >= YIN_DE_JU_RATIO * biS
+        // 印星得局（案三修订）：印旺于比（印为最强方）即可化煞生印；比不弱于印则未得局、走官必大凶
+        val yinDeJu = qiangJi && yinS > biS
         val wangJiBasis = when {
             qiangJi -> buildString {
                 append("命局印比叠叠（印党力${format(yinS)}、比劫党力${format(biS)}），绝无财官食伤——命局只存在印和比劫")
+                if (caiS + guanS + shiS > 0.0) {
+                    append("；印比之支所藏财官食跟着走——借根无用（折减后财${format(caiSAdj)}/官${format(guanSAdj)}/食${format(shiSAdj)}皆零）")
+                }
                 append("；印比二人同心，可顺而不可逆——强旺到极端（与旺极略有区别、大同小异）")
             }
             wangJi -> buildString {
@@ -273,8 +307,8 @@ object JinBiaoCalculator {
                         append("强极印比同心：命局只存在印和比劫，可顺而不可逆——用神取比劫（${biEl.chinese}）")
                         append("；只要运行印比，人生定可亨通显达（好八字）；若走财官之地，触怒强神大凶")
                         append(
-                            if (yinDeJu) "；幸印星得局（印${format(yinS)}对${format(biS)}，印远旺于比），方可化煞生印——官杀运不为大凶"
-                            else "；印未得局（印${format(yinS)}对${format(biS)}，印比相当或比还旺），走官运必大凶",
+                            if (yinDeJu) "；幸印星得局（印${format(yinS)}旺于比${format(biS)}），方可化煞生印——官杀运不为大凶，运支合入印局（三合/六合化印）则大发"
+                            else "；印未得局（印${format(yinS)}比${format(biS)}——比不弱于印），走官运必大凶",
                         )
                     } else {
                         append("旺极专旺：四柱全为比劫、无有官杀食伤（财亦无）——必然随其旺神，用神取比劫（${biEl.chinese}）")
@@ -330,20 +364,21 @@ object JinBiaoCalculator {
         val jiElements = Element.entries.filter { it.controls == yongEl || yongEl.generates == it || yongEl.controls == it }
 
         // ── 运年评断（以用神为中心；从格/专旺的反常识运断由用神立场自动成立） ──
-        // 财解围局（第三讲）：行财运亨通富贵显达；行官运/食神运稍差一点，但不会有什么大问题——中平。
-        // 旺极局（第三讲续）：局中印轻方可行走食伤——中平；官杀犯旺凶祸即至、行财地九死一生——大凶。
+        // 财解围局（第三讲）：行财运亨通；行官/食运稍差但无大碍——中平。
+        // 旺极局：局中印轻食伤顺泄也是好运；官杀犯旺、财地九死一生——大凶。
+        // 强极局（案三修订）：印星得局官杀运化煞生印，运支合入印局（三合/六合化印）则大发；
+        //   财地若得食伤干通关或比劫干盖头——顺泄无直接冲克，贫寒不至大凶（大难不死必有后福）。
         // 弱极铁律（第三讲）：行比劫/印运必大凶（勿看流年——轻则破大财，重则牢狱死亡）。
         val zhongPingNote: Map<Element, String> = buildMap {
             if (choice.way == JinBiaoQuYongWay.CAI_JIE_WEI) {
                 put(guanEl, "解围局行此稍差无大碍")
                 put(shiEl, "解围局行此稍差无大碍")
             }
-            // 强极：唯有印星得局，方可化煞生印——官杀运不为大凶
-            if (yinDeJu) put(guanEl, "印星得局，化煞生印——官杀不为大凶")
         }
-        // 旺极顺泄（第三讲续）：满盘比劫旺到极端，食伤顺泄不克——局中印轻则食伤运也是好运；印重则夺食不可行。
-        val shunXieNote: Map<Element, String> =
-            if (wangJi && !qiangJi && yinS < YIN_QING) mapOf(shiEl to "旺极顺泄——局中印轻，食伤运也是好运") else emptyMap()
+        val favorNote: Map<Element, String> = buildMap {
+            // 旺极顺泄：满盘比劫旺到极端，食伤顺泄不克——局中印轻则食伤运也是好运；印重则夺食不可行
+            if (wangJi && !qiangJi && yinS < YIN_QING) put(shiEl, "旺极顺泄——局中印轻，食伤运也是好运")
+        }
         val daXiongNote: Map<Element, String> = buildMap {
             if (ruoJi) {
                 put(biEl, "弱极行比劫印地必大凶（勿以流年论）")
@@ -357,8 +392,17 @@ object JinBiaoCalculator {
                 put(caiEl, "旺极行财地——立断九死一生（群劫争财，必出人命）")
             }
         }
+        // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
+        val rootlessEls = setOf(caiEl, guanEl, shiEl, yinEl, biEl).filter { partyScore(bazi, it) == 0.0 }.toSet()
+        val ctx = YunCtx(
+            yongEl = yongEl, biEl = biEl, yinEl = yinEl, shiEl = shiEl, caiEl = caiEl, guanEl = guanEl,
+            qiangJi = qiangJi, yinDeJu = yinDeJu,
+            favorEls = favorNote.keys, zhongPingEls = zhongPingNote.keys, daXiongEls = daXiongNote.keys,
+            rootlessEls = rootlessEls,
+            daXiongText = daXiongNote, zhongPingText = zhongPingNote, favorText = favorNote,
+        )
         val yunPings = daYun?.yuns?.map { yun ->
-            pingYun(yun.pillar, yun.startAge, yun.startYear, yongEl, zhongPingNote, shunXieNote, daXiongNote)
+            pingYun(bazi.branches, yun.pillar, yun.startAge, yun.startYear, ctx)
         }
 
         // ── 断语（一律锚定用神，禁泛断） ──
@@ -378,7 +422,12 @@ object JinBiaoCalculator {
             if (ruoJi) append("此为弱极从势之命，行比劫印地必凶（反常之判，勿以普通身弱喜扶论）。")
             if (qiangJi) {
                 append("此为强极印比同心之命，可顺而不可逆：只要运行印比，人生定可亨通显达（好八字）；若走财官之地，触怒强神大凶。")
-                if (yinDeJu) append("幸印星得局（印远旺于比），官杀运亦可化煞生印，不为大凶。") else append("印未得局（印比相当或比还旺），走官运必大凶。")
+                if (yinDeJu) {
+                    append("幸印星得局（印旺于比），官杀运亦可化煞生印——运支合入印局则大发（寒门贵客）；")
+                    append("财地若得食伤干通关或比劫干盖头，顺泄无直接冲克，贫寒不至大凶（大难不死必有后福）。")
+                } else {
+                    append("印未得局（比不弱于印），走官运必大凶。")
+                }
             } else if (wangJi) {
                 append("此为旺极专旺之命，好坏取决于大运：行比劫印绶大运即富贵自然显达（好八字）；行官杀犯旺当知凶祸即至；此格若行财地，立断九死一生。")
                 if (yinS < YIN_QING) append("局中印轻，食伤顺泄而行也是好运。") else append("局中印重，走食伤运印夺食，不可行。")
@@ -415,8 +464,8 @@ object JinBiaoCalculator {
             jiElements = jiElements,
             yuns = yunPings.orEmpty(),
             duanYu = duanYu,
-            note = "金镖门讲义已授一至三讲（弱极从势／旺极专旺／强极印比同心）：身强/中和取用、特殊格局篇待师传档；" +
-                "弱极阈值（占比$RUO_JI_SHARE、微浮党力$WEI_FU_MAX_SCORE）、强极印线（${QIANG_JI_YIN}、得局印比≥${YIN_DE_JU_RATIO}倍）为基线参数，以事实案例为准打补丁。" +
+            note = "金镖门讲义已授一至三讲（弱极从势／旺极专旺／强极印比同心）＋案一~案三补丁（藏根叛向·三会作废·印比支藏敌党作废·得局＝印旺于比·干化于支·化煞合局大发·财地软档）；" +
+                "身强/中和取用、特殊格局篇、壬寅大运专题待师传档；弱极阈值（占比$RUO_JI_SHARE、微浮党力$WEI_FU_MAX_SCORE）、强极印线$QIANG_JI_YIN 为基线参数，以事实案例为准打补丁。" +
                 "带有事实的案例须同时以老引擎（下方传统综合区块）对照分析。",
         )
     }
@@ -533,70 +582,164 @@ object JinBiaoCalculator {
         return JinBiaoYongShenHealth(level = level, rootNote = rootNote, supports = supports, damages = damages)
     }
 
-    /** 单步大运评断（含逐年流年）。[zhongPingNote]/[shunXieNote]/[daXiongNote]：中平/顺泄吉/大凶档五行及其注记。 */
+    /** 运评上下文（案三补丁：干化于支／化煞生印／财地软档）。 */
+    private class YunCtx(
+        val yongEl: Element,
+        val biEl: Element,
+        val yinEl: Element,
+        val shiEl: Element,
+        val caiEl: Element,
+        val guanEl: Element,
+        val qiangJi: Boolean,
+        val yinDeJu: Boolean,
+        val favorEls: Set<Element>,      // 作吉论之五行（旺极印轻食伤顺泄）
+        val zhongPingEls: Set<Element>,  // 作中平论之五行（解围局官/食）
+        val daXiongEls: Set<Element>,    // 作大凶论之五行（弱极比印/旺强极官财）
+        val rootlessEls: Set<Element>,   // 局中党力为零之五行（干生支则化于支）
+        val daXiongText: Map<Element, String>,
+        val zhongPingText: Map<Element, String>,
+        val favorText: Map<Element, String>,
+    )
+
+    /** 单步大运评断（含逐年流年；流年同用大运之档位口径，细分待壬寅专题）。 */
     private fun pingYun(
+        chartBranches: List<EarthlyBranch>,
         pillar: Pillar,
         startAge: Int,
         startYear: Int,
-        yongEl: Element,
-        zhongPingNote: Map<Element, String> = emptyMap(),
-        shunXieNote: Map<Element, String> = emptyMap(),
-        daXiongNote: Map<Element, String> = emptyMap(),
+        ctx: YunCtx,
     ): JinBiaoYunPing {
-        val items = listOf(
-            stanceItem("运干${pillar.stem.chinese}", pillar.stem.chinese, pillar.stem.element, yongEl, zhongPingNote, shunXieNote, daXiongNote),
-            stanceItem("运支${pillar.branch.chinese}", pillar.branch.chinese, pillar.branch.element, yongEl, zhongPingNote, shunXieNote, daXiongNote),
-        )
+        val items = ganZhiItems(chartBranches, pillar.stem, pillar.branch, ctx)
         val years = (startYear..startYear + 9).map { year ->
             val ln = Pillar.fromCycleIndex(year - 4)
-            val lnItems = listOf(
-                stanceItem("${year}${ln.stem.chinese}${ln.branch.chinese}·干", ln.stem.chinese, ln.stem.element, yongEl, zhongPingNote, shunXieNote, daXiongNote),
-                stanceItem("${year}${ln.stem.chinese}${ln.branch.chinese}·支", ln.branch.chinese, ln.branch.element, yongEl, zhongPingNote, shunXieNote, daXiongNote),
-            )
-            JinBiaoLiuNianPing(year = year, pillarName = ln.fullName, items = lnItems, verdict = verdictOf(lnItems, zhongPingNote.keys, shunXieNote.keys, daXiongNote.keys))
+            val lnItems = ganZhiItems(chartBranches, ln.stem, ln.branch, ctx)
+            JinBiaoLiuNianPing(year = year, pillarName = ln.fullName, items = lnItems, verdict = verdictOf(lnItems, ctx))
         }
         return JinBiaoYunPing(
             yunName = "${pillar.fullName}运",
             ageRange = "${startAge}-${startAge + 9}岁",
             yearRange = "$startYear-${startYear + 9}",
             items = items,
-            verdict = verdictOf(items, zhongPingNote.keys, shunXieNote.keys, daXiongNote.keys),
+            verdict = verdictOf(items, ctx),
             years = years,
         )
     }
 
-    private fun stanceItem(
-        label: String,
-        chinese: String,
-        el: Element,
-        yongEl: Element,
-        zhongPingNote: Map<Element, String> = emptyMap(),
-        shunXieNote: Map<Element, String> = emptyMap(),
-        daXiongNote: Map<Element, String> = emptyMap(),
-    ): JinBiaoStanceItem {
-        val (stance, action) = stanceAction(yongEl, el)
-        val act = when {
-            daXiongNote.containsKey(el) -> "$action·${daXiongNote.getValue(el)}"
-            shunXieNote.containsKey(el) -> "$action·${shunXieNote.getValue(el)}"
-            zhongPingNote.containsKey(el) -> "$action·${zhongPingNote.getValue(el)}"
-            else -> action
+    /** 一柱干支对用神的作用条目（大运/流年通用）。 */
+    private fun ganZhiItems(
+        chartBranches: List<EarthlyBranch>,
+        gan: HeavenlyStem,
+        zhi: EarthlyBranch,
+        ctx: YunCtx,
+    ): List<JinBiaoStanceItem> {
+        val ganEl = gan.element
+        val zhiEl = zhi.element
+
+        // 案三专题先记：八字重地支——干生支而干在局无根，干力全化于支（壬水全生寅木，壬寅以寅论）
+        if (ganEl != zhiEl && ganEl.generates == zhiEl && ganEl in ctx.rootlessEls) {
+            val (stance, act) = stanceAction(ctx.yongEl, zhiEl)
+            val huaSha = huaShaNote(zhi, zhiEl, chartBranches, ctx)
+            val note = huaSha?.second
+                ?: ctx.daXiongText[zhiEl]
+                ?: ctx.zhongPingText[zhiEl]
+                ?: ctx.favorText[zhiEl]
+            return listOf(
+                JinBiaoStanceItem(
+                    label = "干化于支",
+                    chinese = "${gan.chinese}${zhi.chinese}",
+                    element = zhiEl,
+                    stance = stance,
+                    action = "${gan.chinese}无根全生${zhi.chinese}——干化于支（八字重地支）·${act}" +
+                        (note?.let { "·$it" } ?: ""),
+                    favorOverride = huaSha?.first == true,
+                    pingOverride = huaSha != null && huaSha.first == false,
+                ),
+            )
         }
-        return JinBiaoStanceItem(label = label, chinese = chinese, element = el, stance = stance, action = act)
+
+        return listOf(ganEl to gan.chinese, zhiEl to zhi.chinese).mapIndexed { i, (el, chinese) ->
+            val (stance, act) = stanceAction(ctx.yongEl, el)
+            // 强极财地软档（案三）：财支得食伤干通关（泄旺生财）或比劫干盖头（干克支）——顺泄无直接冲克
+            if (i == 1 && el == ctx.caiEl && ctx.qiangJi && ganEl != zhiEl &&
+                (ganEl == ctx.shiEl || ganEl == ctx.biEl)
+            ) {
+                val soften = if (ganEl == ctx.shiEl) "${gan.chinese}干通关（泄旺生财）" else "${gan.chinese}干盖头（干克支）"
+                JinBiaoStanceItem(
+                    label = "运支",
+                    chinese = chinese,
+                    element = el,
+                    stance = stance,
+                    action = "$act·$soften——顺泄无直接冲克，贫寒不顺，不至大凶（大难不死必有后福）",
+                )
+            } else {
+                val huaSha = if (el == ctx.guanEl) huaShaNote(zhi, el, chartBranches, ctx, isStem = i == 0) else null
+                val note = huaSha?.second
+                    ?: ctx.daXiongText[el]
+                    ?: ctx.zhongPingText[el]
+                    ?: ctx.favorText[el]
+                JinBiaoStanceItem(
+                    label = if (i == 0) "运干" else "运支",
+                    chinese = chinese,
+                    element = el,
+                    stance = stance,
+                    action = act + (note?.let { "·$it" } ?: ""),
+                    favorOverride = huaSha?.first == true,
+                    pingOverride = huaSha != null && huaSha.first == false,
+                )
+            }
+        }
     }
 
-    private fun verdictOf(
-        items: List<JinBiaoStanceItem>,
-        zhongPingEl: Set<Element> = emptySet(),
-        shunXieEl: Set<Element> = emptySet(),
-        daXiongEl: Set<Element> = emptySet(),
-    ): JinBiaoVerdict = when {
-        // 大凶优先（弱极行比劫印「地」、旺极犯旺/行财——干支混见亦凶，勿以流年论）
-        items.any { it.element in daXiongEl } -> JinBiaoVerdict.XIONG
-        // 财解围局：行官运/食神运皆「稍微差一点，但不会有什么大问题」——中平
-        items.any { it.element in zhongPingEl } -> JinBiaoVerdict.PING
-        // 旺极顺泄（局中印轻）：食伤顺旺而泄也是好运
-        items.all { it.stance == JinBiaoStance.BANG || it.element in shunXieEl } -> JinBiaoVerdict.JI
-        items.all { it.stance == JinBiaoStance.SUN || it.element in shunXieEl } -> JinBiaoVerdict.XIONG
+    /**
+     * 强极得局之官杀（干支同论）——化煞生印：支合入印局→作吉大发；干/未合之支→作中平不为大凶。
+     * 返回 (作吉?, 注记)；非此档返回 null。
+     */
+    private fun huaShaNote(
+        branch: EarthlyBranch,
+        el: Element,
+        chartBranches: List<EarthlyBranch>,
+        ctx: YunCtx,
+        isStem: Boolean = false,
+    ): Pair<Boolean, String>? {
+        if (!ctx.qiangJi || !ctx.yinDeJu || el != ctx.guanEl) return null
+        return if (!isStem && heYinJu(branch, chartBranches, ctx.yinEl)) {
+            true to "印星得局，化煞生印——${branch.chinese}合入印局，大发（寒门贵客）"
+        } else {
+            false to "印星得局，化煞生印——官来生印，不为大凶"
+        }
+    }
+
+    /** 运支与局中支成三合印局（寅午戌火/申子辰水/亥卯未木/巳酉丑金）或六合化印。 */
+    private fun heYinJu(branch: EarthlyBranch, chartBranches: List<EarthlyBranch>, yinEl: Element): Boolean {
+        val sanHe = listOf(
+            setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+            setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+            setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+            setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+        )
+        sanHe.forEach { (trio, el) ->
+            if (branch in trio && trio.all { it == branch || it in chartBranches } && el == yinEl) return true
+        }
+        val partner = LIU_HE[branch]
+        if (partner != null && partner in chartBranches) {
+            val key = listOf(branch.ordinal, partner.ordinal).sorted().joinToString(",")
+            val canonical = mapOf(
+                "0,1" to "子丑", "2,11" to "寅亥", "3,10" to "卯戌", "4,9" to "辰酉",
+                "5,8" to "巳申", "6,7" to "午未",
+            )[key]
+            if (canonical != null && LIU_HE_EL[canonical] == yinEl) return true
+        }
+        return false
+    }
+
+    private fun verdictOf(items: List<JinBiaoStanceItem>, ctx: YunCtx): JinBiaoVerdict = when {
+        // 大凶优先（弱极行比劫印「地」、旺强极犯旺/行财——干支混见亦凶，勿以流年论）
+        items.any { it.element in ctx.daXiongEls } -> JinBiaoVerdict.XIONG
+        // 中平档：解围局官/食、化煞生印未合局
+        items.any { it.pingOverride || it.element in ctx.zhongPingEls } -> JinBiaoVerdict.PING
+        // 吉档：全帮扶，或顺泄/化煞合局之作吉覆写
+        items.all { it.stance == JinBiaoStance.BANG || it.favorOverride || it.element in ctx.favorEls } -> JinBiaoVerdict.JI
+        items.all { it.stance == JinBiaoStance.SUN || it.favorOverride || it.element in ctx.favorEls } -> JinBiaoVerdict.XIONG
         else -> JinBiaoVerdict.GAN_ZHI_FEN
     }
 

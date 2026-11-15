@@ -80,8 +80,12 @@ data class JinBiaoStanceItem(
     val chinese: String,    // 干支汉字
     val element: Element,
     val stance: JinBiaoStance,
-    /** 生用神/同用神/泄用神/耗用神/克用神 */
+    /** 生用神/同用神/泄用神/耗用神/克用神（＋档位注记） */
     val action: String,
+    /** 案三补丁：强极得局官杀运化煞生印且运支合入印局——作吉论 */
+    val favorOverride: Boolean = false,
+    /** 案三补丁：强极得局官杀运化煞生印（未合局）——作中平论 */
+    val pingOverride: Boolean = false,
 )
 
 /** 用神健全度明细 */
