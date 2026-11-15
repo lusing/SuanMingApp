@@ -255,6 +255,38 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎定正财格且身弱", geju.name == "正财格" && geju.strength == DayStrength.WEAK)
     }
 
+    // ── 案二 · 乾造 癸卯 丙辰 庚寅 丁亥（1963-04-17 亥时）——事实：卯寅财运中考上大学 ──
+
+    @Test
+    fun `案二 乾 癸卯丙辰庚寅丁亥 三会叛局弱极 财解围 卯寅两运好运考上大学 帮身必凶`() {
+        val bazi = chart(1963, 4, 17, 21)
+        assertTrue(bazi.fullBazi.startsWith("癸卯 丙辰 庚寅 丁亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("乙卯(1967)", "甲寅(1977)", "癸丑(1987)", "壬子(1997)"),
+        )
+
+        // 金镖门：春天寅卯辰三会木局——辰印跟着木走等于没有，一点帮扶都没有
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("弱极·孤立无气（三会叛局）", jb.ruoJi && jb.ruoJiType == JinBiaoRuoJiType.GU_LI)
+        assertTrue("判据含三会叛向与财坏印反好", jb.ruoJiBasis!!.contains("三会") && jb.ruoJiBasis.contains("财坏印"))
+        assertTrue("财官食并存、伤官制杀——财和解食伤与官杀，用神取财（木）",
+            jb.quYongWay == JinBiaoQuYongWay.CAI_JIE_WEI && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含通关机理（气静和平）", jb.quYongBasis.contains("气静和平"))
+
+        // 事实锚定：第一步乙卯、第二步甲寅走财运没帮身——自然是好运（那个年代考上大学）
+        assertTrue("卯寅两运必好运", jb.yuns[0].verdict == JinBiaoVerdict.JI && jb.yuns[1].verdict == JinBiaoVerdict.JI)
+
+        // 帮之反害：癸丑（丑印地）、辛亥庚戌（比劫）皆大凶
+        assertTrue("走帮身必大凶", listOf(2, 4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+
+        // 老引擎对照（双引擎铁律）
+        val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
+        assertTrue("老引擎定伤官格且身弱", geju.name == "伤官格" && geju.strength == DayStrength.WEAK)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

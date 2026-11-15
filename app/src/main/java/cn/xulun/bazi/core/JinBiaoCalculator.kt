@@ -55,6 +55,13 @@ object JinBiaoCalculator {
     private const val W_YUE_LING = 3.0
 
     // ── 关系表 ──
+    /** 三会局（寅卯辰东方木／巳午未南方火／申酉戌西方金／亥子丑北方水） */
+    private val SAN_HUI_JU = listOf(
+        setOf(EarthlyBranch.YIN, EarthlyBranch.MAO, EarthlyBranch.CHEN) to Element.WOOD,
+        setOf(EarthlyBranch.SI, EarthlyBranch.WU, EarthlyBranch.WEI) to Element.FIRE,
+        setOf(EarthlyBranch.SHEN, EarthlyBranch.YOU, EarthlyBranch.XU) to Element.METAL,
+        setOf(EarthlyBranch.HAI, EarthlyBranch.ZI, EarthlyBranch.CHOU) to Element.WATER,
+    )
     private val LIU_CHONG = mapOf(
         EarthlyBranch.ZI to EarthlyBranch.WU, EarthlyBranch.WU to EarthlyBranch.ZI,
         EarthlyBranch.CHOU to EarthlyBranch.WEI, EarthlyBranch.WEI to EarthlyBranch.CHOU,
@@ -134,13 +141,45 @@ object JinBiaoCalculator {
         val shiS = partyScore(bazi, shiEl)
         val attackerStrong = caiS >= FOLLOW_MIN_SCORE || guanS >= FOLLOW_MIN_SCORE
 
+        // 师传补丁（案二）：地支三会成局——局中之支随局走（辰随春木走，等于没有），
+        // 局内各支的一切印比之力（本气/藏干）作废，帮扶归零。
+        val sanHuiJu: Pair<Set<EarthlyBranch>, Element>? =
+            SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }
+        val juBranches = sanHuiJu?.first ?: emptySet()
+        val sanHuiBetrayNote = if (sanHuiJu != null) {
+            val juEl = sanHuiJu.second
+            "地支${juBranches.joinToString("") { it.chinese }}三会${juEl.chinese}局——局中之支随局走（等于没有）"
+        } else {
+            null
+        }
+        val supportSAdj = if (sanHuiJu != null) {
+            var s = 0.0
+            bazi.stems.forEachIndexed { i, st -> if (i != 2 && (st.element == yinEl || st.element == biEl)) s += W_TOU_GAN }
+            bazi.branches.forEach { br ->
+                if (br !in juBranches) {
+                    if (br.element == yinEl || br.element == biEl) s += W_BEN_QI
+                    else if (branchHiddenStems.getValue(br).any { it.element == yinEl || it.element == biEl }) s += W_CANG_GAN
+                }
+            }
+            s
+        } else {
+            supportS
+        }
+
         val ruoJiType: JinBiaoRuoJiType?
         val ruoJiBasis: String?
-        if (strength == DayStrength.WEAK && supportS == 0.0) {
+        if (strength == DayStrength.WEAK && supportSAdj == 0.0) {
             ruoJiType = JinBiaoRuoJiType.GU_LI
-            ruoJiBasis = "日元孤立无气：四柱印比全无（党力0），一点根都没有，全是克耗泄"
+            ruoJiBasis = buildString {
+                if (sanHuiJu != null) {
+                    append("日元孤立无气：$sanHuiBetrayNote；局内印比之力作废，帮扶党力为 0——一点帮扶都没有")
+                    append("；印根随局叛，财坏印反成全从势——越是财坏印命主越好")
+                } else {
+                    append("日元孤立无气：四柱印比全无（党力0），一点根都没有，全是克耗泄")
+                }
+            }
         } else if (strength == DayStrength.WEAK && !supportRooted &&
-            supportS < WEI_FU_MAX_SCORE && aShare < RUO_JI_SHARE && attackerStrong
+            supportSAdj < WEI_FU_MAX_SCORE && aShare < RUO_JI_SHARE && attackerStrong
         ) {
             ruoJiType = JinBiaoRuoJiType.WEI_FU
             // 师注（案一）：藏根寄于财官食本气之支者「跟着走」——借根无用（戌中丁火随秋金走）
@@ -157,7 +196,7 @@ object JinBiaoCalculator {
                 }
             }
             ruoJiBasis = buildString {
-                append("微浮印比·自顾不暇：印比党力仅 ${format(supportS)}（无本气根），生助占比 ${pct(aShare)}")
+                append("微浮印比·自顾不暇：印比党力仅 ${format(supportSAdj)}（无本气根），生助占比 ${pct(aShare)}")
                 if (caiS >= FOLLOW_MIN_SCORE) append("；印被财克（财党力 ${format(caiS)}）")
                 if (guanS >= FOLLOW_MIN_SCORE) append("；比劫被官杀克（官党力 ${format(guanS)}）")
                 if (hostBranches.isNotEmpty()) {
@@ -209,7 +248,8 @@ object JinBiaoCalculator {
                 when {
                     !dominant && sorted.any { it.first == "财星" } -> Choice(
                         JinBiaoQuYongWay.CAI_JIE_WEI, caiEl,
-                        "弱极从势：财官食神并存而无独旺（$detail），必要财运解围，用神取财星——行财运解围而发",
+                        "弱极从势：财官食神并存而无独旺（$detail），必要财运解围，用神取财星——" +
+                            "财能和解食伤与官杀之关系（食伤生财、财生官杀），命局无争妒之风，气静和平；行财运解围而发",
                     )
                     top.first == "官杀" -> Choice(
                         JinBiaoQuYongWay.SUI_GUAN, guanEl,
