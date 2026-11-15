@@ -377,11 +377,17 @@ object JinBiaoCalculator {
                     )
                 }
             }
-            // 第四讲·正格五理①②④⑥＋基线：身强取用
+            // 第四讲·正格五理①②④⑥＋第五讲去寡＋基线：身强取用
             strength == DayStrength.STRONG -> when {
                 guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
                     "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
+                )
+                // 第五讲·去寡：日主通根得气身旺＋官杀无根气＋财无根不生官＋有食伤——官反以去之为美
+                guanS < FOLLOW_MIN_SCORE && caiS < FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.QU_GUA, shiEl,
+                    "推命经第二段·去寡：日主通根得气身旺，官杀无根气（官党力${format(guanS)}）、财无根不生官（财党力${format(caiS)}）、有食伤（党力${format(shiS)}）——" +
+                        "官星之寡反以去之为美，用神取食伤（去官之星）；走官运补官反差运，走去官之运反好运（与官配财之分水岭在财之根气）",
                 )
                 yinS >= YIN_HUAI -> Choice(
                     JinBiaoQuYongWay.HUAI_YIN, caiEl,
@@ -455,6 +461,8 @@ object JinBiaoCalculator {
         val favorNote: Map<Element, String> = buildMap {
             // 旺极顺泄：满盘比劫旺到极端，食伤顺泄不克——局中印轻则食伤运也是好运；印重则夺食不可行
             if (wangJi && !qiangJi && yinS < YIN_QING) put(shiEl, "旺极顺泄——局中印轻，食伤运也是好运")
+            // 第五讲·去寡：食伤＝去官之星，行此好运
+            if (choice.way == JinBiaoQuYongWay.QU_GUA) put(shiEl, "去官之星到位——去寡局行此好运")
             // 案四：弱极随势无争妒——财官食相生一体，随财杀而走皆吉
             if (ruoJi && !zhengDou) {
                 when (choice.way) {
@@ -480,6 +488,8 @@ object JinBiaoCalculator {
                 put(guanEl, "运行官杀犯旺——必然大凶（严重的死亡，轻微的牢狱）")
                 put(caiEl, "旺极行财地——立断九死一生（群劫争财，必出人命）")
             }
+            // 第五讲·去寡：官星之寡反以去之为美——补官反差
+            if (choice.way == JinBiaoQuYongWay.QU_GUA) put(guanEl, "去寡局行官运补寡官——反差运")
         }
         // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
         val rootlessEls = setOf(caiEl, guanEl, shiEl, yinEl, biEl).filter { partyScore(bazi, it) == 0.0 }.toSet()

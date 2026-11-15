@@ -460,7 +460,7 @@ class JinBiaoAnLiTest {
                                 r.quYongWay in setOf(
                                     JinBiaoQuYongWay.YI_SHEN, JinBiaoQuYongWay.ZHI_SHA,
                                     JinBiaoQuYongWay.PEI_CAI, JinBiaoQuYongWay.HUAI_YIN,
-                                    JinBiaoQuYongWay.SHI_SHENG_CAI,
+                                    JinBiaoQuYongWay.SHI_SHENG_CAI, JinBiaoQuYongWay.QU_GUA,
                                 ) && category in setOf("财星", "官杀", "食伤"),
                             )
                         }
