@@ -141,7 +141,7 @@ class JinBiaoAnLiTest {
         assertTrue("壬子印运——运行比劫印绶富贵自然显达", r.yuns[0].verdict == JinBiaoVerdict.JI)
         assertTrue("甲寅比劫运——同旺神亦吉", r.yuns[1].verdict == JinBiaoVerdict.JI)
         assertTrue("庚申官运——运行官杀犯旺必然大凶", r.yuns[2].verdict == JinBiaoVerdict.XIONG)
-        assertTrue("官杀运标注必然大凶", r.yuns[2].items.all { it.action.contains("必然大凶") })
+        assertTrue("官杀运标注犯旺", r.yuns[2].items.any { it.action.contains("犯旺") })
         assertTrue("戊辰财运——立断九死一生", r.yuns[3].verdict == JinBiaoVerdict.XIONG)
         assertTrue("财运标注九死一生", r.yuns[3].items.all { it.action.contains("九死一生") })
     }
@@ -160,7 +160,7 @@ class JinBiaoAnLiTest {
         val yinQing = JinBiaoCalculator.analyze(syntheticWangJi(yinZhong = false), daYun)
         assertTrue("局中印重——走食伤运印夺食，不可行（凶）", yinZhong.yuns[0].verdict == JinBiaoVerdict.XIONG)
         assertTrue("局中印轻——食伤顺泄而行也是好运（吉）", yinQing.yuns[0].verdict == JinBiaoVerdict.JI)
-        assertTrue("印轻食伤运标注顺泄好运", yinQing.yuns[0].items.all { it.action.contains("食伤运也是好运") })
+        assertTrue("印轻食伤运标注顺泄可行", yinQing.yuns[0].items.all { it.action.contains("泄") })
     }
 
     /** 合成盘·强极：[deJu] 印星得局（壬子 癸亥 甲子 壬子——剩下一两个比劫全是印）/ 未得局（甲子 乙卯 甲子 甲子——印比相当）。 */
@@ -199,8 +199,8 @@ class JinBiaoAnLiTest {
         assertTrue("命局印比叠叠、绝无财官食伤——强极印比同心", r.wangJi && r.wangJiType == JinBiaoWangJiType.YIN_BI_TONG_XIN)
         assertTrue("随其旺神——用神取比劫", r.quYongWay == JinBiaoQuYongWay.SUI_WANG)
         assertTrue("运行印比——人生定可亨通显达", r.yuns[0].verdict == JinBiaoVerdict.JI)
-        assertTrue("印星得局——化煞生印，官杀运不为大凶（中平）", r.yuns[1].verdict == JinBiaoVerdict.PING)
-        assertTrue("官杀运标注化煞生印", r.yuns[1].items.all { it.action.contains("化煞生印") })
+        assertTrue("庚干直克身——犯旺激怒（命一：官干无合化之路，虽得局亦不可触犯）", r.yuns[1].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("申支无合局——化煞生印之注仍存", r.yuns[1].items.any { it.action.contains("化煞生印") })
         assertTrue("行财地——财克印犯印之旺，大凶", r.yuns[2].verdict == JinBiaoVerdict.XIONG)
         assertTrue("财运标注犯印之旺出大灾", r.yuns[2].items.all { it.action.contains("犯印之旺") })
     }
@@ -487,6 +487,82 @@ class JinBiaoAnLiTest {
         // 老引擎对照（双引擎铁律）：建禄格成格——相神壬食伤生财，两派同取壬水
         val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
         assertTrue("老引擎定建禄格", geju.name.contains("建禄"))
+    }
+
+    // ── 基础模型三命（第五讲口授：权在一人／昆仑之水）──
+
+    @Test
+    fun `命一 四庚辰 权在一人 天干可泄地支被夺 官干犯旺激怒 顺者当官丙运死`() {
+        val bazi = BaziResult(
+            yearPillar = Pillar(HeavenlyStem.GENG, EarthlyBranch.CHEN),
+            monthPillar = Pillar(HeavenlyStem.GENG, EarthlyBranch.CHEN),
+            dayPillar = Pillar(HeavenlyStem.GENG, EarthlyBranch.CHEN),
+            hourPillar = Pillar(HeavenlyStem.GENG, EarthlyBranch.CHEN),
+            birthDateTime = LocalDateTime.of(2000, 4, 15, 8, 0),
+        )
+        val daYun = DaYunInfo(
+            forward = true, qiYunText = "合成",
+            startDate = LocalDateTime.of(2004, 4, 15, 0, 0),
+            yuns = listOf(
+                DaYun(Pillar(HeavenlyStem.REN, EarthlyBranch.SHEN), 4, 2004, emptyList()),  // 壬申：食干泄＋比支顺
+                DaYun(Pillar(HeavenlyStem.BING, EarthlyBranch.XU), 14, 2014, emptyList()),   // 丙戌：官干犯旺
+            ),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("天干全比地支全印无一丝财官——旺强极", jb.wangJi)
+        assertTrue("壬申——天干泄秀可行＋西方比地顺：好运（当官）", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("壬干标注天干泄秀", jb.yuns[0].items.any { it.action.contains("天干泄秀") })
+        assertTrue("丙戌——官干直克犯旺激怒：大凶（丙运死亡）", jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("丙干标注犯旺激怒", jb.yuns[1].items.any { it.action.contains("犯旺激怒") })
+    }
+
+    @Test
+    fun `命二 癸酉甲子庚辰甲申 金水两旺顺金水 昆仑之势 火土逆则刑妻克子贫乏`() {
+        val bazi = BaziResult(
+            yearPillar = Pillar(HeavenlyStem.GUI, EarthlyBranch.YOU),
+            monthPillar = Pillar(HeavenlyStem.JIA, EarthlyBranch.ZI),
+            dayPillar = Pillar(HeavenlyStem.GENG, EarthlyBranch.CHEN),
+            hourPillar = Pillar(HeavenlyStem.JIA, EarthlyBranch.SHEN),
+            birthDateTime = LocalDateTime.of(1993, 12, 15, 15, 0),
+        )
+        val daYun = DaYunInfo(
+            forward = true, qiYunText = "合成",
+            startDate = LocalDateTime.of(1997, 12, 15, 0, 0),
+            yuns = listOf(
+                DaYun(Pillar(HeavenlyStem.GENG, EarthlyBranch.ZI), 4, 1997, emptyList()),  // 庚子：金水顺
+                DaYun(Pillar(HeavenlyStem.WU, EarthlyBranch.WU), 14, 2007, emptyList()),    // 戊午：火土逆
+            ),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("申子辰三合水局配酉金生源——昆仑之水顺金水", jb.quYongWay == JinBiaoQuYongWay.KUN_LUN && jb.yongShenElement == Element.WATER)
+        assertTrue("庚子金水顺——当官好运", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("戊午火土逆——刑妻克子贫乏", jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
+    }
+
+    @Test
+    fun `命三 壬子辛亥乙亥丙子 地支四水配金昆仑 不以日主论 木顺好运火逆倾家荡产`() {
+        val bazi = BaziResult(
+            yearPillar = Pillar(HeavenlyStem.REN, EarthlyBranch.ZI),
+            monthPillar = Pillar(HeavenlyStem.XIN, EarthlyBranch.HAI),
+            dayPillar = Pillar(HeavenlyStem.YI, EarthlyBranch.HAI),
+            hourPillar = Pillar(HeavenlyStem.BING, EarthlyBranch.ZI),
+            birthDateTime = LocalDateTime.of(1972, 11, 15, 0, 0),
+        )
+        val daYun = DaYunInfo(
+            forward = true, qiYunText = "合成",
+            startDate = LocalDateTime.of(1976, 11, 15, 0, 0),
+            yuns = listOf(
+                DaYun(Pillar(HeavenlyStem.GENG, EarthlyBranch.ZI), 4, 1976, emptyList()),  // 庚子：金水顺
+                DaYun(Pillar(HeavenlyStem.JIA, EarthlyBranch.YIN), 14, 1986, emptyList()), // 甲寅：东方木顺泄
+                DaYun(Pillar(HeavenlyStem.WU, EarthlyBranch.WU), 24, 1996, emptyList()),   // 戊午：火土逆
+            ),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("地支四水配辛金——昆仑之水，围绕水说事", jb.quYongWay == JinBiaoQuYongWay.KUN_LUN && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含昆仑与不以日主论", jb.quYongBasis.contains("昆仑") && jb.quYongBasis.contains("不一定指日主"))
+        assertTrue("庚子金水顺、甲寅东方木顺泄——皆好运", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("甲寅标注顺泄", jb.yuns[1].items.any { it.action.contains("顺泄") })
+        assertTrue("戊午火土逆——倾家荡产", jb.yuns[2].verdict == JinBiaoVerdict.XIONG)
     }
 
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──

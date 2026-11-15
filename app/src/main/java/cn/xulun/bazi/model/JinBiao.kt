@@ -75,6 +75,8 @@ enum class JinBiaoQuYongWay(val chinese: String) {
     SHI_SHENG_CAI("身旺无官·食伤泄秀"),
     /** 身强：克泄耗取有力者（基线，细则待师传） */
     YI_SHEN("身强抑泄"),
+    /** 第五讲命三·昆仑得局：地支一五行得局（≥3支）配生源（如四水配金生）——不以日主论，顺其势 */
+    KUN_LUN("昆仑得局·顺其势"),
     /** 中和：暂取月令主力（基线，细则待师传） */
     ZHONG_HE("中和取月令"),
 }
@@ -98,6 +100,8 @@ data class JinBiaoStanceItem(
     val favorOverride: Boolean = false,
     /** 案三补丁：强极得局官杀运化煞生印（未合局）——作中平论 */
     val pingOverride: Boolean = false,
+    /** 命一补丁：旺强极局官杀干直克身——犯旺激怒，权在一人不可触犯，作凶论 */
+    val xiongOverride: Boolean = false,
 )
 
 /** 用神健全度明细 */
