@@ -707,6 +707,103 @@ class JinBiaoAnLiTest {
         assertTrue("癸卯壬寅东方木运皆凶", listOf(3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
     }
 
+    // ── 案十五~案二十一 · 气象调候七例（寒甚要暖有气，暖至要寒有根） ──
+
+    @Test
+    fun `案十五 甲申丙子庚辰戊寅 偏寒丙火有气 用丙调候 木火运当官`() {
+        val bazi = chart(2004, 12, 27, 3)
+        assertTrue(bazi.fullBazi.startsWith("甲申 丙子 庚辰 戊寅"))
+        val daYun = DaYunInfo(true, "合成", LocalDateTime.of(2008, 12, 27, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.JIA, EarthlyBranch.YIN), 4, 2008, emptyList()),
+            DaYun(Pillar(HeavenlyStem.REN, EarthlyBranch.ZI), 14, 2018, emptyList()),
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("偏寒而丙有气（甲贴丙＋寅根）——气象调候用火", jb.quYongWay == JinBiaoQuYongWay.TIAO_HOU && jb.yongShenElement == Element.FIRE)
+        assertTrue("得气之寒遇暖而发——甲寅木火运当官", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("壬子金水助寒——差", jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
+    }
+
+    @Test
+    fun `案十六 己酉丙子庚辰甲申 辰化金甲隔位不载 丙无气不调候 火运一事无成`() {
+        val bazi = BaziResult(
+            Pillar(HeavenlyStem.JI, EarthlyBranch.YOU), Pillar(HeavenlyStem.BING, EarthlyBranch.ZI),
+            Pillar(HeavenlyStem.GENG, EarthlyBranch.CHEN), Pillar(HeavenlyStem.JIA, EarthlyBranch.SHEN),
+            LocalDateTime.of(1969, 12, 20, 3, 0),
+        )
+        val daYun = DaYunInfo(false, "合成", LocalDateTime.of(1973, 12, 20, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.DING, EarthlyBranch.SI), 4, 1973, emptyList()),
+            DaYun(Pillar(HeavenlyStem.REN, EarthlyBranch.SHEN), 14, 1983, emptyList()),
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("金局夺辰、甲隔位地支不载——丙无气，不顺调候顺金水", jb.quYongWay == JinBiaoQuYongWay.KUN_LUN && jb.yongShenElement == Element.WATER)
+        assertTrue("走丁巳助火调候——一事无成", jb.yuns[0].verdict == JinBiaoVerdict.XIONG && jb.yuns[0].items.any { it.action.contains("不调候") })
+        assertTrue("金水顺——好运", jb.yuns[1].verdict == JinBiaoVerdict.JI)
+    }
+
+    @Test
+    fun `案十七 丁丑丙午丙午壬辰 仲夏燥壬水有根 可调候 金水运当官富贵`() {
+        val bazi = chart(1997, 7, 3, 7)
+        assertTrue(bazi.fullBazi.startsWith("丁丑 丙午 丙午 壬辰"))
+        val daYun = DaYunInfo(true, "合成", LocalDateTime.of(2001, 7, 3, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.GENG, EarthlyBranch.SHEN), 4, 2001, emptyList()),
+            DaYun(Pillar(HeavenlyStem.BING, EarthlyBranch.WU), 14, 2011, emptyList()),
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("燥而壬坐辰库有根——可调候用水", jb.quYongWay == JinBiaoQuYongWay.TIAO_HOU && jb.yongShenElement == Element.WATER)
+        assertTrue("庚申金水运——当官富贵（得大气象）", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("丙午火运——凶", jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
+    }
+
+    @Test
+    fun `案十八 癸未丁巳丙午癸巳 癸水无根不能调 走水运犯火之旺一败如灰`() {
+        val bazi = chart(2003, 6, 2, 9)
+        assertTrue(bazi.fullBazi.startsWith("癸未 丁巳 丙午 癸巳"))
+        val daYun = DaYunInfo(true, "合成", LocalDateTime.of(2007, 6, 2, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.REN, EarthlyBranch.ZI), 4, 2007, emptyList()),
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("壬子水运——调候神无根强走犯火之旺：一败如灰",
+            jb.yuns[0].verdict == JinBiaoVerdict.XIONG && jb.yuns[0].items.any { it.action.contains("犯火之旺") })
+    }
+
+    @Test
+    fun `案十九 丙辰辛丑庚辰丙子 暖无气 走丙午丁未离婚克子一事无成`() {
+        val bazi = chart(1977, 1, 23, 0)
+        assertTrue(bazi.fullBazi.startsWith("丙辰 辛丑 庚辰 丙子"))
+        val daYun = DaYunInfo(false, "合成", LocalDateTime.of(1981, 1, 23, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.BING, EarthlyBranch.WU), 4, 1981, emptyList()),
+            DaYun(Pillar(HeavenlyStem.DING, EarthlyBranch.WEI), 14, 1991, emptyList()),
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("丙火地支无根无气（隔位无贴生）——强走火运调候反凶",
+            listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG } &&
+                jb.yuns.all { it.items.any { i -> i.action.contains("不调候") } })
+    }
+
+    @Test
+    fun `案二十 丁未壬子庚戌丙戌 戌戌火库藏丁 火有根气可以调候`() {
+        val bazi = chart(1967, 12, 12, 19)
+        assertTrue(bazi.fullBazi.startsWith("丁未 壬子 庚戌 丙戌"))
+        val jb = JinBiaoCalculator.analyze(bazi, null)
+        assertTrue("子月寒而丁丙透、戌戌未藏丁——火有根气，气象调候用火",
+            jb.quYongWay == JinBiaoQuYongWay.TIAO_HOU && jb.yongShenElement == Element.FIRE)
+    }
+
+    @Test
+    fun `案二十一 癸未丁巳甲午庚午 癸无根不能调 走壬水犯火之旺死`() {
+        val bazi = BaziResult(
+            Pillar(HeavenlyStem.GUI, EarthlyBranch.WEI), Pillar(HeavenlyStem.DING, EarthlyBranch.SI),
+            Pillar(HeavenlyStem.JIA, EarthlyBranch.WU), Pillar(HeavenlyStem.GENG, EarthlyBranch.WU),
+            LocalDateTime.of(2003, 5, 21, 11, 0),
+        )
+        val daYun = DaYunInfo(true, "合成", LocalDateTime.of(2007, 5, 21, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.REN, EarthlyBranch.SHEN), 4, 2007, emptyList()),
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("巳午未三会火局叛向——甲木无援从儿，顺火之势", jb.quYongWay == JinBiaoQuYongWay.SUI_SHI && jb.yongShenElement == Element.FIRE)
+        assertTrue("壬申水运——犯火之旺：死", jb.yuns[0].verdict == JinBiaoVerdict.XIONG && jb.yuns[0].items.any { it.action.contains("犯火之旺") })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

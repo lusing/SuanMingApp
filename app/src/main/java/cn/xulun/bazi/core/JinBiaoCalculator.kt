@@ -355,6 +355,36 @@ object JinBiaoCalculator {
             (bazi.stems.any { it.element == kunLunSource } ||
                 bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == kunLunSource } })
 
+        // ── 气象调候（案十五~案二十一）：寒甚要暖有气，暖至要寒有根 ──
+        // 寒面（冬水/水局）调候神＝丙火：有气（火藏根（寅中丙/戌中丁亦是根），或透木紧贴生火且木有地载）→用之暖局；
+        // 无气（隔位之生、地支不载、无藏根）→调候运反大凶（一事无成/离婚克子），反以不调候为美（顺其寒）。
+        // 燥面（夏火/火局）调候神＝壬水：有根（辰丑申中壬癸藏根亦是）→可调候（走金水当官富贵）；
+        // 无根（全火土）→走水运犯旺（一败如灰/死）。纯局（地支全水/全火——权在一人）不可调只可顺。
+        val hanJu = bazi.monthPillar.branch.let {
+            it == EarthlyBranch.HAI || it == EarthlyBranch.ZI ||
+                (it == EarthlyBranch.CHOU && bazi.branches.any { b -> b.element == Element.WATER })
+        }
+        val zaoJu = bazi.monthPillar.branch == EarthlyBranch.SI || bazi.monthPillar.branch == EarthlyBranch.WU
+        val huoCangGen = bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == Element.FIRE } }
+        val shuiCangGen = bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == Element.WATER } }
+        val muZai = bazi.branches.any { br -> br.element == Element.WOOD || branchHiddenStems.getValue(br).any { it.element == Element.WOOD } }
+        val jinJuDuo = sanHeJuEl == Element.METAL || branchCount.getValue(Element.METAL) >= 3
+        val muTieHuo = run {
+            val muIdx = bazi.stems.indexOfFirst { it.element == Element.WOOD }
+            muIdx >= 0 && bazi.stems.getOrNull(muIdx + 1)?.element == Element.FIRE
+        }
+        // 调候神不含日主本干（案十：丙日主非调候神）
+        val huoTou = bazi.stems.filterIndexed { i, _ -> i != 2 }.any { it.element == Element.FIRE }
+        val shuiTou = bazi.stems.filterIndexed { i, _ -> i != 2 }.any { it.element == Element.WATER }
+        val hanTiaoYouQi = huoTou && (huoCangGen || (muTieHuo && muZai && !jinJuDuo))
+        val zaoTiaoYouQi = shuiTou && shuiCangGen
+        val tiaoHouEl: Element? = when {
+            hanJu && hanTiaoYouQi && !bazi.branches.all { it.element == Element.WATER } -> Element.FIRE
+            zaoJu && zaoTiaoYouQi && !bazi.branches.all { it.element == Element.FIRE } -> Element.WATER
+            else -> null
+        }
+        val tiaoHou = tiaoHouEl != null
+
         // ── 弱中变旺（案十定则）：弱基调而日主坐贴身印比本气／月干印比透，
         //    且月令敌党之支被「印比之支」贴身泄克（官被泄克转衰——财克印不算，印伤更弱）——弱中变旺。
         //    非弱极／非旺极时翻转（案四弱极不受此扰；档五十一财克印月仍身弱用印）。
@@ -438,6 +468,17 @@ object JinBiaoCalculator {
                         append("；运行比劫印绶富贵自然显达；运行官杀犯旺，当知凶祸即至；此格若行财地，立断九死一生")
                         append(if (yinS < YIN_QING) "；局中印轻（${format(yinS)}），食伤顺泄而行也是好运" else "；局中印重（${format(yinS)}），走食伤运印夺食，不可行")
                     }
+                },
+            )
+            // 第六讲·气象调候（案十五/案十七/案二十）：先不按生克、按气象论——得气之寒遇暖而发
+            tiaoHou -> Choice(
+                JinBiaoQuYongWay.TIAO_HOU, tiaoHouEl!!,
+                if (tiaoHouEl == Element.FIRE) {
+                    "气象调候（案十五/案二十）：局偏寒（冬水）——先不按生克、按气象论：寒就要用丙火暖局，能不能暖全凭丙火有没有气。" +
+                        "丙火${if (huoCangGen) "地支有藏根（寅中丙、戌中丁亦是根）" else "有透干之木紧贴相生且木有地载"}——有气（即使无根，有甲木贴身生之亦算有气），故用丙火调候：**得气之寒，遇暖而发**——走木火之运吉（当官）".replace("**", "")
+                } else {
+                    "气象调候（案十七）：局燥（夏火）——暖虽至要寒有根：壬水坐库有根（辰丑申中壬癸藏根亦是），可以调候——" +
+                        "走金水之运当官富贵，得了大气象"
                 },
             )
             // 第五讲命三·昆仑得局：顺其势（不以日主论，围绕得局之五行说事）
@@ -712,6 +753,13 @@ object JinBiaoCalculator {
                 val keEl = Element.entries.first { it.controls == yongEl }
                 put(keEl, "克${yongEl.chinese}止${yongEl.chinese}——土止昆仑之水，触犯强旺之势，凶")
                 put(yongEl.controls, "克生源逆${yongEl.chinese}局——逆则贫命出灾（刑妻克子贫乏）")
+            }
+            // 气象调候之反（案十六/案十八/案十九/案二十一）：寒/燥而调候神无根气——强走调候运反大凶
+            if (hanJu && huoTou && !hanTiaoYouQi) {
+                put(Element.FIRE, "调候神丙火无根气（隔位之生、地支不载）——强走火运调候反一事无成（离婚克子之属）；反以不调候为美，顺其寒")
+            }
+            if (zaoJu && shuiTou && !zaoTiaoYouQi) {
+                put(Element.WATER, "调候神壬癸水无根——强走水运调候即犯火之旺（一败如灰，甚者死）；反以不调候为美，顺其燥")
             }
         }
         // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
