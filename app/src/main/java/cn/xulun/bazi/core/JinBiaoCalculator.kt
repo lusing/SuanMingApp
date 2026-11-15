@@ -462,6 +462,10 @@ object JinBiaoCalculator {
                             else "；印党力 ${format(yinS)} 得力可化",
                         )
                         if (yinS == 0.0) append("；局中印不现，以虚神论（运岁补入之时为应）")
+                        if (shiS >= 6.0) {
+                            append("；伤官（食伤）得局（党力${format(shiS)}）泄身过甚——旺中变弱：印两用，一疏其土（克食伤之局）二生日主")
+                            append("；局中拱合待成者（如亥未拱木待卯），运支补成印局即用神得局大发")
+                        }
                     },
                 )
                 shiS >= FOLLOW_MIN_SCORE -> Choice(
@@ -710,6 +714,7 @@ object JinBiaoCalculator {
             favorEls = favorNote.keys, zhongPingEls = zhongPingNote.keys, daXiongEls = daXiongNote.keys,
             rootlessEls = rootlessEls,
             daXiongText = daXiongNote, zhongPingText = zhongPingNote, favorText = favorNote,
+            yongYin = choice.way == JinBiaoQuYongWay.HUA_SHA,
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -955,6 +960,7 @@ object JinBiaoCalculator {
         val daXiongText: Map<Element, String>,
         val zhongPingText: Map<Element, String>,
         val favorText: Map<Element, String>,
+        val yongYin: Boolean = false,        // 身弱用印局（HUA_SHA）——运支合补印局大发（案十三）
     )
 
     /** 单步大运评断（含逐年流年；流年同用大运之档位口径，细分待壬寅专题）。[zhiBureauEl]＝连行方局之印比覆写；[forceJI]＝用印局印比连行方局整运作吉。 */
@@ -1037,6 +1043,8 @@ object JinBiaoCalculator {
                 )
             } else {
                 val huaSha = if (el == ctx.guanEl) huaShaNote(zhi, el, chartBranches, ctx, isStem = i == 0) else null
+                // 案十三：身弱用印局——运支与局支合补印局（三合/六合化印，如亥未拱木逢卯）——用神得局大发
+                val yinJuBu = i == 1 && ctx.yongYin && el == ctx.yinEl && heYinJu(zhi, chartBranches, ctx.yinEl)
                 // 命一补丁·旺强极干支分论：
                 // ① 官杀干直克身——犯旺激怒，权在一人不可触犯（虽得局亦然——丙运死亡）
                 // ② 食伤干泄可行（天干无印不夺——顺其旺势）；食伤支印重则枭夺（地支不能泄）
@@ -1047,6 +1055,7 @@ object JinBiaoCalculator {
                     fanWang -> "官干直克身——犯旺激怒（权在一人，不可触犯），大凶"
                     zhiDuo -> "地支食伤被印枭夺——地支不能泄，凶"
                     shunXieGan -> "天干泄秀（天干无${ctx.yinEl.chinese}不夺）——顺其旺势，可行"
+                    yinJuBu -> "运支合补印局（${zhi.chinese}与局支合成${ctx.yinEl.chinese}局）——亥卯未拱局补成，用神得局大发"
                     huaSha != null -> huaSha.second
                     else -> ctx.daXiongText[el] ?: ctx.zhongPingText[el]
                         ?: (if (!(ctx.wangJiFamily && ctx.yinZhong && el == ctx.shiEl)) ctx.favorText[el] else null)
@@ -1057,7 +1066,7 @@ object JinBiaoCalculator {
                     element = el,
                     stance = stance,
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
-                    favorOverride = huaSha?.first == true || shunXieGan,
+                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu,
                     pingOverride = huaSha != null && huaSha.first == false,
                     xiongOverride = fanWang || zhiDuo,
                 )

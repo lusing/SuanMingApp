@@ -657,6 +657,31 @@ class JinBiaoAnLiTest {
         assertTrue("断语一事无成", jb.duanYu.contains("一事无成"))
     }
 
+    // ── 案十三 · 癸亥 己未 丙午 己丑（1983-07-17 丑时）——伤官得局旺中变弱，用木两用，卯寅补拱发财 ──
+
+    @Test
+    fun `案十三 乾 癸亥己未丙午己丑 伤官得局旺中变弱 用木疏土生身 乙卯甲寅补拱发财`() {
+        val bazi = chart(1983, 7, 17, 1)
+        assertTrue(bazi.fullBazi.startsWith("癸亥 己未 丙午 己丑"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("戊午", "丁巳", "丙辰").mapIndexed { i, s -> s + "(${daYun.yuns[i].startYear})" }.map { it },
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("未月季土晦火、伤官得局泄过——旺中变弱（身弱）", jb.strength == DayStrength.WEAK && !jb.ruoJi)
+        assertTrue("用神取印木——两用：疏土克伤官局＋生身",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WOOD && jb.quYongBasis.contains("印两用"))
+
+        // 事实锚定：乙卯甲寅运——亥卯未拱局补成／寅亥合木，用神木到，发财
+        val yunNames = jb.yuns.map { it.yunName }
+        val yiMao = jb.yuns[yunNames.indexOfFirst { it.startsWith("乙卯") }]
+        val jiaYin = jb.yuns[yunNames.indexOfFirst { it.startsWith("甲寅") }]
+        assertTrue("乙卯运亥卯未补成印局大发", yiMao.verdict == JinBiaoVerdict.JI && yiMao.items.any { it.action.contains("补成") })
+        assertTrue("甲寅运寅亥合木用神到位——发财", jiaYin.verdict == JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
