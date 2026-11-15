@@ -358,7 +358,10 @@ object JinBiaoCalculator {
         val kunLunSource = kunLunEl?.let { el -> Element.entries.first { g -> g.generates == el } }
         val kunLun = kunLunEl != null && kunLunSource != null &&
             (bazi.stems.any { it.element == kunLunSource } ||
-                bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == kunLunSource } })
+                bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == kunLunSource } }) &&
+            // 案廿七裁：得局之五行恰为日主之印、坐下印本气、官杀旺克身——杀重用印优先于昆仑
+            // （辰贴申必生金、申子辰会局被夺——拱局辩证；印在坐下化旺杀即有情）
+            !(kunLunEl == yinEl && bazi.dayPillar.branch.element == yinEl && guanS >= GUAN_WANG)
 
         // ── 气象调候（案十五~案二十一）：寒甚要暖有气，暖至要寒有根 ──
         // 寒面（冬水/水局）调候神＝丙火：有气（火藏根（寅中丙/戌中丁亦是根），或透木紧贴生火且木有地载）→用之暖局；
@@ -517,7 +520,12 @@ object JinBiaoCalculator {
                     buildString {
                         append("杀重用印格（五理③·身衰遇官煞，枭印乃可化）：官党力 ${format(guanS)} 旺克我、身弱——必用印化杀生印出格局。杀重之时要化之以德，不能用食神强制杀：「身弱制杀以威，不若化之以德」")
                         if (bazi.dayPillar.branch.element == yinEl) {
-                            append("；**坐下有印（${bazi.dayPillar.branch.chinese}）——不用坐下午火的话，这么旺的杀就要克死日主；有坐下印就得了贵**：天干杀来克也没关系，坐下印持续生即可。坐下有印就叫有情——别处之气皆向我坐下生拱（杀生印），外界有情就加分，不用管印之旺弱，一样得贵——这叫情分；原命财杀旺，一定要走帮身运才能好".replace("**", ""))
+                            append("；坐下有印（${bazi.dayPillar.branch.chinese}）——没有此印，这么旺的杀就要克死日主；有坐下印就得了贵：天干杀来克也没关系，坐下印持续生即可。坐下有印就叫有情——别处之气皆向我坐下生拱（杀生印），外界有情就加分，不用管印之旺弱，一样得贵——这叫情分；原命财杀旺，一定要走帮身运才能好")
+                        }
+                        if (bazi.branches.contains(EarthlyBranch.CHEN) && bazi.branches.contains(EarthlyBranch.SHEN) &&
+                            bazi.branches.indexOf(EarthlyBranch.CHEN) + 1 == bazi.branches.indexOf(EarthlyBranch.SHEN)
+                        ) {
+                            append("；拱局辩证：辰贴申必生金——土生金是谁也改变不了的规矩，会局被夺不以局论（杀旺取坐下印为用）；寒木向阳——有火时层次更高，但非必需：没有水命主就被旺杀克死，有水即成格，没火一样当官（调候不用刻意考虑）")
                         }
                         append(
                             if (yinS < FOLLOW_MIN_SCORE) "；印弱（党力${format(yinS)}）——印可配官煞，官杀生印为喜"

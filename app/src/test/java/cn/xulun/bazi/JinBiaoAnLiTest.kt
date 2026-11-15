@@ -920,6 +920,30 @@ class JinBiaoAnLiTest {
         assertTrue("丁巳火运帮身吉、庚申金党杀凶", jb.yuns[0].verdict == JinBiaoVerdict.JI && jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
     }
 
+    // ── 案廿七 · 戊辰 庚申 甲子 甲子（1988-09-06 早子时，乾）——杀重用印·昆仑让位 ──
+
+    @Test
+    fun `案廿七 乾 戊辰庚申甲子甲子 辰贴申生金会局被夺 杀重用印坐下印有情`() {
+        val bazi = chart(1988, 9, 6, 0)
+        assertTrue(bazi.fullBazi.startsWith("戊辰 庚申 甲子 甲子"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("辛酉(1989)", "壬戌(1999)", "癸亥(2009)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("申月金旺辰生金——金旺杀重、甲无载身弱（干多不如支重）", jb.strength == DayStrength.WEAK)
+        assertTrue("杀重用印格（昆仑让位）——用神取坐下印（子水）",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含辰贴申生金与情分与寒木向阳",
+            jb.quYongBasis.contains("辰贴申必生金") && jb.quYongBasis.contains("情分") && jb.quYongBasis.contains("寒木向阳"))
+
+        // 金水帮印身皆吉（没火一样当官）；土止水凶
+        assertTrue("辛酉癸亥甲子金水运皆吉", listOf(0, 2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("壬戌运戌土止水——非吉（干支分论偏凶）", jb.yuns[1].verdict != JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
