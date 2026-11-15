@@ -987,6 +987,29 @@ class JinBiaoAnLiTest {
         assertTrue("辛酉庚申金运皆凶", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
     }
 
+    // ── 案三十 · 戊辰 戊午 壬辰 甲辰（1988-06-06 辰时，乾）——食神制杀·日主通根三辰 ──
+
+    @Test
+    fun `案三十 乾 戊辰戊午壬辰甲辰 壬通根三辰有根气 食神制杀成格 妙在无金一将当关`() {
+        val bazi = chart(1988, 6, 6, 7)
+        assertTrue(bazi.fullBazi.startsWith("戊辰 戊午 壬辰 甲辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { it.pillar.fullName } == listOf("己未", "庚申", "辛酉"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("日主通根三个辰（辰中癸）＝有根气，不弱极——足以食神制杀卫身成格",
+            !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含通根三支、妙在无金、一将当关",
+            jb.quYongBasis.contains("通根三支") && jb.quYongBasis.contains("妙在无金") && jb.quYongBasis.contains("一将当关"))
+        assertTrue("有根气豁免替换贫穷断", !jb.duanYu.contains("贫穷汉"))
+
+        // 妙在无金——金运（庚申辛酉）印夺食反凶；水木帮身食皆吉
+        assertTrue("庚申辛酉金运（印夺食）皆凶", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("癸亥甲子乙丑水木运皆吉", listOf(4, 5, 6).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

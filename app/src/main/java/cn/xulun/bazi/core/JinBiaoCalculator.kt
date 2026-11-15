@@ -248,7 +248,9 @@ object JinBiaoCalculator {
                 }
             }
         } else if (strength == DayStrength.WEAK && !supportRooted &&
-            supportSAdj.first < WEI_FU_MAX_SCORE && aShare < RUO_JI_SHARE && attackerStrong
+            supportSAdj.first < WEI_FU_MAX_SCORE && aShare < RUO_JI_SHARE && attackerStrong &&
+            // 案三十：日主藏干通根≥3处（三辰中癸）＝有根气，不弱极——足以食神制杀卫身
+            bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } < 3
         ) {
             ruoJiType = JinBiaoRuoJiType.WEI_FU
             // 师注（案一）：藏根寄于财官食本气之支者「跟着走」——借根无用（戌中丁火随秋金走）
@@ -515,8 +517,18 @@ object JinBiaoCalculator {
                     "不能用杀（杀为忌，怕财滋杀）；坐下有根不属从格（从杀须日主无一丝根气）——只能比劫帮身或印化杀，而印已破难恃，" +
                     "取比劫（${biEl.chinese}）敌杀撑身；印透之运能化杀稍安（然身太衰，重病难救）",
             )
-            // 第四讲·正格五理③／⑥＋基线：身弱取用
+            // 第四讲·正格五理③／⑥＋案三十食神制杀＋基线：身弱取用
             strength == DayStrength.WEAK -> when {
+                // 案三十·食神制杀格（弱而根气足）：日主藏干通根≥3处（辰中癸×3）＝有根气，
+                // 杀旺、食伤有力、妙在无印（印不夺食）——足以食神制杀卫身成格；辰乃木之余气，一将当关群凶自败。
+                // 无根气而食神强制＝克泄交加，更穷困比普通人还差（贫夭负债）。
+                guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE &&
+                    bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 3 -> Choice(
+                    JinBiaoQuYongWay.ZHI_SHA, shiEl,
+                    "食神制杀格（案三十·弱而根气足）：日主藏干通根三支（${bazi.branches.filter { br -> branchHiddenStems.getValue(br).any { it.element == biEl } }.joinToString("") { it.chinese }}）——日主有根气，承载得动食神之泄，足以食神制杀卫身，成格。" +
+                        "杀党力${format(guanS)}旺、食伤党力${format(shiS)}；妙在无${yinEl.chinese}（印不夺食）；辰乃木之余气（食神得余气根）——一将当关，群凶自败。" +
+                        "条件铁律：日主必须有根气——无根气还用食神强制官杀，叫克泄交加，更差更穷困，比普通人还要差（贫夭负债）",
+                )
                 guanS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.HUA_SHA, yinEl,
                     buildString {
@@ -577,12 +589,15 @@ object JinBiaoCalculator {
                         "财无透干无本气根不生官（党力${format(caiS)}）、食伤有力（党力${format(shiS)}）——去官发富贵，用神取食伤（去官之星）；" +
                         "违背官杀之运好运、坏官越重越好；顺着官杀（生官／官星得地得运）则一世无成",
                 )
-                // 五理④制杀：官有本气根之真旺、而财不滋官（无财则官无可倚）——伤食显其威；
+                // 食神制杀格（五理④＋第七讲条件一）：官有本气根之真旺、财不滋官、食伤有力——
+                // 且【日主必须有根气】：食神泄体，无根无气承载不了食神之泄，食神制杀反贫夭负债；得根气则制杀得富贵。
                 // 弱中变旺局之官已被泄克转衰——衰官不制而用之（案十）
                 !ruoZhongBianWang && guanS >= GUAN_WANG && hasBenQiRoot(bazi, guanEl) &&
-                    caiS < FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                    caiS < FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE &&
+                    hasBenQiRoot(bazi, biEl) -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
-                    "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
+                    "食神制杀格（条件一·日主有根气）：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}。" +
+                        "食神制杀条件第一条：日主必须有根气——无根无气者承载不了食神之泄（食神制杀反贫夭、负债）；日主得根气，承载得动食神之泄，食神制杀得富贵",
                 )
                 // 五理②/第七讲·财滋弱杀（案八/案十/案廿二）：身旺而官在局（官废不能用——案十二）——有财有官杀优先用杀
                 guanS >= FOLLOW_MIN_SCORE && !guanFei -> Choice(
@@ -870,7 +885,9 @@ object JinBiaoCalculator {
         // 第四讲·五理⑤：二者如替换，定是贫穷汉——原局结构即呈反用之象者
         val tiHuanPin: String? = when {
             !ruoJi && !wangJi && strength == DayStrength.WEAK &&
-                shiS >= FOLLOW_MIN_SCORE && guanS >= FOLLOW_MIN_SCORE && yinS < 1.0 ->
+                shiS >= FOLLOW_MIN_SCORE && guanS >= FOLLOW_MIN_SCORE && yinS < 1.0 &&
+                // 案三十豁免：日主藏干通根≥3处＝有根气，食神制杀成格（贫穷断仅限无根气强制）
+                bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } < 3 ->
                 "五理之五·二者如替换：身弱不用印化杀、原局反以食伤强制动杀（食${format(shiS)}官${format(guanS)}而印仅${format(yinS)}）——克泄交加、弃日主于不顾，定是贫穷汉。"
             !ruoJi && !wangJi && strength == DayStrength.STRONG &&
                 guanS >= FOLLOW_MIN_SCORE && yinS >= FOLLOW_MIN_SCORE && shiS < 1.0 ->
