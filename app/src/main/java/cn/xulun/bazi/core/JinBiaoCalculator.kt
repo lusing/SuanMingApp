@@ -379,18 +379,29 @@ object JinBiaoCalculator {
             }
             // 第四讲·正格五理①②④⑥＋第五讲去寡＋基线：身强取用
             strength == DayStrength.STRONG -> when {
-                // 第五讲·去寡（案七定序）：地支主宰——官杀天干再多，地支不载即寡，优先于制杀。
-                // 局中须有寡官（虚透或余气藏）＋日主通根身旺＋官财皆无本气根＋有食伤——不用之官尽可去。
-                guanS > 0.0 && !hasBenQiRoot(bazi, guanEl) && !hasBenQiRoot(bazi, caiEl) && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                // 第五讲·去寡（案七/案八定则）：三条件差一点都不对，必须全部满足——
+                // ①日主强旺；②官杀真无根气（地支藏干全无官杀——天干再透两见亦寡）且财不生官（财无透干无本气根）；③有食伤。
+                // 案八之诫：官杀地支藏干有字（丑中癸）或财透干来生（庚）——条件②破，即非去寡，转用官。
+                guanS > 0.0 &&
+                    bazi.branches.none { br -> branchHiddenStems.getValue(br).any { it.element == guanEl } } &&
+                    bazi.stems.none { it.element == caiEl } && !hasBenQiRoot(bazi, caiEl) &&
+                    shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.QU_GUA, shiEl,
-                    "推命经第二段·去寡（案七）：看力量首先看地支、地支主宰——日主坐下印绶通根年月身旺；" +
-                        "官杀（党力${format(guanS)}，天干再透两见）地支不载即无根气，被火土克、被木泄——无用之官，「不用之官尽可去」；" +
-                        "财无本气根不生官（党力${format(caiS)}）、食伤有力（党力${format(shiS)}）——去官发富贵，用神取食伤（去官之星）；" +
+                    "推命经第二段·去寡（案七）：看力量首先看地支、地支主宰——日主通根得气身旺；" +
+                        "官杀（党力${format(guanS)}，天干再透两见）地支藏干全无——不载即无根气，无用之官，「不用之官尽可去」；" +
+                        "财无透干无本气根不生官（党力${format(caiS)}）、食伤有力（党力${format(shiS)}）——去官发富贵，用神取食伤（去官之星）；" +
                         "违背官杀之运好运、坏官越重越好；顺着官杀（生官／官星得地得运）则一世无成",
                 )
-                guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                // 五理④制杀：官有本气根之真旺、而财不滋官（无财则官无可倚）——伤食显其威
+                guanS >= GUAN_WANG && hasBenQiRoot(bazi, guanEl) && caiS < FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
-                    "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺（有本气根）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
+                    "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
+                )
+                // 五理②用官（案八实证）：身旺官杀有根气（藏干有字）而财来生——官杀混杂克我反好，命主用官
+                guanS >= FOLLOW_MIN_SCORE && caiS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.PEI_CAI, guanEl,
+                    "正格五理·官煞依乎财（案八）：身旺通根，官杀（党力${format(guanS)}）地支有根气、财（党力${format(caiS)}）透而生官——" +
+                        "身旺官杀混杂来克我反好，又财来生，命主用官；走帮助官的运（财运、官杀运）都算好运，走违背官杀、制化官杀的运就要差",
                 )
                 yinS >= YIN_HUAI -> Choice(
                     JinBiaoQuYongWay.HUAI_YIN, caiEl,
@@ -469,6 +480,8 @@ object JinBiaoCalculator {
                 put(shiEl, "去官之星到位——违背官杀，好运")
                 put(yinEl, "印泄官生身——身旺食伤亦旺，好运")
             }
+            // 五理②用官（案八）：财生官——帮官之运好运
+            if (choice.way == JinBiaoQuYongWay.PEI_CAI) put(caiEl, "财生官——帮官之运，好运")
             // 案四：弱极随势无争妒——财官食相生一体，随财杀而走皆吉
             if (ruoJi && !zhengDou) {
                 when (choice.way) {
@@ -496,6 +509,11 @@ object JinBiaoCalculator {
             }
             // 第五讲·去寡：不用之官尽可去——官星得地（得运）反一事无成
             if (choice.way == JinBiaoQuYongWay.QU_GUA) put(guanEl, "官星得地得禄——顺着官杀，一世无成（不用之官尽可去）")
+            // 五理②用官（案八）：制化官杀之运——违背官，差运
+            if (choice.way == JinBiaoQuYongWay.PEI_CAI) {
+                put(shiEl, "食伤制官——违背官杀，差运")
+                put(yinEl, "印泄官化官——违背官杀，差运")
+            }
         }
         // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
         val rootlessEls = setOf(caiEl, guanEl, shiEl, yinEl, biEl).filter { partyScore(bazi, it) == 0.0 }.toSet()
@@ -550,6 +568,7 @@ object JinBiaoCalculator {
             if (ruoJi) append("此为弱极从势之命，行比劫印地必凶（反常之判，勿以普通身弱喜扶论）。")
             if (ruoJi && !zhengDou) append("随势而走：走财走官走食伤皆顺皆吉（富贵显达、高人一等）；唯走印比帮身运帮之反害，必大凶或贫穷。")
             if (choice.way == JinBiaoQuYongWay.QU_GUA) append("此为去寡之命——不用之官尽可去：违背官杀之运好运（把官杀坏得越严重越好），顺着官杀之运一世无成；日主已旺，不可用水激之。")
+            if (choice.way == JinBiaoQuYongWay.PEI_CAI) append("此为身旺用官之命：帮助官的运（财生官、官杀得地）都算好运，违背官杀、制化官杀之运（食制、印化）就要差。")
             if (qiangJi) {
                 append("此为强极印比同心之命，可顺而不可逆：只要运行印比，人生定可亨通显达（好八字）；若走财官之地，触怒强神大凶。")
                 if (yinDeJu) {

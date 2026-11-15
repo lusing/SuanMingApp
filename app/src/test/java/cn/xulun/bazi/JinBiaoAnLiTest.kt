@@ -430,6 +430,34 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎定伤官格", geju.name == "伤官格")
     }
 
+    // ── 案八 · 乾造 癸丑 壬戌 丙午 庚寅（1973-11-06 寅时）——官有根财生非去寡，身旺用官 ──
+
+    @Test
+    fun `案八 乾 癸丑壬戌丙午庚寅 三条件差一点都不对 官有根财生则用官 财官运好制化运差`() {
+        val bazi = chart(1973, 11, 6, 3)
+        assertTrue(bazi.fullBazi.startsWith("癸丑 壬戌 丙午 庚寅"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("辛酉(1983)", "庚申(1993)", "己未(2003)"),
+        )
+
+        // 金镖门：寅午戌三合坐刃身旺，但丑中癸＝官有根气、庚财透干来生——条件②破，非去寡
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("身旺用官（配财），用神取官杀（水）", jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含案八实证（帮官好运/制化差）", jb.quYongBasis.contains("案八") && jb.quYongBasis.contains("帮助官的运"))
+
+        // 事实锚定：辛酉庚申财生官——帮官之运好运；己未之后食制印化比劫皆违官——差运
+        assertTrue("辛酉庚申财运皆吉", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("己未起六步制化比皆凶", (2..7).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("断语含身旺用官总纲", jb.duanYu.contains("帮助官的运"))
+
+        // 老引擎对照（双引擎铁律）：食神格（成格，相神庚食神生财）——财运两派同吉，官运金镖门独吉
+        val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
+        assertTrue("老引擎定食神格", geju.name == "食神格")
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
