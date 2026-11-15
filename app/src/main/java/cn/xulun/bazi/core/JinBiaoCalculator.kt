@@ -10,6 +10,7 @@ import cn.xulun.bazi.model.JinBiaoDaiMing
 import cn.xulun.bazi.model.JinBiaoHealth
 import cn.xulun.bazi.model.JinBiaoLiuNianPing
 import cn.xulun.bazi.model.JinBiaoQuYongWay
+import cn.xulun.bazi.model.JinBiaoQingZhuo
 import cn.xulun.bazi.model.JinBiaoResult
 import cn.xulun.bazi.model.JinBiaoRuoJiType
 import cn.xulun.bazi.model.JinBiaoStance
@@ -141,10 +142,35 @@ object JinBiaoCalculator {
             JinBiaoDaiMing("克我", guanEl, "官杀"),
         )
 
-        // ── 日主强弱（复用老引擎八步法，作定位参考） ──
+        // ── 日主强弱（案十定则·金镖门三步法）：①看季节——月令党属经三会/三合/六合叛向调整，
+        //    归印比→身旺基调，归财官食→身弱基调；②地支作用已入调整；③据以取用。
+        //    八步法得分仅作参考（其扶抑口径与金镖门月令党属口径有别——案十两法分歧即教学点）。
         val strengthResult = StrengthEngine.analyze(bazi)
-        val strength = strengthResult.verdict
         val aShare = strengthResult.aSide / (strengthResult.aSide + strengthResult.bSide)
+        val monthBranch = bazi.monthPillar.branch
+        val monthElAdj: Element = run {
+            SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }
+                ?.takeIf { monthBranch in it.first }?.let { return@run it.second }
+            listOf(
+                setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+            ).firstOrNull { (trio, _) -> trio.all { it in bazi.branches } }
+                ?.takeIf { monthBranch in it.first }?.let { return@run it.second }
+            val partner = LIU_HE[monthBranch]
+            if (partner != null && partner in bazi.branches) {
+                val key = listOf(monthBranch.ordinal, partner.ordinal).sorted().joinToString(",")
+                val canonical = mapOf(
+                    "0,1" to "子丑", "2,11" to "寅亥", "3,10" to "卯戌", "4,9" to "辰酉",
+                    "5,8" to "巳申", "6,7" to "午未",
+                )[key]
+                LIU_HE_EL[canonical] ?: monthBranch.element
+            } else {
+                monthBranch.element
+            }
+        }
+        var strength = if (monthElAdj == biEl || monthElAdj == yinEl) DayStrength.STRONG else DayStrength.WEAK
 
         // ── 弱极判定（第三讲两型） ──
         val yinS = partyScore(bazi, yinEl)
@@ -280,6 +306,11 @@ object JinBiaoCalculator {
         val shiSAdj = hostileScoreAdj(shiEl)
         // 命一补丁：天干全印比＋敌党折减全零——权在一人，径判旺强极（日主无根不受生之假生不扰此局）
         val stemsYinBiOnly = bazi.stems.all { it.element == biEl || it.element == yinEl }
+        // 无根修正（档五十一）：印月身旺基调，然日主无比劫本气根而敌党不弱——仍以身弱论（杀重身轻用印）
+        if (strength == DayStrength.STRONG && !hasBenQiRoot(bazi, biEl)) {
+            val diSAdjT = caiSAdj + guanSAdj + shiSAdj
+            if (diSAdjT > 0.0 && diSAdjT >= (yinS + biS) * 0.8) strength = DayStrength.WEAK
+        }
         val wangJi = (strength == DayStrength.STRONG || stemsYinBiOnly) &&
             guanSAdj == 0.0 && caiSAdj == 0.0 && shiSAdj == 0.0
         val caiZai = hasBenQiRoot(bazi, caiEl) || bazi.branches.any { br ->
@@ -494,6 +525,40 @@ object JinBiaoCalculator {
         // ── 用神健全度（第二讲） ──
         val health = assessHealth(bazi, dayMaster, yongEl)
 
+        // ── 清浊三档（第六讲） ──
+        // 病神＝克用神之五行；药＝克病神之五行（力足制病方为药）；
+        // 病被通关化掉＝病神不透干＋通关之神（生用神者）有力＋病神生通关、通关生用神——转而相生有情（案十金生水生木、案十一水生木生火）。
+        val bingEl = Element.entries.first { it.controls == yongEl }
+        val yaoEl = Element.entries.first { it.controls == bingEl }
+        val tongGuanEl = Element.entries.first { it.generates == yongEl }
+        val bingS2 = partyScore(bazi, bingEl)
+        val yongS2 = partyScore(bazi, yongEl)
+        val yaoS = partyScore(bazi, yaoEl)
+        val yongDeLi = bazi.stems.any { it.element == yongEl } || hasBenQiRoot(bazi, yongEl)
+        val bingHua = !bazi.stems.any { it.element == bingEl } &&
+            partyScore(bazi, tongGuanEl) >= GUAN_WANG &&
+            bingEl.generates == tongGuanEl && tongGuanEl.generates == yongEl
+        val bingZhi = yaoS >= bingS2 && yaoS >= FOLLOW_MIN_SCORE && bingS2 > 0.0
+        val qingZhuo = when {
+            bingS2 == 0.0 -> JinBiaoQingZhuo.QING
+            bingHua -> JinBiaoQingZhuo.QING
+            bingZhi -> JinBiaoQingZhuo.QING
+            hasBenQiRoot(bazi, bingEl) && bingS2 >= 1.5 * yongS2 -> JinBiaoQingZhuo.MAN_ZHUO
+            else -> JinBiaoQingZhuo.BAN_QING
+        }
+        val qingZhuoBasis = buildString {
+            append("病神＝${bingEl.chinese}（克${yongEl.chinese}用神，党力${format(bingS2)}）；用神党力${format(yongS2)}${if (yongDeLi) "（得力）" else "（不得力）"}")
+            when (qingZhuo) {
+                JinBiaoQingZhuo.QING -> append(
+                    if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）"
+                    else if (bingHua) "——病神不透干，经${tongGuanEl.chinese}通关转而相生有情（${bingEl.chinese}生${tongGuanEl.chinese}生${yongEl.chinese}），病不为病——此为清（贵命，走什么运都不怕）"
+                    else "——病神被药${yaoEl.chinese}所制（药力${format(yaoS)}），此为清（贵命）",
+                )
+                JinBiaoQingZhuo.MAN_ZHUO -> append("——病神本气得根、力量太大（≥用神1.5倍）毁坏用神，满盘浊气——差命穷命，走什么运也好不了")
+                JinBiaoQingZhuo.BAN_QING -> append("——病在而力未制，半浊半清——普通人之命：多成多败，好两年坏两年（帮用去病之运好、帮病之运差）")
+            }
+        }
+
         // ── 喜忌（第一讲：帮用=喜，损用=忌） ──
         val xiElements = Element.entries.filter { it.generates == yongEl || it == yongEl }
         val jiElements = Element.entries.filter { it.controls == yongEl || yongEl.generates == it || yongEl.controls == it }
@@ -609,7 +674,11 @@ object JinBiaoCalculator {
             }
         }
         val yunPings = daYun?.yuns?.mapIndexed { idx, yun ->
-            pingYun(bazi.branches, yun.pillar, yun.startAge, yun.startYear, ctx, bureauOverride[idx])
+            // 案十一：身弱用印局行印比连行方局（南方火印地）——整运作吉（杀旺印旺身衰补起，富贵）
+            pingYun(
+                bazi.branches, yun.pillar, yun.startAge, yun.startYear, ctx, bureauOverride[idx],
+                forceJI = choice.way == JinBiaoQuYongWay.HUA_SHA && bureauOverride[idx] != null,
+            )
         }
 
         // ── 断语（一律锚定用神，禁泛断） ──
@@ -661,12 +730,17 @@ object JinBiaoCalculator {
                 if (ruoJi) append("弱极行比劫印运勿看流年，必大凶无疑——轻则破大财，重则牢狱、死亡之灾（应事随八字五行而异）。")
             }
             if (tiHuanPin != null) append(tiHuanPin)
+            when (qingZhuo) {
+                JinBiaoQingZhuo.QING -> append("此为清命——用神有力、病神无（或已化已制）：贵命，走什么运都不怕，坏运来了也无病。")
+                JinBiaoQingZhuo.MAN_ZHUO -> append("此为满盘浊气之命——病神之力太大、毁坏用神：差命穷命，走什么运也好不了。")
+                JinBiaoQingZhuo.BAN_QING -> append("此为半浊半清之命——普通人之命：多成多败、好两年坏两年（帮用去病之运好，帮病之运差）。")
+            }
         }
 
         return JinBiaoResult(
             kouJing = "盲派金镖门 · 用神中心论——帮扶用神则吉，耗泄克破用神则凶；十神代五行，立场以用神为中心",
             strength = strength,
-            strengthBasis = "八步法定强弱：生助合力 ${format(strengthResult.aSide)} 对 克泄耗合力 ${format(strengthResult.bSide)}（占比 ${pct(aShare)}）——${strengthResult.ranking}",
+            strengthBasis = "金镖门三步法：月令${monthBranch.chinese}经合会调整属${monthElAdj.chinese}党→${strength.chinese}（八步法参考：${strengthResult.verdict.chinese}，生助占比${pct(aShare)}）",
             ruoJi = ruoJi,
             ruoJiType = ruoJiType,
             ruoJiBasis = ruoJiBasis,
@@ -687,6 +761,8 @@ object JinBiaoCalculator {
             xiElements = xiElements,
             jiElements = jiElements,
             yuns = yunPings.orEmpty(),
+            qingZhuo = qingZhuo,
+            qingZhuoBasis = qingZhuoBasis,
             duanYu = duanYu,
             note = "金镖门讲义已授一至三讲（弱极从势／旺极专旺／强极印比同心）＋案一~案三补丁（藏根叛向·三会作废·印比支藏敌党作废·得局＝印旺于比·干化于支·化煞合局大发·财地软档）；" +
                 "身强/中和取用、特殊格局篇、壬寅大运专题待师传档；弱极阈值（占比$RUO_JI_SHARE、微浮党力$WEI_FU_MAX_SCORE）、强极印线$QIANG_JI_YIN 为基线参数，以事实案例为准打补丁。" +
@@ -827,7 +903,7 @@ object JinBiaoCalculator {
         val favorText: Map<Element, String>,
     )
 
-    /** 单步大运评断（含逐年流年；流年同用大运之档位口径，细分待壬寅专题）。[zhiBureauEl]＝连行方局之印比覆写。 */
+    /** 单步大运评断（含逐年流年；流年同用大运之档位口径，细分待壬寅专题）。[zhiBureauEl]＝连行方局之印比覆写；[forceJI]＝用印局印比连行方局整运作吉。 */
     private fun pingYun(
         chartBranches: List<EarthlyBranch>,
         pillar: Pillar,
@@ -835,6 +911,7 @@ object JinBiaoCalculator {
         startYear: Int,
         ctx: YunCtx,
         zhiBureauEl: Element? = null,
+        forceJI: Boolean = false,
     ): JinBiaoYunPing {
         val items = ganZhiItems(chartBranches, pillar.stem, pillar.branch, ctx, zhiBureauEl)
         val years = (startYear..startYear + 9).map { year ->
@@ -847,7 +924,7 @@ object JinBiaoCalculator {
             ageRange = "${startAge}-${startAge + 9}岁",
             yearRange = "$startYear-${startYear + 9}",
             items = items,
-            verdict = verdictOf(items, ctx),
+            verdict = if (forceJI) JinBiaoVerdict.JI else verdictOf(items, ctx),
             years = years,
         )
     }

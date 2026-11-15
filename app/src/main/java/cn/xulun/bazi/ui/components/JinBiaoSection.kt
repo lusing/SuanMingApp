@@ -190,6 +190,25 @@ fun JinBiaoSection(result: JinBiaoResult, modifier: Modifier = Modifier) {
                 )
             }
 
+            // ── 清浊（第六讲） ──
+            GoldLabel("清浊（用神有力无病为清）", Modifier.padding(top = 12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Badge(
+                    result.qingZhuo.chinese,
+                    when (result.qingZhuo.auspicious) {
+                        true -> GoodColor
+                        false -> BadColor
+                        null -> NoteColor
+                    },
+                )
+            }
+            Text(
+                text = result.qingZhuoBasis,
+                fontSize = 11.sp,
+                color = Color(0xFF90A4AE),
+                modifier = Modifier.padding(top = 4.dp),
+            )
+
             // ── 喜忌（帮用/损用） ──
             GoldLabel("喜忌（一律以用神为中心）", Modifier.padding(top = 12.dp))
             val daiMingOf: (Element) -> String = { el ->

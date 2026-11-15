@@ -13,6 +13,7 @@ import cn.xulun.bazi.model.Element
 import cn.xulun.bazi.model.Gender
 import cn.xulun.bazi.model.HeavenlyStem
 import cn.xulun.bazi.model.JinBiaoQuYongWay
+import cn.xulun.bazi.model.JinBiaoQingZhuo
 import cn.xulun.bazi.model.JinBiaoRuoJiType
 import cn.xulun.bazi.model.JinBiaoStance
 import cn.xulun.bazi.model.JinBiaoVerdict
@@ -563,6 +564,58 @@ class JinBiaoAnLiTest {
         assertTrue("庚子金水顺、甲寅东方木顺泄——皆好运", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
         assertTrue("甲寅标注顺泄", jb.yuns[1].items.any { it.action.contains("顺泄") })
         assertTrue("戊午火土逆——倾家荡产", jb.yuns[2].verdict == JinBiaoVerdict.XIONG)
+    }
+
+    // ── 案十/案十一 · 清浊章案例（第六讲） ──
+
+    @Test
+    fun `案十 癸酉甲子丙寅乙未 非昆仑正常分析 身弱印化 酉金被官化相生有情 清命`() {
+        val bazi = chart(1993, 12, 11, 13)
+        assertTrue(bazi.fullBazi.startsWith("癸酉 甲子 丙寅 乙未"))
+        val jb = JinBiaoCalculator.analyze(bazi, null)
+        assertTrue("子月官旺金生——三步法看季节判身弱（地支水不得局，非昆仑无顺逆）", jb.strength == DayStrength.WEAK)
+        assertTrue("身衰遇官煞枭印乃可化——用神取印（木，甲乙透寅根得力）",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WOOD)
+        assertTrue("天干无金、地支酉金被官水化之——转而相生有情，病不为病：清命",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("相生有情"))
+        assertTrue("清命断语——走什么运都不怕", jb.duanYu.contains("清命") && jb.duanYu.contains("都不怕"))
+
+        // 老引擎对照：正官格身弱——强弱同判
+        val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
+        assertTrue("老引擎定正官格且身弱", geju.name == "正官格" && geju.strength == DayStrength.WEAK)
+    }
+
+    @Test
+    fun `案十一 甲子丙寅己亥辛未 水生木官旺身弱用丙火印 水不透干通关相生 清命南方火运富贵`() {
+        // 甲子年丙寅月无己亥日（1984 寅月内无）——教学例，按原文四柱合成盘
+        val bazi = BaziResult(
+            yearPillar = Pillar(HeavenlyStem.JIA, EarthlyBranch.ZI),
+            monthPillar = Pillar(HeavenlyStem.BING, EarthlyBranch.YIN),
+            dayPillar = Pillar(HeavenlyStem.JI, EarthlyBranch.HAI),
+            hourPillar = Pillar(HeavenlyStem.XIN, EarthlyBranch.WEI),
+            birthDateTime = LocalDateTime.of(1984, 2, 20, 13, 0),
+        )
+        val daYun = DaYunInfo(
+            forward = true, qiYunText = "合成（顺行自丙寅）",
+            startDate = LocalDateTime.of(1988, 2, 20, 0, 0),
+            yuns = listOf(
+                DaYun(Pillar(HeavenlyStem.DING, EarthlyBranch.MAO), 4, 1988, emptyList()),   // 丁卯
+                DaYun(Pillar(HeavenlyStem.WU, EarthlyBranch.CHEN), 14, 1998, emptyList()),    // 戊辰
+                DaYun(Pillar(HeavenlyStem.JI, EarthlyBranch.SI), 24, 2008, emptyList()),      // 己巳
+                DaYun(Pillar(HeavenlyStem.GENG, EarthlyBranch.WU), 34, 2018, emptyList()),    // 庚午
+                DaYun(Pillar(HeavenlyStem.XIN, EarthlyBranch.WEI), 44, 2028, emptyList()),    // 辛未
+                DaYun(Pillar(HeavenlyStem.REN, EarthlyBranch.SHEN), 54, 2038, emptyList()),   // 壬申
+            ),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("寅月官旺＋水生木财生官——身弱（未极，未土独根被克而印可用）",
+            jb.strength == DayStrength.WEAK && !jb.ruoJi)
+        assertTrue("身弱用印——丙火得用为用神", jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.FIRE)
+        assertTrue("病神水不透干、经官木通关转而相生——丙火没被克：清命",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("相生有情"))
+        // 走南方火运——印旺化杀、身衰补起：富贵（用印局印比连行方局整运作吉）
+        assertTrue("南方巳午未连行火印运皆吉（杀旺印旺身衰补起，富贵）",
+            listOf(2, 3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──

@@ -133,6 +133,16 @@ data class JinBiaoYunPing(
     val years: List<JinBiaoLiuNianPing>,
 )
 
+/** 清浊三档（第六讲） */
+enum class JinBiaoQingZhuo(val chinese: String, val auspicious: Boolean?) {
+    /** 用神有力＋无病神（或病被通关化掉／药制）——富贵真，走什么运都不怕 */
+    QING("清·贵命", true),
+    /** 病神贴身紧克且根大力强（地支全是病根）——差命穷命，走什么运也好不了 */
+    MAN_ZHUO("满盘浊气·差命", false),
+    /** 病神力小用神稍大——普通人之命，多成多败好两年坏两年 */
+    BAN_QING("半浊半清·多成多败", null),
+}
+
 /** 金镖门用神分析总结果 */
 data class JinBiaoResult(
     /** 口径说明（模块页眉展示） */
@@ -171,6 +181,10 @@ data class JinBiaoResult(
     val jiElements: List<Element>,
     /** 大运流年评断（无大运时为空） */
     val yuns: List<JinBiaoYunPing>,
+    /** 清浊档位（第六讲） */
+    val qingZhuo: JinBiaoQingZhuo,
+    /** 清浊判据 */
+    val qingZhuoBasis: String,
     /** 综合断语（一律锚定用神，禁泛断） */
     val duanYu: String,
     /** 校准注记 */
