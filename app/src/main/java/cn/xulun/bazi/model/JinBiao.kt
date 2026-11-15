@@ -1,0 +1,158 @@
+package cn.xulun.bazi.model
+
+/**
+ * 盲派金镖门分析结果类型。讲义存档见 `.jinbiao-reference.md`。
+ *
+ * 口径总纲（第一讲）：用神＝命局中对日主最需要、最有帮助的一种五行之神（十神代称）。
+ * 吉凶铁律：帮扶用神（生用/同用）则吉；耗泄克破用神（用所克=耗、用所生=泄、克用=克、冲刑破害=破）则凶。
+ * 立场一律**以用神为中心**，不以日主为中心（第三讲从格验证：从杀格印泄用、比耗用，帮身反凶）。
+ */
+/** 运岁五行相对用神的立场 */
+enum class JinBiaoStance(val chinese: String, val auspicious: Boolean) {
+    /** 同用神 / 生用神 */
+    BANG("帮扶用神", true),
+    /** 耗用（用所克）/ 泄用（用所生）/ 克用（克用神） */
+    SUN("耗泄克破", false),
+}
+
+/** 用神健全度（第二讲：用神得力而健全则八字好，无气或受伤则不好） */
+enum class JinBiaoHealth(val chinese: String, val auspicious: Boolean) {
+    DE_LI("得力健全", true),
+    DAI_SHANG("带伤", false),
+    WU_QI("无气受伤", false),
+}
+
+/** 大运/流年总评 */
+enum class JinBiaoVerdict(val chinese: String) {
+    JI("吉"),
+    /** 财解围局行官/食运：稍差一点，但不会有什么大问题 */
+    PING("中平"),
+    XIONG("凶"),
+    GAN_ZHI_FEN("干支分论"),
+}
+
+/** 弱极分型（第三讲：弱极日元，权威定论 100% 应验） */
+enum class JinBiaoRuoJiType(val chinese: String) {
+    /** 日元孤立无气，四柱毫无生扶；一点根都没有，全是克耗泄 */
+    GU_LI("孤立无气·毫无生扶"),
+    /** 微浮印比而印比自顾不暇（无根被克合，不能帮身） */
+    WEI_FU("微浮印比·自顾不暇"),
+}
+
+/** 旺极/强极分型（第三讲续：两种旺到极端） */
+enum class JinBiaoWangJiType(val chinese: String) {
+    /** 四柱皆为比劫，无有官杀食伤；即或一二印枭，必然随其旺神 */
+    BI_DANG_SHI("比劫当势·随其旺神"),
+    /** 命局印比叠叠，绝无财官食伤；印比二人同心，可顺而不可逆 */
+    YIN_BI_TONG_XIN("印比同心·强旺之极"),
+}
+
+/** 取用路径 */
+enum class JinBiaoQuYongWay(val chinese: String) {
+    /** 官旺随官（从官杀） */
+    SUI_GUAN("官旺随官"),
+    /** 财旺随财（从财） */
+    SUI_CAI("财旺随财"),
+    /** 财官食神并存，必要财运解围 */
+    CAI_JIE_WEI("财官食并存·财运解围"),
+    /** 独旺从儿（食伤旺随食伤） */
+    SUI_SHI("食伤独旺·从儿"),
+    /** 旺极专旺：必然随其旺神，用神取比劫（日主本行） */
+    SUI_WANG("旺极随旺神"),
+    /** 普通身弱：印比扶身，取有力者 */
+    FU_SHEN("身弱扶身"),
+    /** 身强：克泄耗取有力者（基线，细则待师传） */
+    YI_SHEN("身强抑泄"),
+    /** 中和：暂取月令主力（基线，细则待师传） */
+    ZHONG_HE("中和取月令"),
+}
+
+/** 十神代五行条目（第一讲：十神是五行的代名词） */
+data class JinBiaoDaiMing(
+    val relation: String,   // 同我/我生/我克/生我/克我
+    val element: Element,
+    val category: String,   // 比劫/食伤/财星/印绶/官杀
+)
+
+/** 干支对用神的一条作用记录 */
+data class JinBiaoStanceItem(
+    val label: String,      // 如 "运干辛" / "2007丁亥·干"
+    val chinese: String,    // 干支汉字
+    val element: Element,
+    val stance: JinBiaoStance,
+    /** 生用神/同用神/泄用神/耗用神/克用神 */
+    val action: String,
+)
+
+/** 用神健全度明细 */
+data class JinBiaoYongShenHealth(
+    val level: JinBiaoHealth,
+    /** 通根情况：通本气根/藏干根/无根虚浮 */
+    val rootNote: String,
+    /** 得生得扶明细（生用、同用之字及位置） */
+    val supports: List<String>,
+    /** 受克受泄受耗受冲合明细 */
+    val damages: List<String>,
+)
+
+/** 流年评断（以用神为中心） */
+data class JinBiaoLiuNianPing(
+    val year: Int,
+    val pillarName: String,
+    val items: List<JinBiaoStanceItem>,
+    val verdict: JinBiaoVerdict,
+)
+
+/** 大运评断（以用神为中心） */
+data class JinBiaoYunPing(
+    val yunName: String,        // 如 "甲子运"
+    val ageRange: String,       // 如 "4-13岁"
+    val yearRange: String,      // 如 "1982-1991"
+    val items: List<JinBiaoStanceItem>,  // 运干+运支
+    val verdict: JinBiaoVerdict,
+    val years: List<JinBiaoLiuNianPing>,
+)
+
+/** 金镖门用神分析总结果 */
+data class JinBiaoResult(
+    /** 口径说明（模块页眉展示） */
+    val kouJing: String,
+    val strength: DayStrength,
+    val strengthBasis: String,
+    /** 是否弱极从势（第三讲） */
+    val ruoJi: Boolean,
+    /** 弱极分型 */
+    val ruoJiType: JinBiaoRuoJiType?,
+    /** 弱极判定依据 */
+    val ruoJiBasis: String?,
+    /** 是否旺极专旺（第三讲续） */
+    val wangJi: Boolean,
+    /** 旺极分型 */
+    val wangJiType: JinBiaoWangJiType?,
+    /** 旺极判定依据 */
+    val wangJiBasis: String?,
+    /** 取用路径 */
+    val quYongWay: JinBiaoQuYongWay,
+    /** 用神十神（十神代五行之十神） */
+    val yongShenGod: TenGod,
+    /** 用神五行 */
+    val yongShenElement: Element,
+    /** 命中用神之字及位置（如 "月干辛（正印）"） */
+    val yongShenStars: List<String>,
+    /** 取用依据 */
+    val quYongBasis: String,
+    /** 十神代五行表 */
+    val daiMing: List<JinBiaoDaiMing>,
+    /** 用神健全度 */
+    val health: JinBiaoYongShenHealth,
+    /** 帮用五行（喜） */
+    val xiElements: List<Element>,
+    /** 损用五行（忌） */
+    val jiElements: List<Element>,
+    /** 大运流年评断（无大运时为空） */
+    val yuns: List<JinBiaoYunPing>,
+    /** 综合断语（一律锚定用神，禁泛断） */
+    val duanYu: String,
+    /** 校准注记 */
+    val note: String,
+)

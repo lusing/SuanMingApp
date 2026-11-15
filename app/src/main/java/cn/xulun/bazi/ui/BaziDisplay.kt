@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.xulun.bazi.core.DiZhiRelationCalculator
 import cn.xulun.bazi.core.GeJuCalculator
+import cn.xulun.bazi.core.JinBiaoCalculator
 import cn.xulun.bazi.core.HeHuaCalculator
 import cn.xulun.bazi.core.JieChongCalculator
 import cn.xulun.bazi.core.KongWangCalculator
@@ -36,7 +37,9 @@ import cn.xulun.bazi.ui.components.DaYunCard
 import cn.xulun.bazi.ui.components.DiZhiRelationSection
 import cn.xulun.bazi.ui.components.GeJuBanner
 import cn.xulun.bazi.ui.components.HeHuaSection
+import cn.xulun.bazi.ui.components.EngineDivider
 import cn.xulun.bazi.ui.components.JieChongSection
+import cn.xulun.bazi.ui.components.JinBiaoSection
 import cn.xulun.bazi.ui.components.LiuQinSection
 import cn.xulun.bazi.ui.components.HealthSection
 import cn.xulun.bazi.ui.components.GuanYunSection
@@ -149,6 +152,10 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
                 }
             }
         }
+        // 盲派金镖门 · 专门分析模块（独立口径新引擎，置于老引擎之前便于双盘对照）
+        JinBiaoSection(result = JinBiaoCalculator.analyze(result, daYun))
+        // 以下为老引擎（传统综合）——带有事实的案例须以老引擎对照分析锚定
+        EngineDivider("以下为老引擎 · 传统综合分析（案例事实锚定口径）")
         cn.xulun.bazi.ui.components.ShiShenSection(result = shiShen)
         cn.xulun.bazi.ui.components.HangYeSection(result = cn.xulun.bazi.core.HangYeCalculator.analyze(result))
         cn.xulun.bazi.ui.components.XingGeSection(result = cn.xulun.bazi.core.XingGeCalculator.analyze(result), composite = cn.xulun.bazi.core.XingGeCalculator.analyzeComposite(result))
