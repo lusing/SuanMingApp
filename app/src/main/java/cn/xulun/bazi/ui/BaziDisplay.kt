@@ -153,7 +153,7 @@ fun BaziDisplay(result: BaziResult, daYun: DaYunInfo?, gender: Gender, modifier:
             }
         }
         // 盲派金镖门 · 专门分析模块（独立口径新引擎，置于老引擎之前便于双盘对照）
-        JinBiaoSection(result = JinBiaoCalculator.analyze(result, daYun))
+        JinBiaoSection(result = JinBiaoCalculator.analyze(result, daYun, gender))
         // 以下为老引擎（传统综合）——带有事实的案例须以老引擎对照分析锚定
         EngineDivider("以下为老引擎 · 传统综合分析（案例事实锚定口径）")
         cn.xulun.bazi.ui.components.ShiShenSection(result = shiShen)

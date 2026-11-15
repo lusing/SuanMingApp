@@ -124,7 +124,7 @@ object JinBiaoCalculator {
         HeavenlyStem.entries.filter { it.element == el }
     }
 
-    fun analyze(bazi: BaziResult, daYun: DaYunInfo?): JinBiaoResult {
+    fun analyze(bazi: BaziResult, daYun: DaYunInfo?, gender: cn.xulun.bazi.model.Gender? = null): JinBiaoResult {
         val dayMaster = bazi.dayPillar.stem
         val dayEl = dayMaster.element
         val yinEl = Element.entries.first { it.generates == dayEl }
@@ -513,7 +513,7 @@ object JinBiaoCalculator {
                 guanS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.HUA_SHA, yinEl,
                     buildString {
-                        append("正格五理·身衰遇官煞，枭印乃可化：官党力 ${format(guanS)} 有力——必用印化杀生印出格局")
+                        append("杀重用印格（五理③·身衰遇官煞，枭印乃可化）：官党力 ${format(guanS)} 旺克我、身弱——必用印化杀生印出格局。杀重之时要化之以德，不能用食神强制杀：「身弱制杀以威，不若化之以德」")
                         append(
                             if (yinS < FOLLOW_MIN_SCORE) "；印弱（党力${format(yinS)}）——印可配官煞，官杀生印为喜"
                             else "；印党力 ${format(yinS)} 得力可化",
@@ -565,7 +565,7 @@ object JinBiaoCalculator {
                     JinBiaoQuYongWay.PEI_CAI, guanEl,
                     buildString {
                         append("财滋弱杀格（案廿二）：身旺（${if (ruoZhongBianWang) "弱中变旺——坐贴身印比、月令敌党之支被日支泄克转衰" else "土金两旺通根得气"}），官杀露而弱（党力${format(guanS)}）${if (shiS < FOLLOW_MIN_SCORE) "、无食伤" else ""}——有财有官杀优先用杀，命主用官")
-                        append("；财配置（党力${format(caiS)}）${if (caiZhuBing) "——原局${biEl.chinese}克${caiEl.chinese}财被劫，然杀弱无关系、财弱也无妨：只要大运解病（如${shiEl.chinese}运泄${biEl.chinese}生${caiEl.chinese}通关）一样发富发贵，勿见杀弱财弱断贫" else "——官星指着财来生，有财就是好格局"}")
+                        append("；财滋弱杀与财滋弱官不区分，是一样的（①身强②用官杀③财生）；财配置（党力${format(caiS)}）${if (caiZhuBing) "——原局${biEl.chinese}克${caiEl.chinese}财被劫，然杀弱无关系、财弱也无妨：只要大运解病（如${shiEl.chinese}运泄${biEl.chinese}生${caiEl.chinese}通关）一样发富发贵，勿见杀弱财弱断贫" else "——官星指着财来生，有财就是好格局"}")
                         if (biS >= 6.0 && EarthlyBranch.SI in bazi.branches && guanEl == Element.FIRE) {
                             append("；地支${biEl.chinese}旺——巳随${biEl.chinese}走（作${biEl.chinese}根不作火根），${guanEl.chinese}杀真弱而通寅根：杀有根气故不能去杀（去杀须杀无一丝根气），必须财滋弱杀、禁制杀（制杀贫穷欠债）")
                         }
@@ -788,12 +788,15 @@ object JinBiaoCalculator {
             if (choice.way == JinBiaoQuYongWay.GONG_SHEN) {
                 put(caiEl, "财滋杀攻身——最忌（怕财来滋杀）")
             }
-            // 气象调候之反（案十六/案十八/案十九/案二十一）：寒/燥而调候神无根气——强走调候运反大凶
-            if (hanJu && huoTou && !hanTiaoYouQi) {
-                put(Element.FIRE, "调候神丙火无根气（隔位之生、地支不载）——强走火运调候反一事无成（离婚克子之属）；反以不调候为美，顺其寒")
-            }
-            if (zaoJu && shuiTou && !zaoTiaoYouQi) {
-                put(Element.WATER, "调候神壬癸水无根——强走水运调候即犯火之旺（一败如灰，甚者死）；反以不调候为美，顺其燥")
+            // 气象调候之反（案十六/案十八/案十九/案二十一）：寒/燥而调候神无根气——强走调候运反大凶；
+            // 案廿五裁：格局取用已定（财滋弱杀/弱官）则调候让位——走帮官杀财之运即好运
+            if (choice.way != JinBiaoQuYongWay.PEI_CAI) {
+                if (hanJu && huoTou && !hanTiaoYouQi) {
+                    put(Element.FIRE, "调候神丙火无根气（隔位之生、地支不载）——强走火运调候反一事无成（离婚克子之属）；反以不调候为美，顺其寒")
+                }
+                if (zaoJu && shuiTou && !zaoTiaoYouQi) {
+                    put(Element.WATER, "调候神壬癸水无根——强走水运调候即犯火之旺（一败如灰，甚者死）；反以不调候为美，顺其燥")
+                }
             }
         }
         // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
@@ -859,8 +862,12 @@ object JinBiaoCalculator {
                 append("此为财党杀攻身之命——旺财党杀攻身、财先破印：身衰撑不住，非贫即夭（重病之属——肾病严重放弃治疗，身太衰）；丙寅之类印透化杀之运能稍安，然难救本。")
             }
             if (choice.way == JinBiaoQuYongWay.PEI_CAI) {
+                append("财滋弱杀与财滋弱官不区分，是一样的（身强＋用官杀＋财生）。")
                 if (caiZhuBing) append("此为财滋弱杀格（财被劫病局）：杀弱无关系、财弱也无妨——大运解${biEl.chinese}克${caiEl.chinese}之病（${shiEl.chinese}运通关）即一样发富发贵；杀强反不宜，要克身。")
                 else append("此为身旺用官之命：帮助官的运（财生官、官杀得地）都算好运，违背官杀、制化官杀之运（食制、印化）就要差。")
+                if (gender == cn.xulun.bazi.model.Gender.FEMALE) {
+                    append("女命用官、官星得用——百分之百：要么在事业单位有官方工作，要么是家庭主妇（官星要么代表国家、要么代表丈夫），不可能在别的地方上班；官星得助，夫运家计应吉。")
+                }
             }
             if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI && yinS >= YIN_HUAI) {
                 append("印为格局之病（生身助旺＋贴身克用神）：土金运病来即差——贫穷之运；亥子丑水运帮用神则发富；财运去病（克印）发泄更畅，甲寅之属尤佳。")

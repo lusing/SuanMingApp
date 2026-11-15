@@ -874,6 +874,29 @@ class JinBiaoAnLiTest {
         assertTrue("壬申财地凶", jb.yuns[7].verdict == JinBiaoVerdict.XIONG)
     }
 
+    // ── 案廿五 · 壬戌 乙巳 戊戌 壬戌（1982-05-15 戌时，坤）——财滋弱官同格·女命官断 ──
+
+    @Test
+    fun `案廿五 坤 壬戌乙巳戊戌壬戌 财滋弱官同格不区分 女命用官家庭主妇夫收入佳`() {
+        val bazi = chart(1982, 5, 15, 19)
+        assertTrue(bazi.fullBazi.startsWith("壬戌 乙巳 戊戌 壬戌"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("甲辰(1985)", "癸卯(1995)", "壬寅(2005)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("身强＋用官＋财生——财滋弱杀/弱官同格不区分", jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含同格不区分", jb.quYongBasis.contains("不区分"))
+        assertTrue("女命用官——家庭主妇或官方工作断（事实：家庭主妇，夫收入不错）",
+            jb.duanYu.contains("家庭主妇") && jb.duanYu.contains("百分之百"))
+
+        // 走帮官杀财之运即好运（调候让位）：癸卯壬寅官杀得地吉；戊戌比劫夺财凶
+        assertTrue("癸卯壬寅官杀得地皆吉", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("戊戌比劫夺财凶", jb.yuns[6].verdict == JinBiaoVerdict.XIONG)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
