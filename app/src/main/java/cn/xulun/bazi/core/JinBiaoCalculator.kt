@@ -390,13 +390,15 @@ object JinBiaoCalculator {
         }
         val tiaoHou = tiaoHouEl != null
 
-        // ── 弱中变旺（案十定则）：弱基调而日主坐贴身印比本气／月干印比透，
-        //    且月令敌党之支被「印比之支」贴身泄克（官被泄克转衰——财克印不算，印伤更弱）——弱中变旺。
-        //    非弱极／非旺极时翻转（案四弱极不受此扰；档五十一财克印月仍身弱用印）。
+        // ── 弱中变旺（案十定则；案廿六护栏）：弱基调而日主坐贴身印比本气／月干印比透，
+        //    且月令敌党之支被「印比之支」贴身泄克（官被泄克转衰）——弱中变旺。
+        //    护栏①财克印不算（档五十一仍身弱用印）；护栏②敌党压倒性（≥1.5×印比）不翻——
+        //    官旺生印＝杀化印（化杀），正是杀重身弱用印（案廿六：官10对印比3.5，杀重用印格）。
         val dayBranchEl = bazi.dayPillar.branch.element
         var ruoZhongBianWang = false
         if (!ruoJi && !wangJi && strength == DayStrength.WEAK &&
             monthElAdj != yinEl && monthElAdj != biEl &&
+            partyScore(bazi, monthElAdj) < 1.5 * (yinS + biS) &&
             (dayBranchEl == yinEl || dayBranchEl == biEl ||
                 bazi.monthPillar.stem.element == yinEl || bazi.monthPillar.stem.element == biEl) &&
             ((monthElAdj.generates == dayBranchEl && (dayBranchEl == yinEl || dayBranchEl == biEl)) ||
