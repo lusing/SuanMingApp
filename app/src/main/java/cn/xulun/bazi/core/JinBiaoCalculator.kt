@@ -379,15 +379,18 @@ object JinBiaoCalculator {
             }
             // 第四讲·正格五理①②④⑥＋第五讲去寡＋基线：身强取用
             strength == DayStrength.STRONG -> when {
-                guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE -> Choice(
-                    JinBiaoQuYongWay.ZHI_SHA, shiEl,
-                    "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
-                )
-                // 第五讲·去寡（案六细化）：局中须有寡官（虚透或余气藏）＋日主通根身旺＋官财皆无本气根＋有食伤——官反以去之为美
+                // 第五讲·去寡（案七定序）：地支主宰——官杀天干再多，地支不载即寡，优先于制杀。
+                // 局中须有寡官（虚透或余气藏）＋日主通根身旺＋官财皆无本气根＋有食伤——不用之官尽可去。
                 guanS > 0.0 && !hasBenQiRoot(bazi, guanEl) && !hasBenQiRoot(bazi, caiEl) && shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.QU_GUA, shiEl,
-                    "推命经第二段·去寡：日主通根得气身旺，官杀无本气根（党力${format(guanS)}，虚透凭余气亦寡）、财无本气根不生官（党力${format(caiS)}）、有食伤（党力${format(shiS)}）——" +
-                        "官星之寡反以去之为美，用神取食伤（去官之星）；走官运补官反差运，走去官之运反好运（与官配财之分水岭在财之根气）",
+                    "推命经第二段·去寡（案七）：看力量首先看地支、地支主宰——日主坐下印绶通根年月身旺；" +
+                        "官杀（党力${format(guanS)}，天干再透两见）地支不载即无根气，被火土克、被木泄——无用之官，「不用之官尽可去」；" +
+                        "财无本气根不生官（党力${format(caiS)}）、食伤有力（党力${format(shiS)}）——去官发富贵，用神取食伤（去官之星）；" +
+                        "违背官杀之运好运、坏官越重越好；顺着官杀（生官／官星得地得运）则一世无成",
+                )
+                guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.ZHI_SHA, shiEl,
+                    "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺（有本气根）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
                 )
                 yinS >= YIN_HUAI -> Choice(
                     JinBiaoQuYongWay.HUAI_YIN, caiEl,
@@ -461,8 +464,11 @@ object JinBiaoCalculator {
         val favorNote: Map<Element, String> = buildMap {
             // 旺极顺泄：满盘比劫旺到极端，食伤顺泄不克——局中印轻则食伤运也是好运；印重则夺食不可行
             if (wangJi && !qiangJi && yinS < YIN_QING) put(shiEl, "旺极顺泄——局中印轻，食伤运也是好运")
-            // 第五讲·去寡：食伤＝去官之星，行此好运
-            if (choice.way == JinBiaoQuYongWay.QU_GUA) put(shiEl, "去官之星到位——去寡局行此好运")
+            // 第五讲·去寡：食伤＝去官之星，行此好运；印泄官生身——身旺食伤亦旺，行此亦好运（案七）
+            if (choice.way == JinBiaoQuYongWay.QU_GUA) {
+                put(shiEl, "去官之星到位——违背官杀，好运")
+                put(yinEl, "印泄官生身——身旺食伤亦旺，好运")
+            }
             // 案四：弱极随势无争妒——财官食相生一体，随财杀而走皆吉
             if (ruoJi && !zhengDou) {
                 when (choice.way) {
@@ -488,8 +494,8 @@ object JinBiaoCalculator {
                 put(guanEl, "运行官杀犯旺——必然大凶（严重的死亡，轻微的牢狱）")
                 put(caiEl, "旺极行财地——立断九死一生（群劫争财，必出人命）")
             }
-            // 第五讲·去寡：官星之寡反以去之为美——补官反差
-            if (choice.way == JinBiaoQuYongWay.QU_GUA) put(guanEl, "去寡局行官运补寡官——反差运")
+            // 第五讲·去寡：不用之官尽可去——官星得地（得运）反一事无成
+            if (choice.way == JinBiaoQuYongWay.QU_GUA) put(guanEl, "官星得地得禄——顺着官杀，一世无成（不用之官尽可去）")
         }
         // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
         val rootlessEls = setOf(caiEl, guanEl, shiEl, yinEl, biEl).filter { partyScore(bazi, it) == 0.0 }.toSet()
@@ -543,6 +549,7 @@ object JinBiaoCalculator {
             append("。")
             if (ruoJi) append("此为弱极从势之命，行比劫印地必凶（反常之判，勿以普通身弱喜扶论）。")
             if (ruoJi && !zhengDou) append("随势而走：走财走官走食伤皆顺皆吉（富贵显达、高人一等）；唯走印比帮身运帮之反害，必大凶或贫穷。")
+            if (choice.way == JinBiaoQuYongWay.QU_GUA) append("此为去寡之命——不用之官尽可去：违背官杀之运好运（把官杀坏得越严重越好），顺着官杀之运一世无成；日主已旺，不可用水激之。")
             if (qiangJi) {
                 append("此为强极印比同心之命，可顺而不可逆：只要运行印比，人生定可亨通显达（好八字）；若走财官之地，触怒强神大凶。")
                 if (yinDeJu) {

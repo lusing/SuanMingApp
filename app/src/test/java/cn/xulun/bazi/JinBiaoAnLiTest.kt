@@ -399,6 +399,37 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎定七杀格且身弱", geju.name == "七杀格" && geju.strength == DayStrength.WEAK)
     }
 
+    // ── 案七 · 乾造 戊午 壬戌 丁卯 癸卯（1978-11-01 卯时）——地支不载官寡去之，坎卦官运无成 ──
+
+    @Test
+    fun `案七 乾 戊午壬戌丁卯癸卯 官透两见地支不载 去寡 坎卦官运一事无成 木火好运`() {
+        val bazi = chart(1978, 11, 1, 5)
+        assertTrue(bazi.fullBazi.startsWith("戊午 壬戌 丁卯 癸卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("癸亥(1981)", "甲子(1991)", "乙丑(2001)"),
+        )
+
+        // 金镖门：天干一官一杀两透而地支不载——力量主要在地支，无根气＝无用之官，去寡优先于制杀
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("去寡·用神取伤官（土）", jb.quYongWay == JinBiaoQuYongWay.QU_GUA && jb.yongShenElement == Element.EARTH)
+        assertTrue("取用依据含地支主宰与不用之官尽可去", jb.quYongBasis.contains("地支主宰") && jb.quYongBasis.contains("不用之官尽可去"))
+
+        // 坎卦亥子官杀得禄强旺——顺着官杀，一事无成
+        assertTrue("癸亥甲子官运皆凶", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("官运标注一世无成", jb.yuns[0].items.any { it.action.contains("一世无成") })
+
+        // 木火运印旺身旺食伤亦旺——好运（寅卯辰连行方局亦随木作印论）
+        assertTrue("丙寅丁卯木火运皆吉", listOf(3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("断语含违背官杀好运", jb.duanYu.contains("违背官杀") && jb.duanYu.contains("不可用水激"))
+
+        // 老引擎对照（双引擎铁律）：伤官格——老引擎判身弱，金镖门地支主宰判身旺，强弱分歧即此案教学点
+        val geju = cn.xulun.bazi.core.GeJuCalculator.determine(bazi)
+        assertTrue("老引擎定伤官格", geju.name == "伤官格")
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
