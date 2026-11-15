@@ -141,6 +141,8 @@ enum class JinBiaoQingZhuo(val chinese: String, val auspicious: Boolean?) {
     MAN_ZHUO("满盘浊气·差命", false),
     /** 病神力小用神稍大——普通人之命，多成多败好两年坏两年 */
     BAN_QING("半浊半清·多成多败", null),
+    /** 案十二：官食财俱各有浊神克之，用神无着落——一事无成，比普通人还差 */
+    QUAN_ZHUO("全浊·用神无着落，一事无成", false),
 }
 
 /** 金镖门用神分析总结果 */

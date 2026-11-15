@@ -371,6 +371,22 @@ object JinBiaoCalculator {
             ruoZhongBianWang = true
         }
 
+        // ── 全浊三废（案十二）：官、食、财俱在而各有浊神克之——用神无着落 ──
+        // 官废＝官之克者透干力足，且官之源（财）被断（财支逢冲，或比劫根大势压无根之财）
+        // 食废＝印透干力足克食，且食无本气根（有强本气根则克不动——案九壬水通根不废）
+        // 财废＝财支逢六冲，或财无本气根而比劫势压
+        val keGuan = Element.entries.first { it.controls == guanEl }
+        val guanFei = guanS > 0.0 && bazi.stems.any { it.element == keGuan } &&
+            partyScore(bazi, keGuan) >= guanS &&
+            (bazi.branches.any { br -> br.element == caiEl && LIU_CHONG[br] != null && LIU_CHONG.getValue(br) in bazi.branches } ||
+                (caiS > 0.0 && !hasBenQiRoot(bazi, caiEl) && biS >= 1.5 * caiS && hasBenQiRoot(bazi, biEl)))
+        val shiFei = shiS > 0.0 && bazi.stems.any { it.element == yinEl } &&
+            yinS >= shiS && !hasBenQiRoot(bazi, shiEl)
+        val caiFei = caiS > 0.0 && (
+            bazi.branches.any { br -> br.element == caiEl && LIU_CHONG[br] != null && LIU_CHONG.getValue(br) in bazi.branches } ||
+                (!hasBenQiRoot(bazi, caiEl) && biS >= 1.5 * caiS)
+            )
+
         data class Choice(val way: JinBiaoQuYongWay, val el: Element, val basis: String)
 
         val choice: Choice = when {
@@ -483,8 +499,8 @@ object JinBiaoCalculator {
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
                     "正格五理·身强遇官煞，伤食显其威：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}",
                 )
-                // 五理②用官（案八/案十实证）：身旺而官在局有力——弱中变旺者官虽被泄克仍用官，喜财生官
-                guanS >= FOLLOW_MIN_SCORE -> Choice(
+                // 五理②用官（案八/案十实证）：身旺而官在局有力（官废则不能用——案十二）——弱中变旺者官虽被泄克仍用官，喜财生官
+                guanS >= FOLLOW_MIN_SCORE && !guanFei -> Choice(
                     JinBiaoQuYongWay.PEI_CAI, guanEl,
                     buildString {
                         append("正格五理·官煞依乎财（案八/案十）：身旺（${if (ruoZhongBianWang) "弱中变旺——坐贴身印比、月令敌党之支被日支泄克转衰" else "通根得气"}），官在局（党力${format(guanS)}）——命主用官")
@@ -563,7 +579,9 @@ object JinBiaoCalculator {
             else -> emptySet()
         }
         val bingZhi = bingS2 > 0.0 && yaoS >= bingS2 && yaoS >= FOLLOW_MIN_SCORE && yaoEl !in wayJiEls
+        val quanZhuo = strength == DayStrength.STRONG && !ruoJi && !wangJi && guanFei && shiFei && caiFei
         val qingZhuo = when {
+            quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO
             bingS2 == 0.0 -> JinBiaoQingZhuo.QING
             bingHua -> JinBiaoQingZhuo.QING
             bingZhi -> JinBiaoQingZhuo.QING
@@ -581,6 +599,7 @@ object JinBiaoCalculator {
             append("病神＝${bingEl.chinese}（克${yongEl.chinese}用神，党力${format(bingS2)}）；用神党力${format(yongS2)}${if (yongDeLi) "（得力）" else "（不得力）"}")
             if (jianBing != null) append("；$jianBing")
             when (qingZhuo) {
+                JinBiaoQingZhuo.QUAN_ZHUO -> append("——官（${guanEl.chinese}）被${keGuan.chinese}克且财源被断、食（${shiEl.chinese}）被印克无本气根、财（${caiEl.chinese}）被比劫冲克——三者俱废，用神无着落：全浊，一事无成（学什么都不会、干什么都有人捣乱），比普通老百姓还差")
                 JinBiaoQingZhuo.QING -> append(
                     if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）"
                     else if (bingHua) "——病神不透干，经${tongGuanEl.chinese}通关转而相生有情（${bingEl.chinese}生${tongGuanEl.chinese}生${yongEl.chinese}），病不为病——此为清（贵命，走什么运都不怕）"
@@ -763,6 +782,7 @@ object JinBiaoCalculator {
             }
             if (tiHuanPin != null) append(tiHuanPin)
             when (qingZhuo) {
+                JinBiaoQingZhuo.QUAN_ZHUO -> append("此为全浊之命——官食财俱各有浊神克之，用神无着落：一事无成（学什么学不会、干什么都有人捣乱），比普通老百姓还差——今天干乙木的事没成，明天干庚金的事，就是这样一种状态。")
                 JinBiaoQingZhuo.QING -> append("此为清命——用神有力、病神无（或已化已制）：贵命，走什么运都不怕，坏运来了也无病。")
                 JinBiaoQingZhuo.MAN_ZHUO -> append("此为满盘浊气之命——病神之力太大、毁坏用神：差命穷命，走什么运也好不了。")
                 JinBiaoQingZhuo.BAN_QING -> append("此为半浊半清之命——普通人之命：多成多败、好两年坏两年（帮用去病之运好，帮病之运差）。")

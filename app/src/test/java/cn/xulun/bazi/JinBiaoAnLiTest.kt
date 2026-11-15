@@ -628,6 +628,35 @@ class JinBiaoAnLiTest {
             listOf(2, 3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案十二 · 乙亥 庚辰 戊戌 丁巳（教学合成盘——乙亥年辰月无戊戌日）——三废全浊 ──
+
+    @Test
+    fun `案十二 乙亥庚辰戊戌丁巳 官食财三废 全浊用神无着落 一事无成`() {
+        val bazi = BaziResult(
+            yearPillar = Pillar(HeavenlyStem.YI, EarthlyBranch.HAI),
+            monthPillar = Pillar(HeavenlyStem.GENG, EarthlyBranch.CHEN),
+            dayPillar = Pillar(HeavenlyStem.WU, EarthlyBranch.XU),
+            hourPillar = Pillar(HeavenlyStem.DING, EarthlyBranch.SI),
+            birthDateTime = LocalDateTime.of(1995, 4, 20, 9, 0),
+        )
+        val daYun = DaYunInfo(
+            forward = false, qiYunText = "合成（逆行自庚辰）",
+            startDate = LocalDateTime.of(1999, 4, 20, 0, 0),
+            yuns = listOf(
+                DaYun(Pillar(HeavenlyStem.JI, EarthlyBranch.MAO), 4, 1999, emptyList()),
+                DaYun(Pillar(HeavenlyStem.WU, EarthlyBranch.YIN), 14, 2009, emptyList()),
+                DaYun(Pillar(HeavenlyStem.DING, EarthlyBranch.CHOU), 24, 2019, emptyList()),
+                DaYun(Pillar(HeavenlyStem.BING, EarthlyBranch.ZI), 34, 2029, emptyList()),
+            ),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun)
+        assertTrue("辰月土旺、火随土走比劫旺克财——身旺", jb.strength == DayStrength.STRONG)
+        assertTrue("官被庚金克且财源亥被巳冲断——官废不能用（不用之官尽可去）；只能用食神泄我去官",
+            jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI && jb.yongShenElement == Element.METAL)
+        assertTrue("官食财三废俱浊——全浊", jb.qingZhuo == JinBiaoQingZhuo.QUAN_ZHUO && jb.qingZhuoBasis.contains("三者俱废"))
+        assertTrue("断语一事无成", jb.duanYu.contains("一事无成"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
