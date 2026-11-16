@@ -1351,6 +1351,26 @@ class JinBiaoAnLiTest {
             jb.quYongBasis.contains("制杀太过") && jb.quYongBasis.contains("护卫七杀") && jb.quYongBasis.contains("公务员"))
     }
 
+    // ── 案四十七 · 甲寅 戊辰 壬辰 壬寅（1974-04-21 寅时，乾）——制杀太过兼过泄·印运护杀帮身 ──
+
+    @Test
+    fun `案四十七 乾 甲寅戊辰壬辰壬寅 春木旺土虚食伤得局过泄 制杀太过 印运护杀帮身`() {
+        val bazi = chart(1974, 4, 21, 3)
+        assertTrue(bazi.fullBazi.startsWith("甲寅 戊辰 壬辰 壬寅"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己巳(1979)", "庚午(1989)", "辛未(1999)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("官杀（土）有力食伤（木）得局——食神制杀格", jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含制杀太过兼过泄与印两用（护杀帮身）",
+            jb.quYongBasis.contains("制杀太过") && jb.quYongBasis.contains("护杀") && jb.quYongBasis.contains("帮身"))
+
+        // 一定要走印运——庚午辛未壬申癸酉（金）：护杀帮身，非凶
+        assertTrue("庚午辛未壬申癸酉金印运非凶", listOf(1, 2, 3, 4).all { jb.yuns[it].verdict != JinBiaoVerdict.XIONG })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

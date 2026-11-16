@@ -186,7 +186,8 @@ object JinBiaoCalculator {
 
         // 案卅三·退而求其次标志（须在弱极判定前置）：不是克就是泄（杀旺财微食泄）、无印、
         // 日主仅藏根小通根而无本气根——身无力太衰，退而求其次食制，不算弱极；印运反吉（补印化杀帮身）
-        val tuiErQici = guanS >= 8.0 && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE && caiS < FOLLOW_MIN_SCORE &&
+        // 案四十七裁：印两用局（食伤≥杀8成——制杀太过兼过泄，一定要走印运）非退而求其次之劫
+        val tuiErQici = guanS >= 8.0 && shiS >= FOLLOW_MIN_SCORE && shiS * 1.25 < guanS && yinS < FOLLOW_MIN_SCORE && caiS < FOLLOW_MIN_SCORE &&
             !hasBenQiRoot(bazi, biEl) &&
             bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 2
 
@@ -646,7 +647,7 @@ object JinBiaoCalculator {
                 // 无根气而食神强制＝克泄交加，更穷困比普通人还差（贫夭负债）。
                 // 案四十四戒：坐下即印（众杀混行一仁可化之局）——归杀重用印，不归食制
                 bazi.dayPillar.branch.element != yinEl &&
-                (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && (yinS < FOLLOW_MIN_SCORE || luGen) && shiS < 6.0 &&
+                (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && shiS * 1.25 < guanS && (yinS < FOLLOW_MIN_SCORE || luGen) && shiS < 6.0 &&
                     bazi.stems.filterIndexed { i, s -> i != 2 && s.element == shiEl }.none { sg ->
                         val p = GAN_HE[sg]
                         p != null && p.element == guanEl && bazi.stems.any { it == p }
@@ -666,6 +667,10 @@ object JinBiaoCalculator {
                         if (cangRoots.size >= 3) append("；日主藏干通根三支（${cangRoots.joinToString("") { it.chinese }}）——有根气；辰乃木之余气——一将当关，群凶自败")
                         if (yinS == 0.0 && guanS >= 10.0 && cangRoots.size >= 2) {
                             append("；身弱食神制杀首先考虑有没有印——最好用印化之以德；命局无印只有食神，日主通根得气（${cangRoots.joinToString("") { it.chinese }}库根通根），退而求其次也可用食神制杀——身弱肯定没有用印的厉害；库土毕竟泄身，身弱而杀旺赖食制卫身")
+                        }
+                        // 案四十七：制杀太过兼日主过泄（食制支亦录——食有力泄重而官杀虚）——一定要走印运：护杀＋帮身
+                        if (guanS > 0.0 && shiS >= 6.0) {
+                            append("；食伤得局泄重——明面制杀太过（${guanEl.chinese}虚）兼日主过泄：一定要走印运，一是护杀二是帮身")
                         }
                         if (tuiErQici) {
                             append("；此命不是克就是泄、身无帮扶只有小通根——食制不如印化层次高（若换得帮身之支则食制反高）；日主太衰不能弃之于顾：**印运反是好运——大运补起印来化杀帮身（本科、得财之属）**；若连通根得气都没有，就叫以食伤强制——贫夭的命".replace("**", ""))
@@ -709,6 +714,11 @@ object JinBiaoCalculator {
                         if (shiS >= 6.0) {
                             append("；伤官（食伤）得局（党力${format(shiS)}）泄身过甚——旺中变弱：印两用，一疏其土（克食伤之局）二生日主")
                             append("；局中拱合待成者（如亥未拱木待卯），运支补成印局即用神得局大发")
+                        }
+                        // 案四十七·制杀太过兼日主过泄：食伤有力泄重而官杀随季节虚（辰月春天木旺土虚）——
+                        // 一定要走印运：一是护杀（克食），二是帮身（生身）
+                        if (shiS >= GUAN_WANG && guanS >= FOLLOW_MIN_SCORE && shiS * 1.6 >= guanS) {
+                            append("；食伤得局（${format(shiS)}）——明面上制杀太过（${guanEl.chinese}官杀虚：辰土虽为根，春天木旺土虚）；更患日主过泄（食伤泄体、日主没那么旺）——**一定要走印运：一是护杀（印克食），二是帮身（印生身）**".replace("**", ""))
                         }
                         // 案四十六·制杀太过：需用杀而食伤制之将绝尚有余气——贫夭之基；喜印克食护卫七杀＋生身
                         if (shiS >= 6.0 && guanS < GUAN_WANG && guanS > 0.0) {
@@ -963,9 +973,12 @@ object JinBiaoCalculator {
                 }
             }
             // 案九：身旺泄秀——财为泄口；印病时财运兼去病之神（甲克戊）
-            // 案卅三：退而求其次食制局——印运化杀帮身反是好运（非夺食；日主太衰不能弃）
+            // 案卅三/四十七：食制局之印运（壬子型退而求其次·护杀帮身型）——印运反好
             if (choice.way == JinBiaoQuYongWay.ZHI_SHA && tuiErQici) {
                 put(yinEl, "印运化杀帮身——大运补起印来（本科、得财之属），好运")
+            }
+            if (choice.way == JinBiaoQuYongWay.ZHI_SHA && !tuiErQici && shiS >= 6.0) {
+                put(yinEl, "印护杀帮身——制杀太过兼过泄之救，好运")
             }
             if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI) {
                 put(
@@ -1501,7 +1514,7 @@ object JinBiaoCalculator {
         items.any { it.pingOverride || it.element in ctx.zhongPingEls } -> JinBiaoVerdict.PING
         // 吉档：全帮扶，或顺泄/化煞合局之作吉覆写（作吉元素视同帮扶）
         items.all { it.stance == JinBiaoStance.BANG || it.favorOverride || it.element in ctx.favorEls } -> JinBiaoVerdict.JI
-        items.all { it.stance == JinBiaoStance.SUN } -> JinBiaoVerdict.XIONG
+        items.all { it.stance == JinBiaoStance.SUN && it.element !in ctx.favorEls } -> JinBiaoVerdict.XIONG
         else -> JinBiaoVerdict.GAN_ZHI_FEN
     }
 
