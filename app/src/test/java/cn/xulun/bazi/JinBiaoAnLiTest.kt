@@ -1671,6 +1671,37 @@ class JinBiaoAnLiTest {
         assertTrue("壬午午财坏印——凶", jb.yuns[2].verdict == JinBiaoVerdict.XIONG)
     }
 
+    // ── 案五十九 · 癸亥 乙卯 壬戌 甲辰（1983-04-04 辰时，乾）——子女章次例·凑合生子终损 ──
+
+    @Test
+    fun `案五十九 乾 癸亥乙卯壬戌甲辰 克泄交加无印用比劫癸亥 比劫子星被克泄太重 凑合生子终损 生女儿百分之百 财富取决于用神`() {
+        val bazi = chart(1983, 4, 4, 8)
+        assertTrue(bazi.fullBazi.startsWith("癸亥 乙卯 壬戌 甲辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("甲寅(1992)", "癸丑(2002)", "壬子(2012)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("卯月木旺泄体＋坐两杀克泄交加——百分之百身弱", jb.strength == DayStrength.WEAK)
+        assertTrue("印唯戌中辛孤藏不算有印——用神比劫癸亥（财富值取决于比劫之力）",
+            jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含财富取决于用神论",
+            jb.quYongBasis.contains("财富值取决于用神比劫之力") && jb.quYongBasis.contains("用神好财才是真的好"))
+
+        // 子女章：无印比劫当儿——子星被两杀克＋卯泄＋亥卯会泄根，克泄太重：凑合生子终损＋生女儿
+        val zn = jb.ziNv!!
+        assertTrue("无儿有女（凑合生子终损型）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("子星＝劫财癸亥", zn.ziXing == cn.xulun.bazi.model.TenGod.JIE_CAI && zn.ziEl == Element.WATER)
+        assertTrue("判据含凑合生子必损、墓中送出、生女儿",
+            zn.basis.contains("凑合生出来儿子") && zn.basis.contains("损子") &&
+                zn.basis.contains("墓中子星要送出") && zn.basis.contains("生女儿"))
+
+        // 壬子运帮身把比劫帮起来（2012壬辰年生子窗口）；甲寅泄子星早年平常
+        assertTrue("壬子运帮身——吉（凑合生子之窗）", jb.yuns[2].verdict == JinBiaoVerdict.JI)
+        assertTrue("甲寅运泄子星——平（早年无子）", jb.yuns[0].verdict == JinBiaoVerdict.PING)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

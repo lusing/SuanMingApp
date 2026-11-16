@@ -738,7 +738,21 @@ object JinBiaoCalculator {
                         append("；条件铁律：日主必须有根气——无根气还用食神强制官杀，叫克泄交加，更差更穷困，比普通人还要差（贫夭负债）")
                     },
                 )
-                guanS >= FOLLOW_MIN_SCORE -> Choice(
+                // 案五十九戒：印须有力（透干／本气根／半合拱局之势）方可化杀——孤藏之印（戌中辛之类）不算有印，
+                // 身衰无印则比劫扛（用神比劫）——「如果没有印，比劫也能当儿子看」；
+                // 案十三亥未拱木（印局会意待运补成）仍以印化
+                guanS >= FOLLOW_MIN_SCORE && (bazi.stems.any { it.element == yinEl } || hasBenQiRoot(bazi, yinEl) ||
+                    listOf(
+                        setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI),
+                        setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU),
+                        setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN),
+                        setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
+                    ).any { trio -> yinEl == when {
+                        trio == setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) -> Element.WOOD
+                        trio == setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) -> Element.FIRE
+                        trio == setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) -> Element.WATER
+                        else -> Element.METAL
+                    } && trio.count { it in bazi.branches } >= 2 }) -> Choice(
                     JinBiaoQuYongWay.HUA_SHA, yinEl,
                     buildString {
                         append("杀重用印格（五理③·身衰遇官煞，枭印乃可化）：官党力 ${format(guanS)} 旺克我、身弱——必用印化杀生印出格局。杀重之时要化之以德，不能用食神强制杀：「身弱制杀以威，不若化之以德」")
@@ -822,6 +836,7 @@ object JinBiaoCalculator {
                                     val (bs, el) = SAN_HUI_JU.first { (b, _) -> b.all { it in bazi.branches } }
                                     append("；**三会化劫（案五十六）**：地支${bs.joinToString("") { it.chinese }}三会${el.chinese}局——**把比劫都化了**（日主本来坐个根可以，这么一化就身弱了）；劫被化**用神无力——八字格局就不高**：走火土一路帮比劫可**小富**；走食伤运财运（本来就身弱还要食伤生财）**穷困潦倒——即使财再旺也不管用，财越旺他越穷、食伤越旺他越穷**（身弱不任财）；**最怕七杀**克无力之比劫——**死亡**")
                                 }
+                                append("；**财富值取决于用神比劫之力**（${biEl.chinese}有多旺就多大财、有多衰就多衰的财运；做功之神〔如木克土工程〕的力量与财富值一点儿关系都没有——同样做功，有的挣一千万有的挣一万：**用神好财才是真的好**）")
                             },
                     )
                 }
@@ -1136,9 +1151,15 @@ object JinBiaoCalculator {
                         }
                     }
                     guQiS >= FOLLOW_MIN_SCORE -> {
-                        // 官杀欺衰而无印——比劫扛得住才有子
-                        if (biS >= FOLLOW_MIN_SCORE) ZN(biEl, true, false, "**官杀欺衰主而无印**——比劫扛得住（够旺）**比劫为儿也有子**（身弱杀日之间很旺比劫挡杀护我＝我有儿子；扛不住则无子）")
-                        else ZN(biEl, false, false, "**官杀欺衰主，无印、比劫又扛不住**——**没儿子**（官杀无制化攻身——生了儿子也得夭折）")
+                        // 官杀欺衰而无印——比劫扛得住才有子；比劫子星被克泄过重——凑合生子必损＋生女儿
+                        val biKeS = partyScore(bazi, Element.entries.first { it.controls == biEl })
+                        val biXieS = partyScore(bazi, biEl.generates)
+                        when {
+                            biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "**官杀欺衰主，无印、比劫又扛不住**——**没儿子**（官杀无制化攻身——生了儿子也得夭折）")
+                            biKeS >= 0.75 * biS && biXieS >= 1.5 * biS -> ZN(biEl, false, true,
+                                "**官杀欺衰主而无印——比劫扛得住（坐根有气）＝比劫为儿**；然**子星被克泄得太重**（两杀克＋食伤泄＋会局泄根——${biKeS}克${biXieS}泄压过子星${format(biS)}）：大运帮起来（壬子之属）**凑合生出来儿子——终究损子**（运补暂生而生出来没活成之属——**墓中子星要送出**破解）；**比劫有气坐根——生女儿百分之百**（有生育能力；若无会局之泄，走帮身运是可以有儿子的）")
+                            else -> ZN(biEl, true, false, "**官杀欺衰主而无印**——比劫扛得住（够旺）**比劫为儿也有子**（身弱杀日之间很旺比劫挡杀护我＝我有儿子；扛不住则无子）")
+                        }
                     }
                     yinYouLi && keYinS < FOLLOW_MIN_SCORE -> {
                         if (yinTouZuoBen) ZN(yinEl, true, false, "**身衰印做儿**（印为儿，印星就是我的儿子——印好才是真的好）")
