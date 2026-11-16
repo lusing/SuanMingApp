@@ -635,6 +635,8 @@ object JinBiaoCalculator {
                 // 根气＝本气根，或藏干通根≥3（案三十），或【无印而杀极旺（≥10）时藏根≥2亦通根得气——退而求其次】（案卅二）。
                 // 身弱食神制杀首先考虑有没有印：最好用印化之以德；命局无印只有食神——退而求其次食神制杀（身弱肯定没有用印厉害）。
                 // 无根气而食神强制＝克泄交加，更穷困比普通人还差（贫夭负债）。
+                // 案四十四戒：坐下即印（众杀混行一仁可化之局）——归杀重用印，不归食制
+                bazi.dayPillar.branch.element != yinEl &&
                 (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && (yinS < FOLLOW_MIN_SCORE || luGen) && shiS < 6.0 &&
                     bazi.stems.filterIndexed { i, s -> i != 2 && s.element == shiEl }.none { sg ->
                         val p = GAN_HE[sg]

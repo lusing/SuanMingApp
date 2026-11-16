@@ -1285,6 +1285,30 @@ class JinBiaoAnLiTest {
             jb.quYongBasis.contains("辰水辩证") && jb.quYongBasis.contains("必克水") && jb.quYongBasis.contains("寅亥化木"))
     }
 
+    // ── 案四十四 · 壬辰 壬子 丙寅 癸巳（合成盘，乾）——官杀混杂格·杀旺用印 ──
+
+    @Test
+    fun `案四十四 乾 壬辰壬子丙寅癸巳 三壬一癸杀旺混杂加力 坐下寅印一仁可化 帮身运当官`() {
+        val bazi = BaziResult(
+            Pillar(HeavenlyStem.REN, EarthlyBranch.CHEN), Pillar(HeavenlyStem.REN, EarthlyBranch.ZI),
+            Pillar(HeavenlyStem.BING, EarthlyBranch.YIN), Pillar(HeavenlyStem.GUI, EarthlyBranch.SI),
+            LocalDateTime.of(1952, 12, 20, 9, 0),
+        )
+        val daYun = DaYunInfo(true, "合成（顺行自壬子）", LocalDateTime.of(1956, 12, 20, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.GUI, EarthlyBranch.CHOU), 4, 1956, emptyList()),  // 癸丑
+            DaYun(Pillar(HeavenlyStem.JIA, EarthlyBranch.YIN), 14, 1966, emptyList()),  // 甲寅印
+            DaYun(Pillar(HeavenlyStem.YI, EarthlyBranch.MAO), 24, 1976, emptyList()),   // 乙卯印
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("杀旺混杂（更得用印）——杀重用印格，用神取印（寅木）",
+            jb.strength == DayStrength.WEAK && jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WOOD)
+        assertTrue("众杀混行一仁可化＋坐下有情入据",
+            jb.quYongBasis.contains("众杀混行，一仁可化") && jb.quYongBasis.contains("情分"))
+
+        // 走一路帮身（印比）——就要当官
+        assertTrue("甲寅乙卯印运帮身皆吉", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
