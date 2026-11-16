@@ -1640,6 +1640,37 @@ class JinBiaoAnLiTest {
         assertTrue("庚寅辛卯干财坏印凶、支印温饱——干支分论", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.GAN_ZHI_FEN })
     }
 
+    // ── 案五十八 · 庚申 己卯 癸卯 乙卯（1980-03-31 卯时，乾）——子女章首例·木坚金缺无儿有女 ──
+
+    @Test
+    fun `案五十八 乾 庚申己卯癸卯乙卯 三卯食伤得局身太衰用神庚申印 印为儿木坚金缺生女儿 南方火运更无儿`() {
+        val bazi = chart(1980, 3, 31, 6)
+        assertTrue(bazi.fullBazi.startsWith("庚申 己卯 癸卯 乙卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚辰(1981)", "辛巳(1991)", "壬午(2001)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("三卯木得局食伤过泄＋己杀克——克泄交加身太衰", jb.strength == DayStrength.WEAK)
+        assertTrue("印透坐禄有力可依——不作昆仑，肯定要用印星帮身（用神庚申）",
+            jb.quYongWay != JinBiaoQuYongWay.KUN_LUN &&
+                jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.METAL)
+
+        // 子女章：身衰印做儿——印星就是我的儿子；木坚金缺剩一点气——没儿子，可生闺女
+        val zn = jb.ziNv!!
+        assertTrue("无儿有女（四情况之三）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("子星＝正印庚申（印星就是我的儿子）", zn.ziXing == cn.xulun.bazi.model.TenGod.ZHENG_YIN && zn.ziEl == Element.METAL)
+        assertTrue("判据含印为儿、木坚金缺、生闺女",
+            zn.basis.contains("印为儿") && zn.basis.contains("木坚金缺") && zn.basis.contains("可生闺女"))
+        assertTrue("运注火为子星克神——南方运生不出儿子", zn.basis.contains("辛巳") && zn.basis.contains("壬午"))
+
+        // 庚辰金旺早年出身不错；辛巳巳火克印（学历不高）；壬午午财坏印凶（二十多岁南方运更生不出儿子）
+        assertTrue("庚辰金旺帮印——早年吉", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("辛巳支火克印非吉", jb.yuns[1].verdict != JinBiaoVerdict.JI)
+        assertTrue("壬午午财坏印——凶", jb.yuns[2].verdict == JinBiaoVerdict.XIONG)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

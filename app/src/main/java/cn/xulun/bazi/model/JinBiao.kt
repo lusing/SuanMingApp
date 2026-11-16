@@ -161,6 +161,26 @@ enum class JinBiaoQingZhuo(val chinese: String, val auspicious: Boolean?) {
     QING_KU("清枯·病大无救，好运仅温饱", false),
 }
 
+/** 子女四情况（第十一讲：必有儿／必无儿／无儿有女／无儿无女损子——逃不出这个圈） */
+enum class JinBiaoZiNvQingKuang(val chinese: String) {
+    BI_YOU_ER("必有儿"),
+    BI_WU_ER("必无儿"),
+    WU_ER_YOU_NV("无儿有女"),
+    WU_ER_WU_NV("无儿无女·损子"),
+}
+
+/** 子女判读（第十一讲·子星按原局喜忌而定——每十神皆可为子，非子女宫非固定十神） */
+data class JinBiaoZiNv(
+    /** 四情况 */
+    val qingKuang: JinBiaoZiNvQingKuang,
+    /** 子星十神（印做儿／财为子／官杀为儿／食伤为儿／比劫为儿） */
+    val ziXing: TenGod?,
+    /** 子星五行 */
+    val ziEl: Element?,
+    /** 判读依据（判定树逐层检查＋子星昌衰＋克神运） */
+    val basis: String,
+)
+
 /** 金镖门用神分析总结果 */
 data class JinBiaoResult(
     /** 口径说明（模块页眉展示） */
@@ -205,6 +225,8 @@ data class JinBiaoResult(
     val qingZhuoBasis: String,
     /** 综合断语（一律锚定用神，禁泛断） */
     val duanYu: String,
+    /** 子女判读（第十一讲；极端格局未判时为 null） */
+    val ziNv: JinBiaoZiNv? = null,
     /** 校准注记 */
     val note: String,
 )

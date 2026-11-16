@@ -427,7 +427,12 @@ object JinBiaoCalculator {
             // 印比有力可依（身有靠），势虽成不作昆仑——正常分析（身弱用印，财得局坏印）
             !(kunLunEl != yinEl &&
                 (bazi.monthPillar.stem.element == yinEl || bazi.hourPillar.stem.element == yinEl) &&
-                hasBenQiRoot(bazi, biEl))
+                hasBenQiRoot(bazi, biEl)) &&
+            // 案五十八裁：食伤得局（木旺）而印星透干坐本气禄根（庚坐申——有力可依）——
+            // 克泄交加身太衰，肯定要用印星帮身：用神庚申，正常分析不归昆仑（印好才是真的好）
+            !(kunLunEl == shiEl && bazi.stems.anyIndexed { i, s ->
+                i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl
+            })
 
         // ── 气象调候（案十五~案二十一）：寒甚要暖有气，暖至要寒有根 ──
         // 寒面（冬水/水局）调候神＝丙火：有气（火藏根（寅中丙/戌中丁亦是根），或透木紧贴生火且木有地载）→用之暖局；
@@ -1086,6 +1091,85 @@ object JinBiaoCalculator {
         val xiElements = Element.entries.filter { it.generates == yongEl || it == yongEl }
         val jiElements = Element.entries.filter { it.controls == yongEl || yongEl.generates == it || yongEl.controls == it }
 
+        // ── 子女判读（第十一讲·子女章判定树：子星按原局喜忌而定，来回检查；子星要昌） ──
+        // 四情况铁律：必有儿／必无儿／无儿有女／无儿无女损子——逃不出这个圈。
+        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = if (ruoJi || wangJi) {
+            null // 从势／专旺之子女另裁——待师传
+        } else {
+            val yinYouLi = bazi.stems.any { it != dayMaster && it.element == yinEl } || hasBenQiRoot(bazi, yinEl)
+            val yinTouZuoBen = bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl }
+            data class ZN(val el: Element, val er: Boolean, val nv: Boolean, val text: String)
+            val zn: ZN = if (strength == DayStrength.STRONG) {
+                // 身旺：基准财为子——比劫夺财找官杀；无财无官食伤泄秀；食被枭夺找财
+                when {
+                    caiS > 0.0 && biS >= 1.5 * caiS -> {
+                        // 比劫夺财——找官杀：有官杀一样有儿子；没有就没儿子
+                        if (guanS >= FOLLOW_MIN_SCORE) {
+                            ZN(guanEl, true, false, "身旺财为子而**比劫旺夺财**——官杀克劫解放财：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
+                        } else {
+                            ZN(caiEl, false, false, "身旺财为子而**比劫旺夺财、又无官杀救**——**没儿子**")
+                        }
+                    }
+                    caiS > 0.0 -> ZN(caiEl, true, false, "**身旺财为子**（有财即有子；怕劫地——比劫给我克了）")
+                    guanS >= FOLLOW_MIN_SCORE -> ZN(guanEl, true, false, "身旺无财——**官煞为儿**（喜官杀克我；怕食地——食伤制官杀捣乱；月上比劫劫住年官替我受克则子归挡者）")
+                    shiS >= FOLLOW_MIN_SCORE && yinS < YIN_HUAI -> ZN(shiEl, true, false, "身旺无财无官——**食伤泄秀为儿**：泄得好没破坏＝**多子**")
+                    shiS >= FOLLOW_MIN_SCORE -> {
+                        if (caiS > 0.0) ZN(caiEl, true, false, "身旺食伤泄秀而**枭印夺食**——**财坏印解放食伤：仍以财为子，有子**")
+                        else ZN(shiEl, false, false, "身旺食伤泄秀而**枭印夺食又无财救**——**没儿子**（伤官不见财，男孩不见面）")
+                    }
+                    else -> ZN(biEl, false, false, "身旺而财官食俱无——子女另裁（待师传）")
+                }
+            } else {
+                // 身弱：印做儿／比劫为儿——官杀欺衰查印化、财坏印查比劫护、无印比劫扛
+                val keYinS = partyScore(bazi, caiEl) // 财坏印（克印之神）
+                val guQiS = guanS
+                when {
+                    guQiS >= FOLLOW_MIN_SCORE && yinYouLi -> {
+                        // 官杀欺衰主——除非有印：印为儿；螳螂捕蝉黄雀在后查财坏印；木坚金缺查子星所克过旺
+                        val haoQueS = partyScore(bazi, yinEl.controls) // 子星所克之神过旺——木坚金缺（剩一点气生闺女）
+                        when {
+                            keYinS >= 1.5 * yinS && keYinS > 0 -> ZN(yinEl, false, false, "官杀欺衰主有印化（印为儿），然**财坏印坏成**（螳螂捕蝉黄雀在后）——**没儿子**")
+                            haoQueS >= 2.0 * yinS && yinS > 0.5 -> ZN(yinEl, false, true, "**官杀欺衰主——除非有印，印为儿**（印星就是我的儿子，虽在年上——有没有儿子取决于他，印好才是真的好）；然**木坚金缺**（子星所克之神党力${format(haoQueS)}压过子星${format(yinS)}——食伤得局反克，金剩一点气；若是酉金被冲彻底毁，连闺女都生不出来）——**没儿子，可生闺女**")
+                            haoQueS >= 2.0 * yinS -> ZN(yinEl, false, false, "官杀欺衰主有印化（印为儿），然子星被所克之旺神拖至**彻底缺绝**——**连闺女都生不出来**（若是酉金还走火运，必然不生育）")
+                            keYinS > 0.0 -> ZN(yinEl, false, true, "官杀欺衰主有印化（印为儿），然**财轻克而未坏成印**——能生个闺女；万一财更轻凑合生出儿子——**必然逆子**（财有多重儿子就有多不孝：轻则没礼貌、中则啃老、重则破大财打骂爹妈）")
+                            else -> ZN(yinEl, true, false, "官杀欺衰主——**除非有印，有印就有子**：印为儿，子星昌（怕财地——局里有财命局隐患、大运有财损子运）")
+                        }
+                    }
+                    guQiS >= FOLLOW_MIN_SCORE -> {
+                        // 官杀欺衰而无印——比劫扛得住才有子
+                        if (biS >= FOLLOW_MIN_SCORE) ZN(biEl, true, false, "**官杀欺衰主而无印**——比劫扛得住（够旺）**比劫为儿也有子**（身弱杀日之间很旺比劫挡杀护我＝我有儿子；扛不住则无子）")
+                        else ZN(biEl, false, false, "**官杀欺衰主，无印、比劫又扛不住**——**没儿子**（官杀无制化攻身——生了儿子也得夭折）")
+                    }
+                    yinYouLi && keYinS < FOLLOW_MIN_SCORE -> {
+                        if (yinTouZuoBen) ZN(yinEl, true, false, "**身衰印做儿**（印为儿，印星就是我的儿子——印好才是真的好）")
+                        else ZN(yinEl, true, false, "**身衰印做儿**（有印有比劫而无财——印肯定是儿子，印此时不作母亲论；怕财地）")
+                    }
+                    yinYouLi -> {
+                        if (biS >= FOLLOW_MIN_SCORE) ZN(biEl, true, false, "身衰印做儿而**财坏印**——**比劫克财护印：比劫为儿，有子**")
+                        else ZN(yinEl, false, false, "身衰印做儿而**财坏印、比劫又无**——**没儿子**")
+                    }
+                    else -> {
+                        if (biS >= FOLLOW_MIN_SCORE) ZN(biEl, true, false, "身弱局里没有印（必财旺或官杀旺）——**比劫就是儿子**（抗杀挡杀镇财给我力量）：有比劫才有儿子")
+                        else ZN(biEl, false, false, "身弱无印无比劫——**没儿子**")
+                    }
+                }
+            }
+            // 运注：子星之克神运＝损子／生不出之运
+            val keZiEl = Element.entries.first { it.controls == zn.el }
+            val keZiYuns = daYun?.yuns?.filter { it.pillar.stem.element == keZiEl || it.pillar.branch.element == keZiEl }
+                ?.map { it.pillar.fullName } ?: emptyList()
+            cn.xulun.bazi.model.JinBiaoZiNv(
+                qingKuang = when {
+                    zn.er -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER
+                    zn.nv -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV
+                    else -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER
+                },
+                ziXing = representativeGod(bazi, dayMaster, zn.el),
+                ziEl = zn.el,
+                basis = zn.text + (if (keZiYuns.isNotEmpty()) "；运注：**${keZiEl.chinese}为子星之克神**——行${keZiYuns.joinToString("、")}运克子星（生不出儿子／损子）" else ""),
+            )
+        }
+
         // ── 运年评断（以用神为中心；从格/专旺的反常识运断由用神立场自动成立） ──
         // 财解围局（第三讲）：行财运亨通；行官/食运稍差但无大碍——中平。
         // 旺极局：局中印轻食伤顺泄也是好运；官杀犯旺、财地九死一生——大凶。
@@ -1392,6 +1476,7 @@ object JinBiaoCalculator {
             qingZhuo = qingZhuo,
             qingZhuoBasis = qingZhuoBasis,
             duanYu = duanYu,
+            ziNv = ziNv,
             note = "金镖门讲义已授一至三讲（弱极从势／旺极专旺／强极印比同心）＋案一~案三补丁（藏根叛向·三会作废·印比支藏敌党作废·得局＝印旺于比·干化于支·化煞合局大发·财地软档）；" +
                 "身强/中和取用、特殊格局篇、壬寅大运专题待师传档；弱极阈值（占比$RUO_JI_SHARE、微浮党力$WEI_FU_MAX_SCORE）、强极印线$QIANG_JI_YIN 为基线参数，以事实案例为准打补丁。" +
                 "带有事实的案例须同时以老引擎（下方传统综合区块）对照分析。",

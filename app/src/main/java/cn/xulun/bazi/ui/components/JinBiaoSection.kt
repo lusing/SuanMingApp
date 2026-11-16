@@ -291,6 +291,21 @@ fun JinBiaoSection(result: JinBiaoResult, modifier: Modifier = Modifier) {
                     .padding(10.dp),
             )
 
+            // ── 子女判读（第十一讲：子星按原局喜忌而定） ──
+            result.ziNv?.let { zn ->
+                GoldLabel("子女判读", Modifier.padding(top = 14.dp))
+                Text(
+                    text = "${zn.qingKuang.chinese}（子星：${zn.ziXing?.chinese ?: ""}·${zn.ziEl?.chinese ?: ""}）\n${zn.basis}",
+                    fontSize = 12.sp,
+                    color = JinBiaoGold,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(JinBiaoInk.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+                        .padding(10.dp),
+                )
+            }
+
             // 校准注记
             Text(
                 text = "注：${result.note}",
