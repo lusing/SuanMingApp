@@ -1167,6 +1167,27 @@ class JinBiaoAnLiTest {
         assertTrue("非食制路径（食在合中）", jb.quYongWay != JinBiaoQuYongWay.ZHI_SHA)
     }
 
+    // ── 案卅八 · 壬申 丁未 丁未 癸卯（1992-07-30 卯时，乾）——比肩合官·不宜合 ──
+
+    @Test
+    fun `案卅八 乾 壬申丁未丁未癸卯 身旺通两根 比肩合去壬官不宜合 幸坐申不化金水补`() {
+        val bazi = chart(1992, 7, 30, 5)
+        assertTrue(bazi.fullBazi.startsWith("壬申 丁未 丁未 癸卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { it.pillar.fullName } == listOf("戊申", "己酉", "庚戌"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("丁通两未根＋卯印——身旺；身旺官杀先用——财滋弱官（壬癸）",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含不宜合与合而不化",
+            jb.quYongBasis.contains("不宜合") && jb.quYongBasis.contains("合而不化"))
+
+        // 合而不化——走一路金水运把官杀补起来
+        assertTrue("庚戌辛亥壬子癸丑金水四步皆吉", listOf(2, 3, 4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

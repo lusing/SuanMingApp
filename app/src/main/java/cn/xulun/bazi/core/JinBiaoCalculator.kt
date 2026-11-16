@@ -432,7 +432,10 @@ object JinBiaoCalculator {
             (dayBranchEl == yinEl || dayBranchEl == biEl ||
                 bazi.monthPillar.stem.element == yinEl || bazi.monthPillar.stem.element == biEl) &&
             ((monthElAdj.generates == dayBranchEl && (dayBranchEl == yinEl || dayBranchEl == biEl)) ||
-                (dayBranchEl.controls == monthElAdj && dayBranchEl == biEl))
+                (dayBranchEl.controls == monthElAdj && dayBranchEl == biEl) ||
+                // 案卅八：月干比透＋月支藏日主余气根（丁透于未月，未中丁两见）——身旺
+                (bazi.monthPillar.stem.element == biEl &&
+                    branchHiddenStems.getValue(monthBranch).any { it.element == biEl }))
         ) {
             strength = DayStrength.STRONG
             ruoZhongBianWang = true
@@ -699,6 +702,15 @@ object JinBiaoCalculator {
                             append("；地支${biEl.chinese}旺——巳随${biEl.chinese}走（作${biEl.chinese}根不作火根），${guanEl.chinese}杀真弱而通寅根：杀有根气故不能去杀（去杀须杀无一丝根气），必须财滋弱杀、禁制杀（制杀贫穷欠债）")
                         }
                         append("；杀强反不宜（要克身）；走帮官杀之运好运，走加重${biEl.chinese}病之运差")
+                        // 案卅八：官杀两透本赖混杂加力，比肩合去其一——不宜合（官愈弱）；幸被合之干坐强根不化，金水运补起
+                        if (bazi.stems.count { it.element == guanEl } >= 2 &&
+                            bazi.stems.filterIndexed { i, s -> i != 2 && s.element == biEl }.any { bg ->
+                                val p = GAN_HE[bg]
+                                p != null && p.element == guanEl && bazi.stems.any { it == p }
+                            }
+                        ) {
+                            append("；官杀两透本赖混杂加力（官弱喜混杂），比肩合去其一——不宜合（愈合官愈弱）；幸被合之干坐强根（壬坐申金旺）合而不化（若化${yinEl.chinese}成印即无情）——走一路金水之运把官杀补起来亦发")
+                        }
                     },
                 )
                 shiS >= FOLLOW_MIN_SCORE -> Choice(
