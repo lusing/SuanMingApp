@@ -1031,6 +1031,29 @@ class JinBiaoAnLiTest {
         assertTrue("壬午癸未非凶（干头印在南方力减）", listOf(1, 2).all { jb.yuns[it].verdict != JinBiaoVerdict.XIONG })
     }
 
+    // ── 案卅二 · 壬子 壬子 丙戌 戊戌（1972-12-21 戌时，乾）——食神制杀·退而求其次 ──
+
+    @Test
+    fun `案卅二 乾 壬子壬子丙戌戊戌 杀旺无印 丙两处库根通根 退而求其次食神制杀`() {
+        val bazi = chart(1972, 12, 21, 19)
+        assertTrue(bazi.fullBazi.startsWith("壬子 壬子 丙戌 戊戌"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸丑(1977)", "甲寅(1987)", "乙卯(1997)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("杀极旺无印食透藏根两处——不弱极，退而求其次食神制杀",
+            !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.EARTH)
+        assertTrue("取用依据含首先考虑印、退而求其次、没有用印的厉害",
+            jb.quYongBasis.contains("首先考虑有没有印") && jb.quYongBasis.contains("退而求其次") && jb.quYongBasis.contains("没有用印的厉害"))
+
+        // 印运（甲寅乙卯；丙辰之辰随寅卯辰方局作印论）夺食凶；丁巳戊午火土帮身食吉
+        assertTrue("甲寅乙卯印夺食皆凶", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("丙辰之辰随寅卯辰方局作印论——非吉", jb.yuns[3].verdict != JinBiaoVerdict.JI)
+        assertTrue("丁巳戊午火土皆吉", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

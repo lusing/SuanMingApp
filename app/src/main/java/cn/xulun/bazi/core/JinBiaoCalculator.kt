@@ -249,8 +249,11 @@ object JinBiaoCalculator {
             }
         } else if (strength == DayStrength.WEAK && !supportRooted &&
             supportSAdj.first < WEI_FU_MAX_SCORE && aShare < RUO_JI_SHARE && attackerStrong &&
-            // 案三十：日主藏干通根≥3处（三辰中癸）＝有根气，不弱极——足以食神制杀卫身
-            bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } < 3
+            // 案三十：日主藏干通根≥3处（三辰中癸）＝有根气，不弱极——足以食神制杀卫身；
+            // 案卅二：杀极旺（≥10）无印食透而藏根≥2——退而求其次食神制杀，不弱极
+            bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } < 3 &&
+            !(guanS >= 10.0 && shiS >= FOLLOW_MIN_SCORE && partyScore(bazi, Element.entries.first { it.generates == dayEl }) < FOLLOW_MIN_SCORE &&
+                bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 2)
         ) {
             ruoJiType = JinBiaoRuoJiType.WEI_FU
             // 师注（案一）：藏根寄于财官食本气之支者「跟着走」——借根无用（戌中丁火随秋金走）
@@ -519,12 +522,15 @@ object JinBiaoCalculator {
             )
             // 第四讲·正格五理③／⑥＋案三十食神制杀＋基线：身弱取用
             strength == DayStrength.WEAK -> when {
-                // 食神制杀格（案三十/案卅一·弱而根气足）：日主有根气（本气根，或藏干通根≥3处）＝
-                // 承载得动食神之泄——足以食神制杀卫身成格；杀旺、食伤有力、妙在无印（印不夺食）。
+                // 食神制杀格（案三十/卅一/卅二）：日主有根气＝承载得动食神之泄；
+                // 根气＝本气根，或藏干通根≥3（案三十），或【无印而杀极旺（≥10）时藏根≥2亦通根得气——退而求其次】（案卅二）。
+                // 身弱食神制杀首先考虑有没有印：最好用印化之以德；命局无印只有食神——退而求其次食神制杀（身弱肯定没有用印厉害）。
                 // 无根气而食神强制＝克泄交加，更穷困比普通人还差（贫夭负债）。
-                guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE && shiS < 6.0 &&
+                (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE && shiS < 6.0 &&
                     (hasBenQiRoot(bazi, biEl) ||
-                        bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 3) -> Choice(
+                        bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 3)) ||
+                    (guanS >= 10.0 && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE &&
+                        bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 2) -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
                     buildString {
                         val benQiRoots = bazi.branches.filter { it.element == biEl }
@@ -535,6 +541,9 @@ object JinBiaoCalculator {
                             append("；日主通根${benQiRoots.joinToString("") { it.chinese }}（本气根有力）")
                         }
                         if (cangRoots.size >= 3) append("；日主藏干通根三支（${cangRoots.joinToString("") { it.chinese }}）——有根气；辰乃木之余气——一将当关，群凶自败")
+                        if (yinS == 0.0 && guanS >= 10.0 && cangRoots.size >= 2) {
+                            append("；身弱食神制杀首先考虑有没有印——最好用印化之以德；命局无印只有食神，日主通根得气（${cangRoots.joinToString("") { it.chinese }}库根通根），退而求其次也可用食神制杀——身弱肯定没有用印的厉害；库土毕竟泄身，身弱而杀旺赖食制卫身")
+                        }
                         if (EarthlyBranch.CHEN in bazi.branches && EarthlyBranch.XU in bazi.branches) {
                             append("；辰戌一冲土越来越旺、藏金暗相砍木——余气根等于没了（幸有${if (bazi.hourPillar.branch.element == biEl) "时支寅木气贯生时" else "本气根"}，根气不毁）")
                         }
