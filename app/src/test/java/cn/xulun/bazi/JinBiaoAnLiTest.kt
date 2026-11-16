@@ -1146,6 +1146,27 @@ class JinBiaoAnLiTest {
         assertTrue("癸丑壬子帮官方转吉", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案卅七 · 戊申 癸亥 丙午 壬辰（1968-12-02 辰时，乾）——合去混杂·有情 ──
+
+    @Test
+    fun `案卅七 乾 戊申癸亥丙午壬辰 身弱官杀混杂 戊合去癸留壬 有情豁免旺衰`() {
+        val bazi = chart(1968, 12, 2, 7)
+        assertTrue(bazi.fullBazi.startsWith("戊申 癸亥 丙午 壬辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("甲子(1970)", "乙丑(1980)", "丙寅(1990)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱官杀混杂、戊合去癸——合去混杂有情，留壬为用",
+            jb.quYongWay == JinBiaoQuYongWay.HE_LIU && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含混杂两律与豁免",
+            jb.quYongBasis.contains("不喜混杂") && jb.quYongBasis.contains("混杂能加力") && jb.quYongBasis.contains("不用考虑"))
+
+        // 食干被官干合住——不能制杀（案卅七戒）
+        assertTrue("非食制路径（食在合中）", jb.quYongWay != JinBiaoQuYongWay.ZHI_SHA)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

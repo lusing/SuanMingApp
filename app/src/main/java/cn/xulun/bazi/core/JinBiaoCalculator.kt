@@ -557,6 +557,17 @@ object JinBiaoCalculator {
                         "逆者${keEl.chinese}（克${kunLunEl.chinese}止${kunLunEl.chinese}）与${kunLunEl.controls.chinese}（克${kunLunSource.chinese}逆金水之局）——顺来逆去贫之意，逆则贫命出灾",
                 )
             }
+            // 第八讲续·合去混杂（案卅七）：身弱官杀两透混杂（混杂加力克身）而食伤干合去其一——
+            // 去留清纯＝有情豁免（不用考虑留下官杀旺而克身）；留下之官杀为用
+            strength == DayStrength.WEAK && !ruoJi &&
+                bazi.stems.count { it.element == guanEl } >= 2 &&
+                bazi.stems.filterIndexed { i, s -> i != 2 && s.element == shiEl }.any { sg ->
+                    val partner = GAN_HE[sg]
+                    partner != null && partner.element == guanEl && bazi.stems.any { it == partner }
+                } -> Choice(
+                JinBiaoQuYongWay.HE_LIU, guanEl,
+                "合去混杂·有情（案卅七）：${guanEl.chinese}官杀两透混杂——身弱不喜混杂（壬癸一混杂，${guanEl.chinese}之力更大、克身更重；身旺用官而官弱反喜混杂——混杂能加力）。食伤干合去其一＝去留清纯：**任意合去一个也是有情了——不用考虑留下的${guanEl.chinese}很旺克身的问题**。留下${guanEl.chinese}为用神，有情就加分要富贵".replace("**", ""),
+            )
             // 案廿四·财党杀攻身（财滋弱杀之反例）：身弱而财旺党杀克身、财先破有力之印、日主有根非从——非贫即夭
             strength == DayStrength.WEAK && caiS >= GUAN_WANG && guanS >= FOLLOW_MIN_SCORE && yinS >= FOLLOW_MIN_SCORE &&
                 partyScore(bazi, Element.entries.first { it.controls == yinEl }) >= 1.5 * yinS &&
@@ -575,6 +586,10 @@ object JinBiaoCalculator {
                 // 身弱食神制杀首先考虑有没有印：最好用印化之以德；命局无印只有食神——退而求其次食神制杀（身弱肯定没有用印厉害）。
                 // 无根气而食神强制＝克泄交加，更穷困比普通人还差（贫夭负债）。
                 (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && (yinS < FOLLOW_MIN_SCORE || luGen) && shiS < 6.0 &&
+                    bazi.stems.filterIndexed { i, s -> i != 2 && s.element == shiEl }.none { sg ->
+                        val p = GAN_HE[sg]
+                        p != null && p.element == guanEl && bazi.stems.any { it == p }
+                    } && // 案卅七：食干被官干合住——食在合中不能制杀
                     (hasBenQiRoot(bazi, biEl) ||
                         bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 3)) ||
                     tuiErQici -> Choice(
