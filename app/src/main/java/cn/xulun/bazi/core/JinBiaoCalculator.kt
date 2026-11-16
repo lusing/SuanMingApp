@@ -379,6 +379,17 @@ object JinBiaoCalculator {
 
         // ── 取用 ──
         // 案廿二：比劫克财之病（财被劫）——财滋弱杀局之病在比劫，食伤反为通关药神（泄比生财）
+        // 案六十二·身旺无依判据：印三会得局＋食伤本气根随局化＋财不载无根＋官不透而根被化（官本气支入印局
+        // 或与局支六合化印——亥被寅化木：官被泄没了，全化成木）——克耗泄全废
+        val shenWangWuYi = SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }?.let { (bs, el) ->
+            el == yinEl && bazi.branches.any { it.element == shiEl && it in bs } &&
+                !caiZai && !hasBenQiRoot(bazi, caiEl) &&
+                bazi.stems.none { it != dayMaster && it.element == guanEl } &&
+                (bazi.branches.none { it.element == guanEl } ||
+                    bazi.branches.filter { it.element == guanEl }.all { gb ->
+                        gb in bs || (LIU_HE[gb]?.let { p -> p in bazi.branches && liuHeHuaEl(gb, p) == yinEl } == true)
+                    })
+        } == true
         val caiZhuBing = biS >= caiS || bazi.branches.any { br ->
             br.element == biEl && LIU_CHONG[br] != null && LIU_CHONG.getValue(br).let { p -> p.element == caiEl && p in bazi.branches }
         }
@@ -691,6 +702,16 @@ object JinBiaoCalculator {
                     "财先破印（${caiEl.chinese}克${yinEl.chinese}，印根被冲），财复滋杀（官党力${format(guanS)}）贴身克我，身衰撑不住——非贫即夭。" +
                     "不能用杀（杀为忌，怕财滋杀）；坐下有根不属从格（从杀须日主无一丝根气）——只能比劫帮身或印化杀，而印已破难恃，" +
                     "取比劫（${biEl.chinese}）敌杀撑身；印透之运能化杀稍安（然身太衰，重病难救）",
+            )
+            // 案六十二·身旺无依：印三会得局而克耗泄全废（官被化尽〔官不透而根被泄化〕、财不载无根、
+            // 食伤本气根随局化尽）——「一无所用了，这种的才叫身旺无依」：喜用没有力量——一事无成；
+            // 走好大运得温饱，走差大运穷得要死（帮不起来论：原局坏得太重，好运也只能帮到倒数第二）
+            strength == DayStrength.STRONG && shenWangWuYi -> Choice(
+                JinBiaoQuYongWay.SHEN_WANG_WU_YI, caiEl,
+                "**身旺无依（案六十二）**：印三会得局贴身生——日主旺极；取用必须克耗泄：官被化尽（根被泄化、全化成木——用不了）、财地支不载无通根（木旺财也不行）、食伤之根随局化尽——**克耗泄一无所用，才叫身旺无依**。" +
+                    "**喜用没有力量——一事无成**（找什么工作都干不好：他也有机会，就是干不好）；走好大运得**温饱**，走差大运**穷得要死**。" +
+                    "**帮不起来论**：不是用神衰走好运就行——得看能不能帮起来、究竟坏到什么程度；原局被化太重，好运也只能帮到倒数第二（差生、小学五年级毕业——财富温饱打工）。" +
+                    "子星仍取财（虚透没被比劫克——生育能力在：贫富与子嗣两轨，走财得根之运得儿子）",
             )
             // 第四讲·正格五理③／⑥＋案三十食神制杀＋基线：身弱取用
             strength == DayStrength.WEAK -> when {
@@ -1135,7 +1156,20 @@ object JinBiaoCalculator {
                             else -> ZN(caiEl, false, false, "身旺财为子而**比劫夺财、官救食化俱无**——**没儿子**")
                         }
                     }
-                    caiS > 0.0 -> ZN(caiEl, true, false, "**身旺财为子**（有财即有子；怕劫地——比劫给我克了）")
+                    caiS > 0.0 -> {
+                        if (!caiZai && !hasBenQiRoot(bazi, caiEl)) {
+                            // 案六十二·财虚透而没被比劫克——生育能力在（贫富与子嗣两轨）：走财得根运得儿子
+                            val deGenYuns = daYun?.yuns
+                                ?.filter { yun -> branchHiddenStems.getValue(yun.pillar.branch).any { it.element == caiEl } }
+                                ?.map { it.pillar.fullName } ?: emptyList()
+                            ZN(caiEl, true, false,
+                                "**身旺财为子——财虚透而没被比劫克**：**生育能力在**（**贫富与子嗣两轨**——富人也生儿子，穷人也生儿子：大运帮不起来＝财富不行温饱打工，**不代表穷人就生不了儿子**——只要财没被破坏，大运一帮就有机会生）" +
+                                    "；**走财得根的大运是得儿子的**（如${if (deGenYuns.isNotEmpty()) deGenYuns.joinToString("、") + "之属" else "财藏根支之运"}）" +
+                                    "；**财运过后防损子**——其后克泄财之运损子：死／送人／**离婚判给对方（孩子跟人家也行——反正不在你身边就破解了）**；若离婚儿子还判给你——儿子就要没了（必须的）")
+                        } else {
+                            ZN(caiEl, true, false, "**身旺财为子**（有财即有子；怕劫地——比劫给我克了）")
+                        }
+                    }
                     guanS >= FOLLOW_MIN_SCORE -> ZN(guanEl, true, false, "身旺无财——**官煞为儿**（喜官杀克我；怕食地——食伤制官杀捣乱；月上比劫劫住年官替我受克则子归挡者）")
                     shiS >= FOLLOW_MIN_SCORE && yinS < YIN_HUAI -> ZN(shiEl, true, false, "身旺无财无官——**食伤泄秀为儿**：泄得好没破坏＝**多子**")
                     shiS >= FOLLOW_MIN_SCORE -> {

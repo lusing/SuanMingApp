@@ -1731,6 +1731,34 @@ class JinBiaoAnLiTest {
         assertTrue("庚戌运戌支克用非吉（火局生女之运）", jb.yuns[2].verdict != JinBiaoVerdict.JI)
     }
 
+    // ── 案六十二 · 甲辰 乙亥 丙寅 辛卯（1964-11-13 卯时，乾）——子女章五例·身旺无依 ──
+
+    @Test
+    fun `案六十二 乾 甲辰乙亥丙寅辛卯 寅卯辰三会印局身旺无依克耗泄全废 财虚透未被克生育能力在 丑运得子运过损子判前妻`() {
+        val bazi = chart(1964, 11, 13, 6)
+        assertTrue(bazi.fullBazi.startsWith("甲辰 乙亥 丙寅 辛卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丙子(1972)", "丁丑(1982)", "戊寅(1992)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("寅卯辰三会印局＋亥寅化木——身旺", jb.strength == DayStrength.STRONG)
+        assertTrue("官被化尽、财不载无根、食伤根随局化——身旺无依（喜用全废一事无成）",
+            jb.quYongWay == JinBiaoQuYongWay.SHEN_WANG_WU_YI && jb.yongShenElement == Element.METAL)
+        assertTrue("取用依据含身旺无依、一事无成、帮不起来论",
+            jb.quYongBasis.contains("身旺无依") && jb.quYongBasis.contains("一事无成") && jb.quYongBasis.contains("帮不起来"))
+
+        // 子女章：财虚透没被比劫克——生育能力在（贫富两轨）；丑运财得根得子；运过损子（离婚判前妻即破解）
+        val zn = jb.ziNv!!
+        assertTrue("必有儿（生育能力在）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("子星＝正财辛金", zn.ziXing == cn.xulun.bazi.model.TenGod.ZHENG_CAI && zn.ziEl == Element.METAL)
+        assertTrue("判据含贫富两轨、走财得根运得子、离婚判对方破解",
+            zn.basis.contains("贫富与子嗣两轨") && zn.basis.contains("不代表穷人就生不了儿子") &&
+                zn.basis.contains("走财得根的大运是得儿子的") && zn.basis.contains("丁丑") &&
+                zn.basis.contains("离婚判给对方"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
@@ -1793,7 +1821,7 @@ class JinBiaoAnLiTest {
                                     JinBiaoQuYongWay.YI_SHEN, JinBiaoQuYongWay.ZHI_SHA,
                                     JinBiaoQuYongWay.PEI_CAI, JinBiaoQuYongWay.HUAI_YIN,
                                     JinBiaoQuYongWay.SHI_SHENG_CAI, JinBiaoQuYongWay.QU_GUA,
-                                    JinBiaoQuYongWay.SHI_CAI_YONG_CAI,
+                                    JinBiaoQuYongWay.SHI_CAI_YONG_CAI, JinBiaoQuYongWay.SHEN_WANG_WU_YI,
                                 ) && category in setOf("财星", "官杀", "食伤"),
                             )
                         }
