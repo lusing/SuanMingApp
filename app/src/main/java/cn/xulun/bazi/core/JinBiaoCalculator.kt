@@ -470,6 +470,9 @@ object JinBiaoCalculator {
                 bazi.monthPillar.stem.element == yinEl || bazi.monthPillar.stem.element == biEl) &&
             ((monthElAdj.generates == dayBranchEl && (dayBranchEl == yinEl || dayBranchEl == biEl)) ||
                 (dayBranchEl.controls == monthElAdj && dayBranchEl == biEl) ||
+                // 案五十：坐下印本气（兼刃）克月令食伤（午火克酉金）——食伤被印克转衰，弱中变旺
+                // 护栏：限食伤月令＋非寒燥调候局（案廿子月寒局调候优先不翻——财月令被印克亦不翻）
+                (dayBranchEl == yinEl && dayBranchEl.controls == monthElAdj && monthElAdj == shiEl && !hanJu && !zaoJu) ||
                 // 案卅八：月干比透＋月支藏日主余气根（丁透于未月，未中丁两见）——身旺；
                 // 案四十九：月干比透＋坐下比劫本气根（己透＋坐戌——两戌厚土）——身旺
                 (bazi.monthPillar.stem.element == biEl && dayBranchEl == biEl) ||
@@ -827,6 +830,10 @@ object JinBiaoCalculator {
                             append("；印星两坏（生身助旺＋贴身克用神）——印为格局之病，病去或用神强旺方能好")
                             if (!caiZai) append("；财地支不载（金旺土生金、支全金局）——用财无出息，不如用食伤（秋水通源，壬水有劲）")
                         }
+                        // 案五十·枭神夺食不可见官：印旺夺食为病、财护食制枭为药——最怕官（官生枭夺食更凶）
+                        if (yinS >= YIN_HUAI && guanS == 0.0) {
+                            append("；枭神夺食之局（印${format(yinS)}旺贴克食伤）——好在${caiEl.chinese}财护食制枭（${shiEl.chinese}生${caiEl.chinese}、${caiEl.chinese}克${yinEl.chinese}）＝药，是为好命；最怕官：财生官、官生枭——夺食更凶。伤官不可见官，见官为祸百端（身旺逢枭夺食最不可见官）；亥子丑坎卦克忌神好运，丙寅丁卯官星来即凶。金水伤官／土金伤官口诀皆不成立——一切用生克分析做最后判断（案四十九喜官、案五十忌官，分野即枭夺食有无）")
+                        }
                         append("；财党力 ${format(caiS)}")
                         if (caiS < FOLLOW_MIN_SCORE) append("——虽财不现，食伤够旺亦必发泄，也是好命")
                     },
@@ -1008,9 +1015,14 @@ object JinBiaoCalculator {
             if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI) {
                 put(
                     caiEl,
-                    if (yinS >= YIN_HUAI) "财克印去病——去戊土之病，发泄更畅，好运（甲寅之属尤佳）"
+                    if (yinS >= YIN_HUAI && guanS == 0.0) "财克印去病兼护食制枭——克掉忌神印${yinEl.chinese}（亥子丑坎卦），好运"
+                    else if (yinS >= YIN_HUAI) "财克印去病——去戊土之病，发泄更畅，好运（甲寅之属尤佳）"
                     else "食神生财——泄秀得衡，好运",
                 )
+            }
+            // 案五十·枭神夺食局：官生枭夺食——伤官不可见官大凶
+            if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI && yinS >= YIN_HUAI && guanS == 0.0) {
+                put(guanEl, "官生枭夺食更凶——伤官不可见官，见官为祸百端（运忌丙寅丁卯之属）")
             }
             // 案四：弱极随势无争妒——财官食相生一体，随财杀而走皆吉
             if (ruoJi && !zhengDou) {

@@ -1417,6 +1417,28 @@ class JinBiaoAnLiTest {
         assertTrue("癸丑丑生酉克用神卯非吉", jb.yuns[3].verdict != JinBiaoVerdict.JI)
     }
 
+    // ── 案五十 · 戊子 辛酉 戊午 丁巳（1948-09-30 巳时，乾）——枭神夺食不可见官 ──
+
+    @Test
+    fun `案五十 乾 戊子辛酉戊午丁巳 身旺坐禄刃印贴生 枭神夺食财护为药 官生枭见官祸百端`() {
+        val bazi = chart(1948, 9, 30, 9)
+        assertTrue(bazi.fullBazi.startsWith("戊子 辛酉 戊午 丁巳"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { it.pillar.fullName } == listOf("壬戌", "癸亥", "甲子"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("坐午刃巳禄＋丁巳印贴生——身旺（坐下印克月令食伤补臂）", jb.strength == DayStrength.STRONG)
+        assertTrue("身旺无官食伤泄秀——用神取食伤（金）", jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI && jb.yongShenElement == Element.METAL)
+        assertTrue("取用依据含枭神夺食不可见官", jb.quYongBasis.contains("枭神夺食") && jb.quYongBasis.contains("不可见官"))
+
+        // 亥子丑坎卦（水财运克忌神火印）好运；丙寅丁卯官星来凶（官生枭夺食）
+        assertTrue("癸亥水运好运", jb.yuns[1].verdict == JinBiaoVerdict.JI)
+        assertTrue("丙寅丁卯官运凶", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("官运标注见官为祸百端", jb.yuns[4].items.any { it.action.contains("祸百端") })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
