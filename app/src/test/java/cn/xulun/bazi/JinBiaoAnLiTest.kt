@@ -1048,10 +1048,32 @@ class JinBiaoAnLiTest {
         assertTrue("取用依据含首先考虑印、退而求其次、没有用印的厉害",
             jb.quYongBasis.contains("首先考虑有没有印") && jb.quYongBasis.contains("退而求其次") && jb.quYongBasis.contains("没有用印的厉害"))
 
-        // 印运（甲寅乙卯；丙辰之辰随寅卯辰方局作印论）夺食凶；丁巳戊午火土帮身食吉
-        assertTrue("甲寅乙卯印夺食皆凶", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
-        assertTrue("丙辰之辰随寅卯辰方局作印论——非吉", jb.yuns[3].verdict != JinBiaoVerdict.JI)
+        // 壬子型（不是克就是泄、身无力）——印运反是好运：大运补印化杀帮身（师断「走印运克食神反而好」）
+        assertTrue("甲寅乙卯印运化杀帮身皆吉", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("丙辰之辰随寅卯辰方局作印论——亦吉", jb.yuns[3].verdict == JinBiaoVerdict.JI)
         assertTrue("丁巳戊午火土皆吉", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
+    // ── 案卅三 · 壬戌 壬子 丙戌 己丑（1982-12-29 丑时，乾）——退而求其次·印运反好 ──
+
+    @Test
+    fun `案卅三 乾 壬戌壬子丙戌己丑 杀旺无印食制退而求其次 印运反好甲寅本科乙卯得财`() {
+        val bazi = chart(1982, 12, 29, 1)
+        assertTrue(bazi.fullBazi.startsWith("壬戌 壬子 丙戌 己丑"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸丑(1985)", "甲寅(1995)", "乙卯(2005)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("杀旺无印、丙通两根得气——退而求其次食制，不弱极",
+            !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.EARTH)
+        assertTrue("取用依据含不如印化层次高与印运好运",
+            jb.quYongBasis.contains("不如印化层次高") && jb.quYongBasis.contains("印运反是好运"))
+
+        // 事实锚定：甲寅运本科、乙卯运做生意得财——印运化杀帮身好运
+        assertTrue("甲寅乙卯印运皆吉（本科/得财）", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("丁巳戊午火土亦吉", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──

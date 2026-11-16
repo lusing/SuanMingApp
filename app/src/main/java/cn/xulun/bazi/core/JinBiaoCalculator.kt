@@ -182,6 +182,12 @@ object JinBiaoCalculator {
         val shiS = partyScore(bazi, shiEl)
         val attackerStrong = caiS >= FOLLOW_MIN_SCORE || guanS >= FOLLOW_MIN_SCORE
 
+        // 案卅三·退而求其次标志（须在弱极判定前置）：不是克就是泄（杀旺财微食泄）、无印、
+        // 日主仅藏根小通根而无本气根——身无力太衰，退而求其次食制，不算弱极；印运反吉（补印化杀帮身）
+        val tuiErQici = guanS >= 8.0 && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE && caiS < FOLLOW_MIN_SCORE &&
+            !hasBenQiRoot(bazi, biEl) &&
+            bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 2
+
         // 师传补丁（案二）：地支三会成局——局中之支随局走（辰随春木走，等于没有），
         // 局内各支的一切印比之力（本气/藏干）作废，帮扶归零。
         val sanHuiJu: Pair<Set<EarthlyBranch>, Element>? =
@@ -249,11 +255,9 @@ object JinBiaoCalculator {
             }
         } else if (strength == DayStrength.WEAK && !supportRooted &&
             supportSAdj.first < WEI_FU_MAX_SCORE && aShare < RUO_JI_SHARE && attackerStrong &&
-            // 案三十：日主藏干通根≥3处（三辰中癸）＝有根气，不弱极——足以食神制杀卫身；
-            // 案卅二：杀极旺（≥10）无印食透而藏根≥2——退而求其次食神制杀，不弱极
+            // 案三十：藏根≥3＝有根气不弱极；案卅二/卅三：退而求其次食制不弱极
             bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } < 3 &&
-            !(guanS >= 10.0 && shiS >= FOLLOW_MIN_SCORE && partyScore(bazi, Element.entries.first { it.generates == dayEl }) < FOLLOW_MIN_SCORE &&
-                bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 2)
+            !tuiErQici
         ) {
             ruoJiType = JinBiaoRuoJiType.WEI_FU
             // 师注（案一）：藏根寄于财官食本气之支者「跟着走」——借根无用（戌中丁火随秋金走）
@@ -366,6 +370,8 @@ object JinBiaoCalculator {
                 bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == kunLunSource } }) &&
             // 案廿八裁：局克日主不为顺——火局克庚是杀攻身非顺势；印有气不随杀走（正常八格杀重用印）
             kunLunEl.controls != dayEl &&
+            // 案卅三裁：局为日主食伤而杀旺克身（≥官旺线）——杀重框架优先（退而求其次食制），不顺食弃杀
+            !(kunLunEl == shiEl && guanS >= GUAN_WANG) &&
             // 案廿七裁：得局之五行恰为日主之印、坐下印本气、官杀旺克身——杀重用印优先于昆仑
             // （辰贴申必生金、申子辰会局被夺——拱局辩证；印在坐下化旺杀即有情）
             !(kunLunEl == yinEl && bazi.dayPillar.branch.element == yinEl && guanS >= GUAN_WANG)
@@ -529,8 +535,7 @@ object JinBiaoCalculator {
                 (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE && shiS < 6.0 &&
                     (hasBenQiRoot(bazi, biEl) ||
                         bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 3)) ||
-                    (guanS >= 10.0 && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE &&
-                        bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 2) -> Choice(
+                    tuiErQici -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
                     buildString {
                         val benQiRoots = bazi.branches.filter { it.element == biEl }
@@ -543,6 +548,9 @@ object JinBiaoCalculator {
                         if (cangRoots.size >= 3) append("；日主藏干通根三支（${cangRoots.joinToString("") { it.chinese }}）——有根气；辰乃木之余气——一将当关，群凶自败")
                         if (yinS == 0.0 && guanS >= 10.0 && cangRoots.size >= 2) {
                             append("；身弱食神制杀首先考虑有没有印——最好用印化之以德；命局无印只有食神，日主通根得气（${cangRoots.joinToString("") { it.chinese }}库根通根），退而求其次也可用食神制杀——身弱肯定没有用印的厉害；库土毕竟泄身，身弱而杀旺赖食制卫身")
+                        }
+                        if (tuiErQici) {
+                            append("；此命不是克就是泄、身无帮扶只有小通根——食制不如印化层次高（若换得帮身之支则食制反高）；日主太衰不能弃之于顾：**印运反是好运——大运补起印来化杀帮身（本科、得财之属）**；若连通根得气都没有，就叫以食伤强制——贫夭的命".replace("**", ""))
                         }
                         if (EarthlyBranch.CHEN in bazi.branches && EarthlyBranch.XU in bazi.branches) {
                             append("；辰戌一冲土越来越旺、藏金暗相砍木——余气根等于没了（幸有${if (bazi.hourPillar.branch.element == biEl) "时支寅木气贯生时" else "本气根"}，根气不毁）")
@@ -801,6 +809,10 @@ object JinBiaoCalculator {
                 put(kunLunEl.generates, "顺泄——${kunLunEl.chinese}生${kunLunEl.generates.chinese}（金生水水生木），好运")
             }
             // 案九：身旺泄秀——财为泄口；印病时财运兼去病之神（甲克戊）
+            // 案卅三：退而求其次食制局——印运化杀帮身反是好运（非夺食；日主太衰不能弃）
+            if (choice.way == JinBiaoQuYongWay.ZHI_SHA && tuiErQici) {
+                put(yinEl, "印运化杀帮身——大运补起印来（本科、得财之属），好运")
+            }
             if (choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI) {
                 put(
                     caiEl,
