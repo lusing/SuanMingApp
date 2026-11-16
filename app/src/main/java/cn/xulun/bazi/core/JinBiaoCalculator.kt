@@ -418,7 +418,14 @@ object JinBiaoCalculator {
             else -> EarthlyBranch.ZI
         }
         val luGen = luZhi in bazi.branches
-        val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen)
+        // 案四十三裁：调候神本身即食伤（合杀之工具）而官杀两透混杂一官被合——生克合留为纲，调候让位；
+        // 调候神即官杀本身（案二十）——调候为纲，合留让位
+        val heZhuHunZa = bazi.stems.count { it.element == guanEl } >= 2 &&
+            bazi.stems.filterIndexed { i, s -> i != 2 && (s.element == shiEl || s.element == biEl) }.any { hg ->
+                val p = GAN_HE[hg]
+                p != null && p.element == guanEl && bazi.stems.any { it == p }
+            } && tiaoHouEl == shiEl
+        val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen) && !heZhuHunZa
 
         // ── 旺中变弱（案四十二）：旺基调（比月）而辰酉化金（辰随酉走——藏乙癸叛向、辰作金论）
         //    官杀党力压倒（≥1.5×折减印比）且月支被六冲（卯酉冲——禄根被杀根冲伤）——旺中变弱
@@ -596,7 +603,20 @@ object JinBiaoCalculator {
                     partner != null && partner.element == guanEl && bazi.stems.any { it == partner }
                 } -> Choice(
                 JinBiaoQuYongWay.HE_LIU, guanEl,
-                "合去混杂·有情（案卅七/卅九/四十二）：${guanEl.chinese}官杀两透混杂——身弱不喜混杂（壬癸一混杂，${guanEl.chinese}之力更大、克身更重；身旺用官而官弱反喜混杂——混杂能加力）。身弱官杀混杂必须去一个或用印化；无印则食伤干去一官也算有情——**化不化不论，合了这个官就叫有情；有情就是有格局，不在于命局旺弱——不用考虑留下的${guanEl.chinese}很旺克身的问题**。虽仍身弱，走帮身运也当官。留下${guanEl.chinese}为用神，有情就加分要富贵".replace("**", ""),
+                buildString {
+                    append("合去混杂·有情（案卅七/卅九/四十二/四十三）：${guanEl.chinese}官杀两透混杂——身弱不喜混杂（壬癸一混杂，${guanEl.chinese}之力更大、克身更重；身旺用官而官弱反喜混杂——混杂能加力）。身弱官杀混杂必须去一个或用印化；无印则食伤干去一官也算有情——化不化不论，合了这个官就叫有情；有情就是有格局，不在于命局旺弱——不用考虑留下的${guanEl.chinese}很旺克身的问题。虽仍身弱，走帮身运也当官。留下${guanEl.chinese}为用神，有情就加分要富贵")
+                    // 案四十三：辰水辩证——火土多辰克水（印伤）；金水多辰帮水（案卅七）
+                    if (EarthlyBranch.CHEN in bazi.branches && yinEl == Element.WATER) {
+                        val huoTu = bazi.branches.count { it.element == Element.EARTH || it.element == Element.FIRE }
+                        val jinShui = bazi.branches.count { it.element == Element.METAL || it.element == Element.WATER }
+                        append(
+                            if (huoTu > jinShui) "；辰水辩证：地支火土多——辰毕竟是土，必克水（印根被两土贴克，身愈弱）" else "；辰水辩证：地支金水多——辰要帮水（蓄印）",
+                        )
+                    }
+                    if (EarthlyBranch.YIN in bazi.branches && EarthlyBranch.HAI in bazi.branches && bazi.dayPillar.stem.element == Element.WOOD) {
+                        append("；寅亥化木——六合帮身")
+                    }
+                },
             )
             // 案廿四·财党杀攻身（财滋弱杀之反例）：身弱而财旺党杀克身、财先破有力之印、日主有根非从——非贫即夭
             strength == DayStrength.WEAK && caiS >= GUAN_WANG && guanS >= FOLLOW_MIN_SCORE && yinS >= FOLLOW_MIN_SCORE &&

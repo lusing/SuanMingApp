@@ -1267,6 +1267,24 @@ class JinBiaoAnLiTest {
         assertTrue("女命官星双得断（命主地级市领导、夫团长）", jb.duanYu.contains("官星双得"))
     }
 
+    // ── 案四十三 · 丙寅 辛丑 乙亥 庚辰（1987-01-26 辰时，坤）——辰水辩证·合杀有情 ──
+
+    @Test
+    fun `案四十三 坤 丙寅辛丑乙亥庚辰 丑辰两土贴亥辰克水印伤 丙合七杀寅亥化木 合掉一个有情`() {
+        val bazi = chart(1987, 1, 26, 7)
+        assertTrue(bazi.fullBazi.startsWith("丙寅 辛丑 乙亥 庚辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚子(1993)", "己亥(2003)", "戊戌(2013)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("丑月财当令身弱、官杀混杂——丙合辛杀留庚官，合掉一个有情",
+            jb.quYongWay == JinBiaoQuYongWay.HE_LIU && jb.yongShenElement == Element.METAL)
+        assertTrue("取用依据含辰水辩证（火土多辰克水）与寅亥化木帮身",
+            jb.quYongBasis.contains("辰水辩证") && jb.quYongBasis.contains("必克水") && jb.quYongBasis.contains("寅亥化木"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
