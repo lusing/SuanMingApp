@@ -1124,6 +1124,28 @@ class JinBiaoAnLiTest {
         assertTrue("乙卯甲寅制戊留壬皆吉", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案卅六 · 癸巳 戊午 丙午 壬辰（1953-06-24 辰时，乾）——合而化火·无情 ──
+
+    @Test
+    fun `案卅六 乾 癸巳戊午丙午壬辰 戊癸化火无情 癸丑运前一事无成多灾多难`() {
+        val bazi = chart(1953, 6, 24, 7)
+        assertTrue(bazi.fullBazi.startsWith("癸巳 戊午 丙午 壬辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丁巳(1959)", "丙辰(1969)", "乙卯(1979)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("癸根太弱（仅辰一弱根）火炎当令——戊癸化火＝合而化·无情",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_WU_QING && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含化火无情与一事无成",
+            jb.quYongBasis.contains("化火") && jb.quYongBasis.contains("无情") && jb.quYongBasis.contains("一事无成"))
+
+        // 癸丑运之前（丁巳丙辰乙卯甲寅）皆凶；癸丑壬子帮官方转
+        assertTrue("癸丑前四步皆凶", listOf(0, 1, 2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("癸丑壬子帮官方转吉", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

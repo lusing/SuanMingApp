@@ -507,6 +507,20 @@ object JinBiaoCalculator {
                     }
                 },
             )
+            // 第八讲·合而化（案卅六）：合干根气太弱（仅一弱根）而化神当令——戊癸化火：
+            // 火生土、癸去不了戊土＝无情，用神被克太坏——癸丑运之前一事无成多灾多难，帮官杀之运方转
+            strength == DayStrength.STRONG && !ruoJi && !wangJi && guanS >= FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE &&
+                shiS >= guanS &&
+                bazi.stems.filterIndexed { i, s -> i != 2 && s.element == shiEl }.any { sg ->
+                    val partner = GAN_HE[sg]
+                    partner != null && partner.element == guanEl &&
+                        bazi.stems.any { it == partner } &&
+                        bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == guanEl } } <= 1 &&
+                        zaoJu
+                } -> Choice(
+                JinBiaoQuYongWay.HUA_WU_QING, guanEl,
+                "合而化·无情（案卅六）：身强用官杀，壬水有气不去寡；${shiEl.chinese}重制杀太过。官干合食伤干，然被合之干根气太弱（仅一弱根）而化神（${biEl.chinese}）当令——**戊癸化火**：${biEl.chinese}生${shiEl.chinese}，合干解不开克＝**无情**。${shiEl.chinese}土克${guanEl.chinese}水把用神克得太坏——**帮官杀之运到来之前一事无成、多灾多难**；帮官杀之运（如癸丑壬子）方转".replace("**", ""),
+            )
             // 第八讲·合官留杀（案卅五）：身旺有官杀先定官杀；食伤有力制官杀本是差命，
             // 然一官干合住食伤干（戊癸合）——食伤不克官杀＝清格：留下之官杀为用，有情豁免旺衰
             strength == DayStrength.STRONG && !ruoJi && !wangJi && guanS >= FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE &&
@@ -840,6 +854,7 @@ object JinBiaoCalculator {
                 put(kunLunEl.generates, "顺泄——${kunLunEl.chinese}生${kunLunEl.generates.chinese}（金生水水生木），好运")
             }
             // 案卅五：合官留杀局——印运制食留杀（解病清格）好运；食伤再到＝复克用神
+            // 案卅六：合而化局——食伤党杀再克用神（火生土），差运
             if (choice.way == JinBiaoQuYongWay.HE_LIU) {
                 put(yinEl, "制${shiEl.chinese}留${guanEl.chinese}——解病清格，好运")
                 put(shiEl, "食伤再到——复克${guanEl.chinese}用神，病")
