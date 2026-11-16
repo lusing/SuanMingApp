@@ -1759,6 +1759,31 @@ class JinBiaoAnLiTest {
                 zn.basis.contains("离婚判给对方"))
     }
 
+    // ── 案六十三 · 丙午 辛丑 乙亥 丁亥（1967-01-11 亥时，乾）——子女章六例·调候优先 ──
+
+    @Test
+    fun `案六十三 乾 丙午辛丑乙亥丁亥 寒局用暖丙午有根 走东南生火不用分析生克 必然有儿子有孙子没有缺陷`() {
+        val bazi = chart(1967, 1, 11, 22)
+        assertTrue(bazi.fullBazi.startsWith("丙午 辛丑 乙亥 丁亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬寅(1975)", "癸卯(1985)", "甲辰(1995)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("丑月寒冬两亥水——寒局；暖须有气有根：丙午有根——用暖（调候）",
+            jb.quYongWay == JinBiaoQuYongWay.TIAO_HOU && jb.yongShenElement == Element.FIRE)
+
+        // 调候优先：走东南暖运就是好——必然有儿子有孙子，没有缺陷
+        val zn = jb.ziNv!!
+        assertTrue("调候局必有儿（无缺陷有儿有孙）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含调候优先、不用分析生克、必然有儿子有孙子",
+            zn.basis.contains("调候优先") && zn.basis.contains("不用分析生克") && zn.basis.contains("必然有儿子、有孙子"))
+
+        // 东南暖运皆吉（什么都有什么都顺）；辅证：坐印足以食伤制杀——食伤偏弱帮起即好
+        assertTrue("甲辰乙巳丙午丁未东南暖运皆吉", listOf(2, 3, 4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

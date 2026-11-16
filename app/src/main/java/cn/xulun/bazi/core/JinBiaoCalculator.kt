@@ -1140,7 +1140,12 @@ object JinBiaoCalculator {
             val yinYouLi = bazi.stems.any { it != dayMaster && it.element == yinEl } || hasBenQiRoot(bazi, yinEl)
             val yinTouZuoBen = bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl }
             data class ZN(val el: Element, val er: Boolean, val nv: Boolean, val text: String)
-            val zn: ZN = if (strength == DayStrength.STRONG) {
+            // 案六十三·调候优先：寒暖特殊气象局——一切以寒暖为规范，不用分析生克：
+            // 走东南暖运就是好——什么都有什么都顺——必然有儿子有孙子，没有缺陷
+            val zn: ZN = if (choice.way == JinBiaoQuYongWay.TIAO_HOU) {
+                ZN(yongEl, true, false,
+                    "**调候优先（案六十三）**：寒暖特殊气象局**不用分析生克——一切以寒暖为规范**：调候神有根有气、走东南暖运就是好——什么都有什么都顺——**必然有儿子、有孙子——没有缺陷**（辅证：日主坐印足以食伤制杀——食伤偏弱，帮起食伤即好）")
+            } else if (strength == DayStrength.STRONG) {
                 // 身旺：基准财为子——查比劫夺财（重夺/地支得局不载）→官旺救或食伤得局化劫；无财无官食伤泄秀；食被枭夺找财
                 // 「鲁莽地说就错了」——有财不可遽断有子，必来回检查螳螂捕蝉黄雀在后
                 val duoCai = biS >= 1.2 * caiS ||
