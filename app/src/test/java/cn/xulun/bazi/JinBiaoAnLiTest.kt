@@ -1010,6 +1010,27 @@ class JinBiaoAnLiTest {
         assertTrue("癸亥甲子乙丑水木运皆吉", listOf(4, 5, 6).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案卅一 · 庚申 庚辰 甲戌 丙寅（1980-05-01 寅时，乾）——食神制杀·气贯生时 ──
+
+    @Test
+    fun `案卅一 乾 庚申庚辰甲戌丙寅 时支寅木气贯生时 辰戌冲砍余气根 食神制杀印运夺食不可`() {
+        val bazi = chart(1980, 5, 1, 3)
+        assertTrue(bazi.fullBazi.startsWith("庚申 庚辰 甲戌 丙寅"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { it.pillar.fullName } == listOf("辛巳", "壬午", "癸未"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("时支寅本气根（气贯生时）＋杀旺＋丙食有力＋印微不夺食——食神制杀格",
+            jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.FIRE)
+        assertTrue("取用依据含气贯生时、辰戌冲砍根、印运夺食",
+            jb.quYongBasis.contains("气贯生时") && jb.quYongBasis.contains("藏金暗相砍木") && jb.quYongBasis.contains("印运夺食"))
+
+        // 壬午癸未干头水在南方力减——终究差一点（非大凶）；午地支帮食伤
+        assertTrue("壬午癸未非凶（干头印在南方力减）", listOf(1, 2).all { jb.yuns[it].verdict != JinBiaoVerdict.XIONG })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

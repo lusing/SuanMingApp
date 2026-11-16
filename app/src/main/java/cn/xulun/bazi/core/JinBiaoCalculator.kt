@@ -519,15 +519,28 @@ object JinBiaoCalculator {
             )
             // 第四讲·正格五理③／⑥＋案三十食神制杀＋基线：身弱取用
             strength == DayStrength.WEAK -> when {
-                // 案三十·食神制杀格（弱而根气足）：日主藏干通根≥3处（辰中癸×3）＝有根气，
-                // 杀旺、食伤有力、妙在无印（印不夺食）——足以食神制杀卫身成格；辰乃木之余气，一将当关群凶自败。
+                // 食神制杀格（案三十/案卅一·弱而根气足）：日主有根气（本气根，或藏干通根≥3处）＝
+                // 承载得动食神之泄——足以食神制杀卫身成格；杀旺、食伤有力、妙在无印（印不夺食）。
                 // 无根气而食神强制＝克泄交加，更穷困比普通人还差（贫夭负债）。
-                guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE &&
-                    bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 3 -> Choice(
+                guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE && shiS < 6.0 &&
+                    (hasBenQiRoot(bazi, biEl) ||
+                        bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 3) -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
-                    "食神制杀格（案三十·弱而根气足）：日主藏干通根三支（${bazi.branches.filter { br -> branchHiddenStems.getValue(br).any { it.element == biEl } }.joinToString("") { it.chinese }}）——日主有根气，承载得动食神之泄，足以食神制杀卫身，成格。" +
-                        "杀党力${format(guanS)}旺、食伤党力${format(shiS)}；妙在无${yinEl.chinese}（印不夺食）；辰乃木之余气（食神得余气根）——一将当关，群凶自败。" +
-                        "条件铁律：日主必须有根气——无根气还用食神强制官杀，叫克泄交加，更差更穷困，比普通人还要差（贫夭负债）",
+                    buildString {
+                        val benQiRoots = bazi.branches.filter { it.element == biEl }
+                        val cangRoots = bazi.branches.filter { br -> br.element != biEl && branchHiddenStems.getValue(br).any { it.element == biEl } }
+                        append("食神制杀格（案卅一·弱而根气足）：杀党力${format(guanS)}旺、食伤党力${format(shiS)}有力、妙在无${yinEl.chinese}（印不夺食）——用神即食神，印运夺食不可以")
+                        if (bazi.hourPillar.branch.element == biEl) append("；时支${bazi.hourPillar.branch.chinese}本气根——气贯生时（坐下与气贯生时对日主帮助都是很大的），通根有力足以食神制杀")
+                        if (benQiRoots.isNotEmpty() && bazi.hourPillar.branch.element != biEl) {
+                            append("；日主通根${benQiRoots.joinToString("") { it.chinese }}（本气根有力）")
+                        }
+                        if (cangRoots.size >= 3) append("；日主藏干通根三支（${cangRoots.joinToString("") { it.chinese }}）——有根气；辰乃木之余气——一将当关，群凶自败")
+                        if (EarthlyBranch.CHEN in bazi.branches && EarthlyBranch.XU in bazi.branches) {
+                            append("；辰戌一冲土越来越旺、藏金暗相砍木——余气根等于没了（幸有${if (bazi.hourPillar.branch.element == biEl) "时支寅木气贯生时" else "本气根"}，根气不毁）")
+                        }
+                        append("；干头之印行南方火力减（终究差一点），火地支之运帮起食伤——食神制杀得力")
+                        append("；条件铁律：日主必须有根气——无根气还用食神强制官杀，叫克泄交加，更差更穷困，比普通人还要差（贫夭负债）")
+                    },
                 )
                 guanS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.HUA_SHA, yinEl,
@@ -865,7 +878,7 @@ object JinBiaoCalculator {
         for (i in 0 until maxOf(0, yunBranchesSeq.size - 2)) {
             val trio = setOf(yunBranchesSeq[i], yunBranchesSeq[i + 1], yunBranchesSeq[i + 2])
             val juEl = SAN_HUI_JU.firstOrNull { p -> trio.containsAll(p.first) }?.second
-            if (juEl != null && (juEl == biEl || juEl == yinEl)) {
+            if (juEl != null && (juEl == biEl || juEl == yinEl || juEl == choice.el)) {
                 bureauOverride[i] = juEl
                 bureauOverride[i + 1] = juEl
                 bureauOverride[i + 2] = juEl
