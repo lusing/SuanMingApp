@@ -318,8 +318,12 @@ object JinBiaoCalculator {
         val shiSAdj = hostileScoreAdj(shiEl)
         // 命一补丁：天干全印比＋敌党折减全零——权在一人，径判旺强极（日主无根不受生之假生不扰此局）
         val stemsYinBiOnly = bazi.stems.all { it.element == biEl || it.element == yinEl }
-        // 无根修正（档五十一）：印月身旺基调，然日主无比劫本气根而敌党不弱——仍以身弱论（杀重身轻用印）
-        if (strength == DayStrength.STRONG && !hasBenQiRoot(bazi, biEl)) {
+        // 无根修正（档五十一）：印月身旺基调，然日主无比劫本气根而敌党不弱——仍以身弱论（杀重身轻用印）；
+        // 案四十八豁免：坐下即印且印得局压杀（yinS＞guanS——印6.5对杀4.5）——印生身有依，身旺不翻；
+        // （案廿七对照：坐下子印而印4.0＜杀6.5——杀压倒印，仍翻弱）
+        if (strength == DayStrength.STRONG && !hasBenQiRoot(bazi, biEl) &&
+            !(bazi.dayPillar.branch.element == yinEl && yinS > guanS)
+        ) {
             val diSAdjT = caiSAdj + guanSAdj + shiSAdj
             if (diSAdjT > 0.0 && diSAdjT >= (yinS + biS) * 0.8) strength = DayStrength.WEAK
         }
@@ -757,12 +761,17 @@ object JinBiaoCalculator {
                 // 食神制杀格（五理④＋第七讲条件一）：官有本气根之真旺、财不滋官、食伤有力——
                 // 且【日主必须有根气】：食神泄体，无根无气承载不了食神之泄，食神制杀反贫夭负债；得根气则制杀得富贵。
                 // 弱中变旺局之官已被泄克转衰——衰官不制而用之（案十）
+                // 食神制杀格（五理④＋条件一＋案四十八）：官有本气根之真旺、财不滋官（无财或财不透干）、食伤有力——
+                // 且【日主必须有根气】：食伤泄体，无根无气承载不了食神之泄（食神制杀反贫夭负债）；得根气则制杀得富贵。
+                // 根气三途：本气根／藏干通根≥3（案三十）／坐下印得局压杀（案四十八：印6.5对杀4.5——印生身有依）。
                 !ruoZhongBianWang && guanS >= GUAN_WANG && hasBenQiRoot(bazi, guanEl) &&
-                    caiS < FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE &&
-                    hasBenQiRoot(bazi, biEl) -> Choice(
+                    (caiS < FOLLOW_MIN_SCORE || bazi.stems.none { it.element == caiEl }) &&
+                    shiS >= FOLLOW_MIN_SCORE &&
+                    (hasBenQiRoot(bazi, biEl) || (bazi.dayPillar.branch.element == yinEl && yinS > guanS)) -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
-                    "食神制杀格（条件一·日主有根气）：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}。" +
-                        "食神制杀条件第一条：日主必须有根气——无根无气者承载不了食神之泄（食神制杀反贫夭、负债）；日主得根气，承载得动食神之泄，食神制杀得富贵",
+                    "食神制杀格（案四十八·身旺杀旺可制）：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}。" +
+                        "食神制杀条件第一条：日主必须有根气（印得局生身亦是依）——无根无气者承载不了食神之泄（食神制杀反贫夭、负债）；日主得根气，承载得动食神之泄，食神制杀得富贵。" +
+                        "格局高低看杀之强弱存续：杀旺可制不贫夭——官贵之格（官二代、处长之子之属）；杀之根被拔克绝（制杀太过——子午冲根之属）则落普通人之列",
                 )
                 // 五理②/第七讲·财滋弱杀（案八/案十/案廿二）：身旺而官在局（官废不能用——案十二）——有财有官杀优先用杀
                 guanS >= FOLLOW_MIN_SCORE && !guanFei -> Choice(

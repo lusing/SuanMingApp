@@ -1371,6 +1371,29 @@ class JinBiaoAnLiTest {
         assertTrue("庚午辛未壬申癸酉金印运非凶", listOf(1, 2, 3, 4).all { jb.yuns[it].verdict != JinBiaoVerdict.XIONG })
     }
 
+    // ── 案四十八 · 丙寅 壬辰 庚辰 壬午（1986-04-06 午时，乾）——身旺食制杀旺官二代 ──
+
+    @Test
+    fun `案四十八 乾 丙寅壬辰庚辰壬午 印得局身旺 食伤制杀杀旺可制 官二代`() {
+        val bazi = chart(1986, 4, 6, 11)
+        assertTrue(bazi.fullBazi.startsWith("丙寅 壬辰 庚辰 壬午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸巳(1996)", "甲午(2006)", "乙未(2016)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("印得局（两辰＋火生土）身旺——坐下印者不翻弱", jb.strength == DayStrength.STRONG)
+        assertTrue("杀旺（丙寅午）＋食有力（壬壬）——食伤制杀，用神取食神（水）",
+            jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含杀旺可制官贵与普通人之别",
+            jb.quYongBasis.contains("杀旺可制") && jb.quYongBasis.contains("官贵"))
+
+        // 金支生用神（干火盖头→干支分论非凶）；火运（杀党）非吉
+        assertTrue("丙申丁酉金支生用非凶", listOf(3, 4).all { jb.yuns[it].verdict != JinBiaoVerdict.XIONG })
+        assertTrue("甲午乙未火运非吉", listOf(1, 2).all { jb.yuns[it].verdict != JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
