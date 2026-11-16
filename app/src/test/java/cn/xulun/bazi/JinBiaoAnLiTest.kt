@@ -1333,6 +1333,24 @@ class JinBiaoAnLiTest {
             jb.yuns[2].verdict != JinBiaoVerdict.XIONG && jb.yuns[2].items.any { it.action.contains("绝处逢生") })
     }
 
+    // ── 案四十六 · 辛卯 戊戌 丙辰 壬辰（2011-10-28 辰时，乾）——制杀太过·公务员没当官 ──
+
+    @Test
+    fun `案四十六 乾 辛卯戊戌丙辰壬辰 戊通四支制杀太过 喜印克食护杀 杀太弱公务员没当官`() {
+        val bazi = chart(2011, 10, 28, 7)
+        assertTrue(bazi.fullBazi.startsWith("辛卯 戊戌 丙辰 壬辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { it.pillar.fullName } == listOf("丁酉", "丙申", "乙未"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("戌月土旺食伤制杀、杀仅存余气（壬坐辰藏癸）——用印（卯，木克土）护杀生身",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含制杀太过与公务员没当官",
+            jb.quYongBasis.contains("制杀太过") && jb.quYongBasis.contains("护卫七杀") && jb.quYongBasis.contains("公务员"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

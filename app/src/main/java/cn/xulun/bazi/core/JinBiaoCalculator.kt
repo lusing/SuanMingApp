@@ -367,13 +367,20 @@ object JinBiaoCalculator {
             sanHeJuEl?.takeIf { it != biEl },
         ).firstOrNull()
         val kunLunSource = kunLunEl?.let { el -> Element.entries.first { g -> g.generates == el } }
+        // 案四十六：官干坐支藏官之余气（壬坐辰藏癸——杀还有点气）——制杀太过之辨在焉
+        val guanZuoYouQi = bazi.stems.filterIndexed { i, s -> i != 2 && s.element == guanEl }.any { gs ->
+            val idx = bazi.stems.indexOf(gs)
+            branchHiddenStems.getValue(bazi.branches[idx]).any { it.element == guanEl }
+        }
         val kunLun = kunLunEl != null && kunLunSource != null &&
             (bazi.stems.any { it.element == kunLunSource } ||
                 bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == kunLunSource } }) &&
             // 案廿八裁：局克日主不为顺——火局克庚是杀攻身非顺势；印有气不随杀走（正常八格杀重用印）
             kunLunEl.controls != dayEl &&
-            // 案卅三裁：局为日主食伤而杀旺克身（≥官旺线）——杀重框架优先（退而求其次食制），不顺食弃杀
-            !(kunLunEl == shiEl && guanS >= GUAN_WANG) &&
+            // 案卅三裁：局为日主食伤而杀旺（≥官旺线）——生克框架优先，不顺食弃杀；
+            // 案四十六裁：局为日主食伤而官干坐支藏余气（杀还有点气）——制杀太过之辨，不顺食弃势
+            // （案十六丙坐子官无气败地、案十八庚坐午官无气——皆无此辨，归昆仑顺势）
+            !(kunLunEl == shiEl && (guanS >= GUAN_WANG || (guanS >= FOLLOW_MIN_SCORE && guanZuoYouQi))) &&
             // 案廿七裁：得局之五行恰为日主之印、坐下印本气、官杀旺克身——杀重用印优先于昆仑
             // （辰贴申必生金、申子辰会局被夺——拱局辩证；印在坐下化旺杀即有情）
             !(kunLunEl == yinEl && bazi.dayPillar.branch.element == yinEl && guanS >= GUAN_WANG)
@@ -702,6 +709,10 @@ object JinBiaoCalculator {
                         if (shiS >= 6.0) {
                             append("；伤官（食伤）得局（党力${format(shiS)}）泄身过甚——旺中变弱：印两用，一疏其土（克食伤之局）二生日主")
                             append("；局中拱合待成者（如亥未拱木待卯），运支补成印局即用神得局大发")
+                        }
+                        // 案四十六·制杀太过：需用杀而食伤制之将绝尚有余气——贫夭之基；喜印克食护卫七杀＋生身
+                        if (shiS >= 6.0 && guanS < GUAN_WANG && guanS > 0.0) {
+                            append("；制杀太过（第九讲）：食伤党力${format(shiS)}重重克制——杀（党力${format(guanS)}）快被克绝、仅存余气（一点气都没有反是去寡之吉，还有点气即制杀太过）——要用印星克食神护卫七杀、其次把日主生起来；终究杀太弱——层次降档：公务员之命而没当官（重者贫夭）")
                         }
                     },
                 )
