@@ -1488,6 +1488,36 @@ class JinBiaoAnLiTest {
         assertTrue("甲寅官杀克比劫亦非吉", jb.yuns[6].verdict != JinBiaoVerdict.JI)
     }
 
+    // ── 案五十三 · 己丑 辛未 丙寅 己丑（1949-08-04 丑时，乾）——伤官配印·丑未冲三层·去忌神 ──
+
+    @Test
+    fun `案五十三 乾 己丑辛未丙寅己丑 丑未冲三层旺中变弱 配印用寅木 干支异途病不贴克 丁卯丙寅去辛金当官`() {
+        val bazi = chart(1949, 8, 4, 2)
+        assertTrue(bazi.fullBazi.startsWith("己丑 辛未 丙寅 己丑"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行大运与师传表一致",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚午(1958)", "己巳(1968)", "戊辰(1978)", "丁卯(1988)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("两丑冲未灭木火余气＋湿土晦火——旺中变弱身弱", jb.strength == DayStrength.WEAK)
+        assertTrue("伤官配印——用神坐下寅木（印）",
+            jb.quYongWay == JinBiaoQuYongWay.FU_SHEN && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含丑未冲三层、旺中变弱、帮身、忌神潜伏、去忌神",
+            jb.quYongBasis.contains("丑未冲三层") && jb.quYongBasis.contains("财坏印于支内") &&
+                jb.quYongBasis.contains("旺中变弱") && jb.quYongBasis.contains("泄体过必须帮身") &&
+                jb.quYongBasis.contains("忌神潜伏律") && jb.quYongBasis.contains("去忌神之运最好"))
+        assertTrue("辛透干无本气根＋用神坐日支本气根——干支异途病不贴克，有格局行运不违背即好命",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("干支异途"))
+
+        // 庚午己巳：干忌金耗土、支午巳比劫帮身——干支分论；丁卯丙寅去辛金忌神最好当官；甲子癸亥官生印吉
+        assertTrue("庚午己巳干凶支帮身——干支分论", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.GAN_ZHI_FEN })
+        assertTrue("丁卯丙寅克去透干忌神辛——最好的运",
+            listOf(3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("丁丙标注去忌神", listOf(3, 4).all { i -> jb.yuns[i].items.any { it.action.contains("去忌神") } })
+        assertTrue("甲子癸亥官生印皆吉", listOf(6, 7).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
