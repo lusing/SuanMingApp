@@ -1439,6 +1439,26 @@ class JinBiaoAnLiTest {
         assertTrue("官运标注见官为祸百端", jb.yuns[4].items.any { it.action.contains("祸百端") })
     }
 
+    // ── 案五十一 · 辛酉 丁酉 戊午 辛酉（1981-10-07 酉时，乾）——伤官配印喜见官忌见财 ──
+
+    @Test
+    fun `案五十一 乾 辛酉丁酉戊午辛酉 三酉泄体过身弱伤官配印 官生印喜见官 财坏印大忌`() {
+        val bazi = chart(1981, 10, 7, 17)
+        assertTrue(bazi.fullBazi.startsWith("辛酉 丁酉 戊午 辛酉"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { it.pillar.fullName } == listOf("丙申", "乙未", "甲午"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("三酉泄体过——身弱伤官配印（用神丁午火印）", jb.strength == DayStrength.WEAK && jb.quYongWay == JinBiaoQuYongWay.FU_SHEN && jb.yongShenElement == Element.FIRE)
+        assertTrue("喜见官不可见财", jb.quYongBasis.contains("喜见官") && jb.quYongBasis.contains("不可见财"))
+        // 甲午乙未印运吉；癸巳巳印亦吉；壬辰财坏印非纯吉（干支分论）
+        assertTrue("甲午乙未印运皆吉", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("癸巳巳印吉", jb.yuns[3].verdict == JinBiaoVerdict.JI)
+        assertTrue("壬辰财坏印非吉", jb.yuns[4].verdict != JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

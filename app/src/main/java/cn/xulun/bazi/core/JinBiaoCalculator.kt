@@ -380,6 +380,16 @@ object JinBiaoCalculator {
         val kunLun = kunLunEl != null && kunLunSource != null &&
             (bazi.stems.any { it.element == kunLunSource } ||
                 bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == kunLunSource } }) &&
+            // 案五十一裁：食伤局（kunLunEl=食伤）而日支为印本气且日支克食伤局（印夺食——日主有印可依不从）——走普通取用，不归昆仑
+            // 护栏：日支在得局之三合局中者随局走不作克论（命二：辰随申子辰水局走——辰不作克水论，仍可从）
+            !(kunLunEl == shiEl && bazi.dayPillar.branch.element == yinEl &&
+                bazi.dayPillar.branch.element.controls == kunLunEl &&
+                listOf(
+                    setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN),
+                    setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI),
+                    setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU),
+                    setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
+                ).none { trio -> bazi.dayPillar.branch in trio && trio.all { it in bazi.branches } }) &&
             // 案廿八裁：局克日主不为顺——火局克庚是杀攻身非顺势；印有气不随杀走（正常八格杀重用印）
             kunLunEl.controls != dayEl &&
             // 案卅三裁：局为日主食伤而杀旺（≥官旺线）——生克框架优先，不顺食弃杀；
@@ -737,14 +747,16 @@ object JinBiaoCalculator {
                 )
                 shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.FU_SHEN, yinEl,
-                    "正格续理·身衰伤配印：身衰须帮身，食伤（党力 ${format(shiS)}）泄体——喜印星制服食伤且生身，两得其用（印党力 ${format(yinS)}），此为有格局",
+                    "伤官配印（案五十一）：身弱泄体过（食伤党力${format(shiS)}）——印星制服食伤且生身，两得其用（印党力${format(yinS)}），此为有格局。" +
+                        "**伤官配印喜见官**（官能生印——伤官见官＝最好组合，再有个官格局更高）；**不可见财**（用神印无护卫，财来坏印就完了——用神中心论：只考虑印的死活）。运：官运/印运好运，财运坏印庸碌无为不得志。" +
+                        "（对勘：案四十九身旺喜官、案五十身旺枭夺食忌官、案五十一身弱配印喜官——见官三辨全）",
                 )
                 else -> {
                     val useYin = yinS >= biS
                     Choice(
                         JinBiaoQuYongWay.FU_SHEN, if (useYin) yinEl else biEl,
-                        "身弱扶身：印绶党力 ${format(yinS)}、比劫党力 ${format(biS)}——取" +
-                            (if (useYin) "印绶（生身）" else "比劫（助身）") + "为用（有力者优先）",
+                        if (useYin) "身弱扶身：印绶党力 ${format(yinS)}、比劫党力 ${format(biS)}——取印绶（生身）为用（有力者优先）" else
+                            "身弱扶身·一定用劫（案五十一）：印绶党力 ${format(yinS)}、比劫党力 ${format(biS)}——泄体过而无印，唯一指望比劫帮身。**比劫好了我就好**（即使比劫夺财也没事——身弱用劫不考虑财，只考虑比劫死活决定命局死活）；最忌官杀克比劫（要出事）；食伤运泄比劫亦差；以食伤制官更不可（身弱不能伤制官＝克泄交加，官克你还泄你）",
                     )
                 }
             }
@@ -992,6 +1004,11 @@ object JinBiaoCalculator {
                 put(kunLunSource!!, "${kunLunSource.chinese}生${kunLunEl!!.chinese}——顺其势，好运")
                 put(kunLunEl, "本势得局——顺其势，好运")
                 put(kunLunEl.generates, "顺泄——${kunLunEl.chinese}生${kunLunEl.generates.chinese}（金生水水生木），好运")
+            }
+            // 案五十一·伤官配印局：官生印好运（配印喜见官）；财坏印大忌（用神无护卫）
+            if (choice.way == JinBiaoQuYongWay.FU_SHEN && guanS == 0.0 && caiS < FOLLOW_MIN_SCORE) {
+                put(guanEl, "官生印——伤官配印喜见官（最好组合），好运")
+                put(caiEl, "财坏印——用神无护卫，来了就完，庸碌无为不得志")
             }
             // 案卅五：合官留杀局——印运制食留杀（解病清格）好运；食伤再到＝复克用神
             // 案卅六：合而化局——食伤党杀再克用神（火生土），差运
