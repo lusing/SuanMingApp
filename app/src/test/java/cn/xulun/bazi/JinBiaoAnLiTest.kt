@@ -1784,6 +1784,27 @@ class JinBiaoAnLiTest {
         assertTrue("甲辰乙巳丙午丁未东南暖运皆吉", listOf(2, 3, 4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案六十四（＝案四十二盘复看子女）· 丙辰 辛卯 乙酉 庚辰（1976-04-03 辰时，坤）──
+
+    @Test
+    fun `案六十四 坤 丙辰辛卯乙酉庚辰复看子女 金贴身冲比劫子星根 没儿子只能生女儿 富贵与子嗣两轨`() {
+        val bazi = chart(1976, 4, 3, 7)
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+
+        // 官杀欺衰无印——比劫子星之根被官杀贴身冲克（酉贴卯＋辰酉化金力大）——没儿子只能生女儿
+        val zn = jb.ziNv!!
+        assertTrue("无儿有女", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("子星＝比肩木（身衰印做儿而无印——比劫线）", zn.ziXing == cn.xulun.bazi.model.TenGod.BI_JIAN && zn.ziEl == Element.WOOD)
+        assertTrue("判据含贴身冲克、没儿子只能生女儿、没有这个能力和功能、运化忌不救子嗣",
+            zn.basis.contains("贴身冲克") && zn.basis.contains("没儿子，只能生女儿") &&
+                zn.basis.contains("没有这个能力和功能") && zn.basis.contains("不能说明有儿子"))
+
+        // 己丑金旺助忌——提升不了（中平）；提升在北方运（丁亥泄金生木）
+        assertTrue("己丑运生官助忌——提升不了（非吉）", jb.yuns[1].verdict != JinBiaoVerdict.JI)
+        assertTrue("丁亥运北方化杀——提升之运吉", jb.yuns[3].verdict == JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

@@ -1203,7 +1203,16 @@ object JinBiaoCalculator {
                         // 官杀欺衰而无印——比劫扛得住才有子；比劫子星被克泄过重——凑合生子必损＋生女儿
                         val biKeS = partyScore(bazi, Element.entries.first { it.controls == biEl })
                         val biXieS = partyScore(bazi, biEl.generates)
+                        // 案六十四·贴身深克：比劫子星之本气根被官杀本气支贴身冲（相邻）而官杀党力压过——
+                        // 忌神深重贴身克用神：没儿子只能生女儿（没有这个能力和功能）
+                        val tieChong = bazi.branches.filter { it.element == biEl }.any { bg ->
+                            val idx = bazi.branches.indexOf(bg)
+                            (idx - 1 in bazi.branches.indices && bazi.branches[idx - 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx - 1]) ||
+                                (idx + 1 in bazi.branches.indices && bazi.branches[idx + 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx + 1])
+                        }
                         when {
+                            tieChong && guanS >= biS -> ZN(biEl, false, true,
+                                "**官杀欺衰主而无印——比劫子星之根被官杀贴身冲克**（贴冲＋辰酉合化金力大——忌神深重贴身克用神）：**没儿子，只能生女儿**——属于**没有这个能力和功能**（即使走印化杀之运，生的也不是儿子——运化忌只说明财运事业好了，**不能说明有儿子**；看子女跟看财运不一样——富贵贫贱与有没有儿子没有关系）")
                             biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "**官杀欺衰主，无印、比劫又扛不住**——**没儿子**（官杀无制化攻身——生了儿子也得夭折）")
                             biKeS >= 0.75 * biS && biXieS >= 1.5 * biS -> ZN(biEl, false, true,
                                 "**官杀欺衰主而无印——比劫扛得住（坐根有气）＝比劫为儿**；然**子星被克泄得太重**（两杀克＋食伤泄＋会局泄根——${biKeS}克${biXieS}泄压过子星${format(biS)}）：大运帮起来（壬子之属）**凑合生出来儿子——终究损子**（运补暂生而生出来没活成之属——**墓中子星要送出**破解）；**比劫有气坐根——生女儿百分之百**（有生育能力；若无会局之泄，走帮身运是可以有儿子的）")
@@ -1250,6 +1259,17 @@ object JinBiaoCalculator {
         // 无争妒（案四：财官相生一体）——走财走官走食伤皆顺皆吉，唯帮身反害。
         val zhengDou = ruoJi && guanS >= FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE
         val zhongPingNote: Map<Element, String> = buildMap {
+            // 案六十四·官已重（官杀本气支贴冲比劫之根——辰酉化金力大）而再生成官（如土生金）：
+            // 助忌——提升不了（提升在帮身化杀／制杀以威之运——事实庚寅年甲午年提升）
+            if (choice.way == JinBiaoQuYongWay.HE_LIU &&
+                bazi.branches.filter { it.element == biEl }.any { bg ->
+                    val idx = bazi.branches.indexOf(bg)
+                    (idx + 1 in bazi.branches.indices && bazi.branches[idx + 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx + 1]) ||
+                        (idx - 1 in bazi.branches.indices && bazi.branches[idx - 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx - 1])
+                }
+            ) {
+                put(caiEl, "官杀已重（贴冲比劫之根），生官之地助忌——提升不了（提升在帮身化杀之运：泄金生木；火运制杀以威＝大层次——庚寅、甲午年之属）")
+            }
             if (choice.way == JinBiaoQuYongWay.CAI_JIE_WEI) {
                 put(guanEl, "解围局行此稍差无大碍")
                 put(shiEl, "解围局行此稍差无大碍")
