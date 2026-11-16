@@ -713,6 +713,15 @@ object JinBiaoCalculator {
                             append("；地支${biEl.chinese}旺——巳随${biEl.chinese}走（作${biEl.chinese}根不作火根），${guanEl.chinese}杀真弱而通寅根：杀有根气故不能去杀（去杀须杀无一丝根气），必须财滋弱杀、禁制杀（制杀贫穷欠债）")
                         }
                         append("；杀强反不宜（要克身）；走帮官杀之运好运，走加重${biEl.chinese}病之运差")
+                        // 案四十一：官杀弱全指财滋——怕劫克财、必护财；官干合去劫干（丙辛合）
+                        // ＝合去病神、解放财（有情）——南方火运双功：助官＋火克金卫护财（当官）
+                        val jieGai = bazi.stems.filterIndexed { i, s -> i != 2 && s.element == biEl }.any { bg ->
+                            val p = GAN_HE[bg]
+                            p != null && p.element == guanEl && bazi.stems.any { it == p }
+                        }
+                        if (jieGai) {
+                            append("；官杀弱全指${caiEl.chinese}财滋养——**怕劫克财、必护财**（护住喜神方能助起用神）。官杀干合去劫干（如丙辛合）＝**合去病神、解放${caiEl.chinese}财——有情**（地支之克另论：只要有去劫这个动作就叫有情）；被合之杀去而用留下之官。南方${guanEl.chinese}运双功：官杀得助＋${guanEl.chinese}克${biEl.chinese}卫护${caiEl.chinese}财——喜神卫、用神助，**当官**".replace("**", ""))
+                        }
                         // 案卅八：官杀两透本赖混杂加力，比肩合去其一——不宜合（官愈弱）；幸被合之干坐强根不化，金水运补起
                         if (bazi.stems.count { it.element == guanEl } >= 2 &&
                             bazi.stems.filterIndexed { i, s -> i != 2 && s.element == biEl }.any { bg ->

@@ -1227,6 +1227,27 @@ class JinBiaoAnLiTest {
         assertTrue("取用依据含取清与依然当官", jb.quYongBasis.contains("取清") && jb.quYongBasis.contains("依然当官"))
     }
 
+    // ── 案四十一 · 丙辰 辛卯 庚申 丁丑（1976-03-09 丑时，乾）——合去病神·有情 ──
+
+    @Test
+    fun `案四十一 乾 丙辰辛卯庚申丁丑 丙辛合去劫解放卯财有情 用丁官喜卯 南方火运双功当官`() {
+        val bazi = chart(1976, 3, 9, 1)
+        assertTrue(bazi.fullBazi.startsWith("丙辰 辛卯 庚申 丁丑"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬辰(1985)", "癸巳(1995)", "甲午(2005)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("土金两旺身旺、官杀优先——财滋弱官（用丁留丙去）",
+            jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.FIRE)
+        assertTrue("取用依据含怕劫护财、合去病神有情、火克金卫护",
+            jb.quYongBasis.contains("怕劫克财") && jb.quYongBasis.contains("合去病神") && jb.quYongBasis.contains("卫护"))
+
+        // 南方火运双功：助官＋克金卫卯——当官（甲午乙未火财连吉；癸巳干头伤官不论）
+        assertTrue("甲午乙未南方火财皆吉", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
