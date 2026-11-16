@@ -1547,6 +1547,43 @@ class JinBiaoAnLiTest {
         assertTrue("寅运干壬官护财注记", jb.yuns[3].items.any { it.action.contains("官护财") })
     }
 
+    // ── 案五十五 · 壬申 辛亥 辛酉 庚寅（1992-12-11 寅时·农历月界合成盘，乾）——破格→有情救格 ──
+
+    private fun an55(): cn.xulun.bazi.model.BaziResult = cn.xulun.bazi.model.BaziResult(
+        yearPillar = Pillar(HeavenlyStem.REN, EarthlyBranch.SHEN),
+        monthPillar = Pillar(HeavenlyStem.XIN, EarthlyBranch.HAI),
+        dayPillar = Pillar(HeavenlyStem.XIN, EarthlyBranch.YOU),
+        hourPillar = Pillar(HeavenlyStem.GENG, EarthlyBranch.YIN),
+        birthDateTime = LocalDateTime.of(1992, 12, 11, 4, 0),
+    )
+
+    @Test
+    fun `案五十五 乾 壬申辛亥辛酉庚寅 三金两禄身旺用财 财被围克已破格 寅亥化木绝处逢生有情 北方东方水木发大财`() {
+        // 排盘口径：节气界壬申年亥月无辛酉日（1992/1932皆无）；1992-12-11农历十月十八仍在亥月——农历月界合成盘
+        val bazi = an55()
+        assertTrue(bazi.fullBazi == "壬申 辛亥 辛酉 庚寅")
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬子(2001)", "癸丑(2011)", "甲寅(2021)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("三金两禄——弱中变旺身旺", jb.strength == DayStrength.STRONG)
+        assertTrue("身旺食伤喜生财——用神财星寅木",
+            jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含破格→有情救格与救财两途",
+            jb.quYongBasis.contains("已破格") && jb.quYongBasis.contains("绝处逢生") &&
+                jb.quYongBasis.contains("食伤能把财彻底救起来也行"))
+        assertTrue("寅亥化木补用神入 supports",
+            jb.health.supports.any { it.contains("寅亥合化木") && it.contains("化局补用神") })
+        assertTrue("破格→有情救格——清（有情就有格局）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("有情救格"))
+
+        // 北方坎（壬子通关之神到——通关更力反吉）→东方震（甲寅乙卯食伤生财）——一路水木发大财
+        assertTrue("壬子通关之神到反吉", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("甲寅乙卯食伤生财发财", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

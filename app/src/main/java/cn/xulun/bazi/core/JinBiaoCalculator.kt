@@ -94,6 +94,16 @@ object JinBiaoCalculator {
         "辰酉" to Element.METAL, "巳申" to Element.WATER, "午未" to Element.EARTH,
     )
 
+    /** 六合所化之五行（子丑土/寅亥木/卯戌火/辰酉金/巳申水/午未土）；非六合对返回 null。 */
+    private fun liuHeHuaEl(b1: EarthlyBranch, b2: EarthlyBranch): Element? {
+        val key = listOf(b1.ordinal, b2.ordinal).sorted().joinToString(",")
+        val canonical = mapOf(
+            "0,1" to "子丑", "2,11" to "寅亥", "3,10" to "卯戌", "4,9" to "辰酉",
+            "5,8" to "巳申", "6,7" to "午未",
+        )[key] ?: return null
+        return LIU_HE_EL[canonical]
+    }
+
     /** 干之禄支与长生支（案五十四：丙火见根于寅——长生；比劫见根即变强）。 */
     private val LU_ZHANG: Map<HeavenlyStem, Set<EarthlyBranch>> = mapOf(
         HeavenlyStem.JIA to setOf(EarthlyBranch.YIN, EarthlyBranch.HAI),
@@ -878,9 +888,18 @@ object JinBiaoCalculator {
                             append("；**怕比劫夺财**——然原局${biTou.joinToString("") { it.chinese }}劫有${shiEl.chinese}食伤居中通关（${biEl.chinese}生${shiEl.chinese}生${caiEl.chinese}——通关化劫、泄化比劫之力），原局不夺财、不会有事")
                             append("；然通关乃静态之缓——运来${biEl.chinese}之根（禄/长生）即冲垮：比劫见根变强、${biEl.chinese}旺则${shiEl.chinese}燥（通关之神亦被焚——燥${shiEl.chinese}不生${caiEl.chinese}），比劫直接克掉用神——死亡级大祸")
                         }
-                        append("；**官护财配置论**：用财怕比劫夺财（或印枭夺食），首要找官——**有官星就一直富（走什么运都没事）；没官——走反差之运人生大反差（一会儿天上一会儿地下）——命局没有充分配置的八字，起伏就要大；配置好的八字，人生就一路平坦**")
+                        append("；**官护财配置论**：用财怕比劫夺财（或印枭夺食），首要找官——**有官星就一直富（走什么运都没事）；没官——走反差之运人生大反差（一会儿天上一会儿地下）——命局没有充分配置的八字，起伏就要大；配置好的八字，人生就一路平坦**。救财两途：**先找官，没有官——食伤能把财彻底救起来也行**")
                         if (guanS < FOLLOW_MIN_SCORE) {
                             append("；此局${guanEl.chinese}官全无——配置不足：帮用（${shiEl.chinese}${caiEl.chinese}）之运发财显贵，${biEl.chinese}劫得根之运大祸（对照案四十九有官克劫救财——用神转官，一路平坦）")
+                        }
+                        // 案五十五·破格→有情救格：财被重重围克已破格，无官护财——
+                        // 然食伤通关化劫＋六合化局补财（寅亥化木）＝绝处逢生有情
+                        val huaJuBu = bazi.branches.firstOrNull { br ->
+                            br.element == caiEl && LIU_HE[br]?.let { p -> p in bazi.branches && liuHeHuaEl(br, p) == caiEl } == true
+                        }
+                        if (caiS < biS && huaJuBu != null) {
+                            val p = LIU_HE[huaJuBu]!!
+                            append("；**财被${biEl.chinese}重重围克（两支克＋干盖头）——已破格**；无${guanEl.chinese}官护财；然${shiEl.chinese}通关化劫＋**${huaJuBu.chinese}${p.chinese}合化${caiEl.chinese}补财——绝处逢生，就有情了**（财稍弱，但不至于用不了——有情就有格局）；运：水（通关之神到）木（财）助用**发大财**（北方坎、东方震）；**土金旺运则破**（土克${shiEl.chinese}断通关之源、复生${biEl.chinese}助劫——日主就完）；申酉戌西方比劫之地不行")
                         }
                     },
                 )
@@ -985,6 +1004,10 @@ object JinBiaoCalculator {
             bazi.stems.any { it != dayMaster && it.element == biEl } &&
             bazi.stems.any { it != dayMaster && it.element == shiEl } &&
             partyScore(bazi, shiEl) >= GUAN_WANG && guanS < FOLLOW_MIN_SCORE
+        // 案五十五·化局补用神（寅亥化木补财）：破格被救——绝处逢生有情就有格局
+        val huaJuBuYong = bazi.branches.any { br ->
+            br.element == yongEl && LIU_HE[br]?.let { p -> p in bazi.branches && liuHeHuaEl(br, p) == yongEl } == true
+        }
         val qingZhuo = when {
             qingKu -> JinBiaoQingZhuo.QING_KU
             quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO
@@ -992,6 +1015,7 @@ object JinBiaoCalculator {
             bingHua -> JinBiaoQingZhuo.QING
             bingZhi -> JinBiaoQingZhuo.QING
             bingYiTU -> JinBiaoQingZhuo.QING
+            bingTongGuanTou && huaJuBuYong -> JinBiaoQingZhuo.QING
             hasBenQiRoot(bazi, bingEl) && bingS2 >= 1.5 * yongS2 && !bingTongGuanTou -> JinBiaoQingZhuo.MAN_ZHUO
             else -> JinBiaoQingZhuo.BAN_QING
         }
@@ -1012,6 +1036,7 @@ object JinBiaoCalculator {
                     if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）"
                     else if (bingHua) "——病神不透干，经${tongGuanEl.chinese}通关转而相生有情（${bingEl.chinese}生${tongGuanEl.chinese}生${yongEl.chinese}），病不为病——此为清（贵命，走什么运都不怕）"
                     else if (bingYiTU) "——病神透干而无本气根、用神坐日支本气根——干支异途（干不克支），病不贴克用神：有格局（坐下印在），行运不违背即好命（用印显贵多，当官）"
+                    else if (bingTongGuanTou && huaJuBuYong) "——**破格→有情救格**：${yongEl.chinese}用神被${bingEl.chinese}重重围克本已破格，无${guanEl.chinese}官护财；然${shiEl.chinese}通关化劫＋六合化局补用神（绝处逢生）——**有情就有格局**：水木运助起用神发大财；土金旺运（克${shiEl.chinese}生${bingEl.chinese}）则破"
                     else "——病神被药${yaoEl.chinese}所制（药力${format(yaoS)}），此为清（贵命）",
                 )
                 JinBiaoQingZhuo.MAN_ZHUO -> append("——病神本气得根、力量太大（≥用神1.5倍）毁坏用神，满盘浊气——差命穷命，走什么运也好不了")
@@ -1439,6 +1464,14 @@ object JinBiaoCalculator {
                 }
             }
         }
+        // 案五十五·六合化局补用神（绝处逢生有情）：用神本气之支与他支六合而化用神之五行
+        // （寅亥化木——财被重重围克已破格，化局把用神补起来：财稍弱，但不至于用不了）
+        bazi.branches.firstOrNull { br ->
+            br.element == yongEl && LIU_HE[br]?.let { p -> p in bazi.branches && liuHeHuaEl(br, p) == yongEl } == true
+        }?.let { br ->
+            val p = LIU_HE[br]!!
+            supports += "${br.chinese}${p.chinese}合化${yongEl.chinese}——化局补用神（绝处逢生有情）：用神稍弱被补起来，不至于用不了"
+        }
         // 用神透干被合绊
         bazi.stems.forEachIndexed { i, st ->
             val hePartner = GAN_HE[st]
@@ -1578,9 +1611,12 @@ object JinBiaoCalculator {
                 val quJiShen = i == 0 && ctx.jiShenTouGans.isNotEmpty() &&
                     ctx.jiShenTouGans.any { ganEl.controls == it.element }
                 // 案五十四·用财局比劫见根：运支为透干比劫之禄/长生根位（寅＝丙长生——支虽属木，正是丙火之根）——
-                // 比劫变强，通关之神被焚（火旺土燥不生金），直接克掉用神财——死亡级大祸
+                // 比劫变强，通关之神被焚（火旺土燥不生金），直接克掉用神财——死亡级大祸。
+                // 案五十五戒：支行为食伤（通关之神到——通关更力，反吉：壬子）或官（官到护财）——不凶
                 val biJianGen = i == 1 && ctx.yongCai &&
-                    ctx.biTouGan.any { bt -> zhi in LU_ZHANG.getValue(bt) }
+                    ctx.biTouGan.any { bt -> zhi in LU_ZHANG.getValue(bt) } &&
+                    (el == ctx.biEl || el.controls == ctx.yongEl || ctx.yongEl.controls == el) &&
+                    el != ctx.shiEl && el != ctx.guanEl
                 // 命一补丁·旺强极干支分论：
                 // ① 官杀干直克身——犯旺激怒，权在一人不可触犯（虽得局亦然——丙运死亡）
                 // ② 食伤干泄可行（天干无印不夺——顺其旺势）；食伤支印重则枭夺（地支不能泄）
