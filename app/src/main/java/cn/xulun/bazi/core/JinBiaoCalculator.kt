@@ -745,18 +745,22 @@ object JinBiaoCalculator {
                         }
                     },
                 )
-                shiS >= FOLLOW_MIN_SCORE -> Choice(
+                shiS >= FOLLOW_MIN_SCORE && (bazi.stems.any { it.element == yinEl } || hasBenQiRoot(bazi, yinEl)) -> Choice(
                     JinBiaoQuYongWay.FU_SHEN, yinEl,
                     "伤官配印（案五十一）：身弱泄体过（食伤党力${format(shiS)}）——印星制服食伤且生身，两得其用（印党力${format(yinS)}），此为有格局。" +
                         "**伤官配印喜见官**（官能生印——伤官见官＝最好组合，再有个官格局更高）；**不可见财**（用神印无护卫，财来坏印就完了——用神中心论：只考虑印的死活）。运：官运/印运好运，财运坏印庸碌无为不得志。" +
-                        "（对勘：案四十九身旺喜官、案五十身旺枭夺食忌官、案五十一身弱配印喜官——见官三辨全）",
+                        "（对勘：案四十九身旺喜官、案五十身旺枭夺食忌官、案五十一身弱配印喜官、案五十二身弱用劫忌官——见官四辨全）",
                 )
                 else -> {
-                    val useYin = yinS >= biS
+                    val useYin = yinS >= biS && (bazi.stems.any { it.element == yinEl } || hasBenQiRoot(bazi, yinEl) || shiS < FOLLOW_MIN_SCORE)
                     Choice(
-                        JinBiaoQuYongWay.FU_SHEN, if (useYin) yinEl else biEl,
+                        if (useYin) JinBiaoQuYongWay.FU_SHEN else JinBiaoQuYongWay.SHANG_YONG_JIE,
+                        if (useYin) yinEl else biEl,
                         if (useYin) "身弱扶身：印绶党力 ${format(yinS)}、比劫党力 ${format(biS)}——取印绶（生身）为用（有力者优先）" else
-                            "身弱扶身·一定用劫（案五十一）：印绶党力 ${format(yinS)}、比劫党力 ${format(biS)}——泄体过而无印，唯一指望比劫帮身。**比劫好了我就好**（即使比劫夺财也没事——身弱用劫不考虑财，只考虑比劫死活决定命局死活）；最忌官杀克比劫（要出事）；食伤运泄比劫亦差；以食伤制官更不可（身弱不能伤制官＝克泄交加，官克你还泄你）",
+                            "伤官用劫·一定用比劫（案五十二）：日主过泄（食伤党力${format(shiS)}）而**没有印星**（印绶党力${format(yinS)}——藏支之印不算有印，配印须印透干或印有本气根）——用神一定就是比劫。" +
+                                "**比劫夺财是好事**（身弱用劫不考虑财：比劫离财近夺得更干净、离得远夺不着也没事，因为能帮我的身）；**只要比劫好了我就好，比劫坏了我就坏**——八字好坏完全围绕比劫用神来说事。" +
+                                "**最怕见官**：官克比劫——「伤官见官为祸百端」皆日主衰弱用比劫帮身、见官则比劫受克所以有祸（若局中有印，见官不但无祸反而有福——官的双作用：一者生印、二者克比劫：**用印见官是好事，用比劫见官就是为祸百端**）。" +
+                                "运：一路印比帮比劫皆好运（印运帮比劫兼克食伤＝**伤官配印之效**，双用）——用神得助，可以承载食伤生财，**可以做官**；食伤运泄比劫差但没什么大事（毕竟没有被克）；官杀运克用神出事；以食伤制官更不可（身弱不能伤制官＝克泄交加，此时最忌官）",
                     )
                 }
             }
@@ -1119,6 +1123,7 @@ object JinBiaoCalculator {
             rootlessEls = rootlessEls,
             daXiongText = daXiongNote, zhongPingText = zhongPingNote, favorText = favorNote,
             yongYin = choice.way == JinBiaoQuYongWay.HUA_SHA,
+            yongJie = choice.way == JinBiaoQuYongWay.SHANG_YONG_JIE,
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -1401,6 +1406,7 @@ object JinBiaoCalculator {
         val zhongPingText: Map<Element, String>,
         val favorText: Map<Element, String>,
         val yongYin: Boolean = false,        // 身弱用印局（HUA_SHA）——运支合补印局大发（案十三）
+        val yongJie: Boolean = false,        // 伤官用劫档（案五十二）——用神为比劫：泄比劫＝差而没什么大事（毕竟没有被克），克比劫＝出事
     )
 
     /** 单步大运评断（含逐年流年；流年同用大运之档位口径，细分待壬寅专题）。[zhiBureauEl]＝连行方局之印比覆写；[forceJI]＝用印局印比连行方局整运作吉。 */
@@ -1487,6 +1493,12 @@ object JinBiaoCalculator {
                 val huaSha = if (el == ctx.guanEl) huaShaNote(zhi, el, chartBranches, ctx, isStem = i == 0) else null
                 // 案十三：身弱用印局——运支与局支合补印局（三合/六合化印，如亥未拱木逢卯）——用神得局大发
                 val yinJuBu = i == 1 && ctx.yongYin && el == ctx.yinEl && heYinJu(zhi, chartBranches, ctx.yinEl)
+                // 案五十二：运支填实原局拱合待成之局（亥未拱木待卯——卯来成亥卯未）——局神得势：
+                // 局神克用神→克掉用神就要出事（伤官见官为祸百端之属）；局神为用神之印→用神得局大发（案十三吉向）；
+                // 局神为药神（通关解病，案廿二申子辰水局泄金生木）→不作凶论——药神到一样富贵
+                val sanHeChengEl = if (i == 1) sanHeCompletedEl(zhi, chartBranches) else null
+                val sanHeCheng = sanHeChengEl != null && sanHeChengEl!!.controls == ctx.yongEl &&
+                    sanHeChengEl !in ctx.favorEls && sanHeChengEl !in ctx.zhongPingEls
                 // 命一补丁·旺强极干支分论：
                 // ① 官杀干直克身——犯旺激怒，权在一人不可触犯（虽得局亦然——丙运死亡）
                 // ② 食伤干泄可行（天干无印不夺——顺其旺势）；食伤支印重则枭夺（地支不能泄）
@@ -1499,6 +1511,7 @@ object JinBiaoCalculator {
                     zhiDuo -> "地支食伤被印枭夺——地支不能泄，凶"
                     shunXieGan -> "天干泄秀（天干无${ctx.yinEl.chinese}不夺）——顺其旺势，可行"
                     yinJuBu -> "运支合补印局（${zhi.chinese}与局支合成${ctx.yinEl.chinese}局）——亥卯未拱局补成，用神得局大发"
+                    sanHeCheng -> "运支${zhi.chinese}填实${sanHeChengEl!!.chinese}三合局（原局拱合待成——局中两支早等着${zhi.chinese}来，${sanHeChengEl.chinese}旺了）——局神得势克掉用神，就要出事（伤官见官为祸百端）"
                     huaSha != null -> huaSha.second
                     else -> ctx.daXiongText[el] ?: ctx.zhongPingText[el]
                         ?: (if (!(ctx.wangJiFamily && ctx.yinZhong && el == ctx.shiEl)) ctx.favorText[el] else null)
@@ -1511,7 +1524,7 @@ object JinBiaoCalculator {
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
                     favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong,
                     pingOverride = huaSha != null && huaSha.first == false,
-                    xiongOverride = fanWang || zhiDuo,
+                    xiongOverride = fanWang || zhiDuo || sanHeCheng,
                 )
             }
         }
@@ -1534,6 +1547,17 @@ object JinBiaoCalculator {
         } else {
             false to "印星得局，化煞生印——官来生印，不为大凶"
         }
+    }
+
+    /** 运支填实原局拱合待成之局（局中已有两支，如亥未拱木待卯——卯来即成亥卯未）：返回所成局之五行。 */
+    private fun sanHeCompletedEl(branch: EarthlyBranch, chartBranches: List<EarthlyBranch>): Element? {
+        val sanHe = listOf(
+            setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+            setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+            setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+            setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+        )
+        return sanHe.firstOrNull { (t, _) -> branch in t && t.all { it == branch || it in chartBranches } }?.second
     }
 
     /** 运支与局中支成三合印局（寅午戌火/申子辰水/亥卯未木/巳酉丑金）或六合化印。 */
@@ -1568,7 +1592,9 @@ object JinBiaoCalculator {
         items.any { it.pingOverride || it.element in ctx.zhongPingEls } -> JinBiaoVerdict.PING
         // 吉档：全帮扶，或顺泄/化煞合局之作吉覆写（作吉元素视同帮扶）
         items.all { it.stance == JinBiaoStance.BANG || it.favorOverride || it.element in ctx.favorEls } -> JinBiaoVerdict.JI
-        items.all { it.stance == JinBiaoStance.SUN && it.element !in ctx.favorEls } -> JinBiaoVerdict.XIONG
+        // 案五十二分档（限伤官用劫档——用神为比劫）：克比劫＝出事大凶；纯泄耗比劫（毕竟没有被克）＝差而没什么大事，中平
+        items.all { it.stance == JinBiaoStance.SUN && it.element !in ctx.favorEls } ->
+            if (ctx.yongJie && items.none { it.action.contains("克用神") }) JinBiaoVerdict.PING else JinBiaoVerdict.XIONG
         else -> JinBiaoVerdict.GAN_ZHI_FEN
     }
 

@@ -1459,6 +1459,35 @@ class JinBiaoAnLiTest {
         assertTrue("壬辰财坏印非吉", jb.yuns[4].verdict != JinBiaoVerdict.JI)
     }
 
+    // ── 案五十二 · 癸亥 辛酉 戊申 己未（1983-09-17 未时，乾）——伤官用劫·祸百端正例 ──
+
+    @Test
+    fun `案五十二 乾 癸亥辛酉戊申己未 金水旺泄体过无印用劫 比劫夺财是好事 一路印比吉可以做官 乙卯填成亥卯未凶`() {
+        val bazi = chart(1983, 9, 17, 14)
+        assertTrue(bazi.fullBazi.startsWith("癸亥 辛酉 戊申 己未"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行大运与师传表一致",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚申(1986)", "己未(1996)", "戊午(2006)", "丁巳(2016)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("酉月申酉辛金泄体过——身弱", jb.strength == DayStrength.WEAK)
+        assertTrue("印只藏未中丁不算有印——伤官用劫，用神己未（土比劫）",
+            jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE && jb.yongShenElement == Element.EARTH)
+        assertTrue("取用依据含用劫四要：夺财是好事、最怕见官、祸百端、配印之效",
+            jb.quYongBasis.contains("比劫夺财是好事") && jb.quYongBasis.contains("最怕见官") &&
+                jb.quYongBasis.contains("为祸百端") && jb.quYongBasis.contains("伤官配印之效"))
+
+        // 庚申泄己未——没什么大事（毕竟没有被克）→中平；己未戊午丁巳丙辰一路帮比劫皆吉
+        assertTrue("庚申泄用神非克——中平（没什么大事）", jb.yuns[0].verdict == JinBiaoVerdict.PING)
+        assertTrue("己未戊午丁巳丙辰四步印比帮用神皆吉（用神得助可承载食伤生财做官）",
+            listOf(1, 2, 3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        // 乙卯：亥未拱木待卯，运支填成亥卯未——木旺克掉用神己未，出事（伤官见官为祸百端）
+        assertTrue("乙卯运填成三合木局克用神——凶", jb.yuns[5].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("乙卯运标注三合成局出事", jb.yuns[5].items.any { it.action.contains("三合") && it.action.contains("出事") })
+        assertTrue("甲寅官杀克比劫亦非吉", jb.yuns[6].verdict != JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
@@ -1508,7 +1537,7 @@ class JinBiaoAnLiTest {
                     DayStrength.WEAK ->
                         assertTrue(
                             "$name 身弱取用——印比扶身或枭印化杀",
-                            r.quYongWay in setOf(JinBiaoQuYongWay.FU_SHEN, JinBiaoQuYongWay.HUA_SHA) &&
+                            r.quYongWay in setOf(JinBiaoQuYongWay.FU_SHEN, JinBiaoQuYongWay.HUA_SHA, JinBiaoQuYongWay.SHANG_YONG_JIE) &&
                                 category in setOf("比劫", "印绶"),
                         )
                     DayStrength.STRONG ->
