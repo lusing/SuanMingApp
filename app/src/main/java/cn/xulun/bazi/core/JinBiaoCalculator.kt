@@ -404,7 +404,19 @@ object JinBiaoCalculator {
             zaoJu && zaoTiaoYouQi && !bazi.branches.all { it.element == Element.FIRE } -> Element.WATER
             else -> null
         }
-        val tiaoHou = tiaoHouEl != null
+        // 案卅四裁：杀旺食透而日主得禄根（禄支不克泄日主——异于库根之泄身）——禄根型食制优先于调候
+        val luZhi = when (dayMaster) {
+            HeavenlyStem.JIA -> EarthlyBranch.YIN
+            HeavenlyStem.YI -> EarthlyBranch.MAO
+            HeavenlyStem.BING, HeavenlyStem.WU -> EarthlyBranch.SI
+            HeavenlyStem.DING, HeavenlyStem.JI -> EarthlyBranch.WU
+            HeavenlyStem.GENG -> EarthlyBranch.SHEN
+            HeavenlyStem.XIN -> EarthlyBranch.YOU
+            HeavenlyStem.REN -> EarthlyBranch.HAI
+            else -> EarthlyBranch.ZI
+        }
+        val luGen = luZhi in bazi.branches
+        val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen)
 
         // ── 弱中变旺（案十定则；案廿六护栏）：弱基调而日主坐贴身印比本气／月干印比透，
         //    且月令敌党之支被「印比之支」贴身泄克（官被泄克转衰）——弱中变旺。
@@ -532,7 +544,7 @@ object JinBiaoCalculator {
                 // 根气＝本气根，或藏干通根≥3（案三十），或【无印而杀极旺（≥10）时藏根≥2亦通根得气——退而求其次】（案卅二）。
                 // 身弱食神制杀首先考虑有没有印：最好用印化之以德；命局无印只有食神——退而求其次食神制杀（身弱肯定没有用印厉害）。
                 // 无根气而食神强制＝克泄交加，更穷困比普通人还差（贫夭负债）。
-                (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && yinS < FOLLOW_MIN_SCORE && shiS < 6.0 &&
+                (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && (yinS < FOLLOW_MIN_SCORE || luGen) && shiS < 6.0 &&
                     (hasBenQiRoot(bazi, biEl) ||
                         bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } >= 3)) ||
                     tuiErQici -> Choice(
@@ -556,6 +568,9 @@ object JinBiaoCalculator {
                             append("；辰戌一冲土越来越旺、藏金暗相砍木——余气根等于没了（幸有${if (bazi.hourPillar.branch.element == biEl) "时支寅木气贯生时" else "本气根"}，根气不毁）")
                         }
                         append("；干头之印行南方火力减（终究差一点），火地支之运帮起食伤——食神制杀得力")
+                        if (luGen) {
+                            append("；日主之根为禄（${luZhi.chinese}＝${dayMaster.chinese}之禄）——禄根不克泄日主，异于库根之泄身（案卅二/卅三）：玄机正在根之质性——为什么有的命走印运好、有的走别的运好，原因就在这里。禄根型食制层次高：只要把食伤帮起来、身偏弱再把自身补起来——帮食（${shiEl.chinese}）兼帮身（${biEl.chinese}）俱吉，这种的食神制杀是要做官的")
+                        }
                         append("；条件铁律：日主必须有根气——无根气还用食神强制官杀，叫克泄交加，更差更穷困，比普通人还要差（贫夭负债）")
                     },
                 )

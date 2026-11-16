@@ -1076,6 +1076,28 @@ class JinBiaoAnLiTest {
         assertTrue("丁巳戊午火土亦吉", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案卅四 · 壬申 丙午 庚午 丙戌（1992-06-23 戌时，乾）——食神制杀·禄根型做官 ──
+
+    @Test
+    fun `案卅四 乾 壬申丙午庚午丙戌 申为庚禄不克泄 禄根型食制 金水俱吉做官`() {
+        val bazi = chart(1992, 6, 23, 19)
+        assertTrue(bazi.fullBazi.startsWith("壬申 丙午 庚午 丙戌"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丁未(1996)", "戊申(2006)", "己酉(2016)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("杀旺食透禄根——禄根型食制（非调候面）",
+            jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含禄根不克泄与做官",
+            jb.quYongBasis.contains("禄根不克泄") && jb.quYongBasis.contains("要做官"))
+
+        // 帮食（水）兼帮身（金）俱吉——金水好运做官；火土凶
+        assertTrue("庚戌辛亥壬子癸丑金水四步皆吉", listOf(3, 4, 5, 6).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("丁未火土凶", jb.yuns[0].verdict == JinBiaoVerdict.XIONG)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
