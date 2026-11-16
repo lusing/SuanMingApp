@@ -1309,6 +1309,30 @@ class JinBiaoAnLiTest {
         assertTrue("甲寅乙卯印运帮身皆吉", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案四十五 · 甲子 乙亥 己巳 丁卯（1984-12-01 卯时，乾）——亥巳冲毁印·卯半救·寅运绝处逢生 ──
+
+    @Test
+    fun `案四十五 乾 甲子乙亥己巳丁卯 官杀混杂必用印 亥巳冲毁印根卯半救 寅运合去冲神绝处逢生`() {
+        val bazi = chart(1984, 12, 1, 5)
+        assertTrue(bazi.fullBazi.startsWith("甲子 乙亥 己巳 丁卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丙子(1986)", "丁丑(1996)", "戊寅(2006)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("财杀两旺官杀混杂——必用坐下印化之以德（官杀混杂必要用印绶化之以德）",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.FIRE)
+        assertTrue("亥巳贴身冲无通关——支神只以冲为重毁用神印根",
+            jb.health.damages.any { it.contains("支神只以冲为重") })
+        assertTrue("卯生巳——家里还有生的把印星补起来（半救）",
+            jb.health.supports.any { it.contains("半救") && it.contains("卯") })
+
+        // 戊寅运：寅亥化木合去冲神——巳火绝处逢生，彻底有情（戊干泄火截脚，支神为重）
+        assertTrue("寅运合去亥冲神——绝处逢生非凶且注明",
+            jb.yuns[2].verdict != JinBiaoVerdict.XIONG && jb.yuns[2].items.any { it.action.contains("绝处逢生") })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

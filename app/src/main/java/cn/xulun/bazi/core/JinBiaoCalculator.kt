@@ -420,11 +420,13 @@ object JinBiaoCalculator {
         val luGen = luZhi in bazi.branches
         // 案四十三裁：调候神本身即食伤（合杀之工具）而官杀两透混杂一官被合——生克合留为纲，调候让位；
         // 调候神即官杀本身（案二十）——调候为纲，合留让位
-        val heZhuHunZa = bazi.stems.count { it.element == guanEl } >= 2 &&
+        val heZhuHunZa = (bazi.stems.count { it.element == guanEl } >= 2 &&
             bazi.stems.filterIndexed { i, s -> i != 2 && (s.element == shiEl || s.element == biEl) }.any { hg ->
                 val p = GAN_HE[hg]
                 p != null && p.element == guanEl && bazi.stems.any { it == p }
-            } && tiaoHouEl == shiEl
+            } && tiaoHouEl == shiEl) ||
+            // 案四十五：调候神即印而官杀两透混杂身弱——杀重用印化之以德为纲（生克故事更全），调候让位
+            (tiaoHouEl == yinEl && bazi.stems.count { it.element == guanEl } >= 2 && strength == DayStrength.WEAK)
         val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen) && !heZhuHunZa
 
         // ── 旺中变弱（案四十二）：旺基调（比月）而辰酉化金（辰随酉走——藏乙癸叛向、辰作金论）
@@ -1024,9 +1026,16 @@ object JinBiaoCalculator {
         }
         // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
         val rootlessEls = setOf(caiEl, guanEl, shiEl, yinEl, biEl).filter { partyScore(bazi, it) == 0.0 }.toSet()
+        // 案四十五：用神本气根被冲——冲神之支；运支六合合去冲神＝用神绝处逢生
+        val chongShen: EarthlyBranch? = health.damages.firstOrNull { it.contains("支神只以冲为重") }?.let { d ->
+            bazi.branches.firstOrNull { br ->
+                br.element == yongEl && LIU_CHONG[br] != null && d.contains("被${LIU_CHONG[br]!!.chinese}冲")
+            }?.let { LIU_CHONG[it] }
+        }
         val ctx = YunCtx(
             yongEl = yongEl, biEl = biEl, yinEl = yinEl, shiEl = shiEl, caiEl = caiEl, guanEl = guanEl,
             qiangJi = qiangJi, yinDeJu = yinDeJu,
+            chongShen = chongShen,
             wangJiFamily = wangJi || qiangJi, yinZhong = yinS >= YIN_QING,
             favorEls = favorNote.keys, zhongPingEls = zhongPingNote.keys, daXiongEls = daXiongNote.keys,
             rootlessEls = rootlessEls,
@@ -1250,21 +1259,28 @@ object JinBiaoCalculator {
             if (act != null) damages += "${PillarBranchLabels[i]}${br.chinese}$act"
         }
 
-        // 根被冲——案廿六护栏：冲对之间有通关之支卡中（子午冲得寅卡中：水生木木生火）属友情，
-        // 冲化为生反向我生拱——情分加分，不作冲伤
+        // 根被冲——案廿六：冲对之间（隔位）有通关之支卡中属友情，冲化为生情分加分；
+        // 案四十五戒：贴身相邻之冲无支可卡——支神只以冲为重，破坏用神（基本无格），
+        // 若另有一支生用神（如卯生巳）——家里还有生的，把用神补起来（半救，绝处逢生待运）
         bazi.branches.forEachIndexed { i, br ->
             val chongPartner = LIU_CHONG[br]
             if (chongPartner != null && br.element == yongEl &&
                 bazi.branches.any { it == chongPartner }
             ) {
-                val tongGuan = bazi.branches.any { mid ->
-                    mid != br && mid != chongPartner &&
-                        chongPartner.element.generates == mid.element && mid.element.generates == br.element
+                val pIdx = bazi.branches.indexOf(chongPartner)
+                val lo = minOf(i, pIdx)
+                val hi = maxOf(i, pIdx)
+                val mid = bazi.branches.subList(lo + 1, hi).firstOrNull { m ->
+                    chongPartner.element.generates == m.element && m.element.generates == br.element
                 }
-                if (tongGuan) {
-                    supports += "根${br.chinese}与${chongPartner.chinese}之冲有通关之支卡中（属友情）——冲化为生，情分加分"
+                if (mid != null) {
+                    supports += "根${br.chinese}与${chongPartner.chinese}之冲有${mid.chinese}卡中通关（属友情）——冲化为生，情分加分"
                 } else {
-                    damages += "${br.chinese}用神之根被${chongPartner.chinese}冲"
+                    damages += "${br.chinese}用神之根被${chongPartner.chinese}冲——支神只以冲为重，破坏用神"
+                    val repair = bazi.branches.firstOrNull { it != br && it != chongPartner && it.element.generates == yongEl }
+                    if (repair != null) {
+                        supports += "${repair.chinese}生${br.chinese}用神——家里还有生的，把用神印星补起来（半救）；待运支合去${chongPartner.chinese}冲神——绝处逢生，彻底有情"
+                    }
                 }
             }
         }
@@ -1298,6 +1314,7 @@ object JinBiaoCalculator {
         val yinDeJu: Boolean,
         val wangJiFamily: Boolean,       // 旺极/强极
         val yinZhong: Boolean,           // 印党力≥印轻线（地支食伤被枭夺）
+        val chongShen: EarthlyBranch? = null, // 案四十五：用神根之冲神——运支六合合去冲神＝绝处逢生
         val favorEls: Set<Element>,      // 作吉论之五行（旺极印轻食伤顺泄）
         val zhongPingEls: Set<Element>,  // 作中平论之五行（解围局官/食）
         val daXiongEls: Set<Element>,    // 作大凶论之五行（弱极比印/旺强极官财）
@@ -1387,6 +1404,8 @@ object JinBiaoCalculator {
                     action = "$act·$soften——顺泄无直接冲克，贫寒不顺，不至大凶（大难不死必有后福）",
                 )
             } else {
+                // 案四十五：运支六合合去用神之冲神——用神绝处逢生，彻底有情
+                val heChong = i == 1 && ctx.chongShen != null && LIU_HE[zhi] == ctx.chongShen
                 val huaSha = if (el == ctx.guanEl) huaShaNote(zhi, el, chartBranches, ctx, isStem = i == 0) else null
                 // 案十三：身弱用印局——运支与局支合补印局（三合/六合化印，如亥未拱木逢卯）——用神得局大发
                 val yinJuBu = i == 1 && ctx.yongYin && el == ctx.yinEl && heYinJu(zhi, chartBranches, ctx.yinEl)
@@ -1397,6 +1416,7 @@ object JinBiaoCalculator {
                 val zhiDuo = ctx.wangJiFamily && i == 1 && el == ctx.shiEl && ctx.yinZhong
                 val shunXieGan = ctx.wangJiFamily && i == 0 && el == ctx.shiEl
                 val note = when {
+                    heChong -> "运支${zhi.chinese}合去冲神${ctx.chongShen!!.chinese}——用神绝处逢生，彻底有情（把印绶救起来了）"
                     fanWang -> "官干直克身——犯旺激怒（权在一人，不可触犯），大凶"
                     zhiDuo -> "地支食伤被印枭夺——地支不能泄，凶"
                     shunXieGan -> "天干泄秀（天干无${ctx.yinEl.chinese}不夺）——顺其旺势，可行"
@@ -1411,7 +1431,7 @@ object JinBiaoCalculator {
                     element = el,
                     stance = stance,
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
-                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu,
+                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong,
                     pingOverride = huaSha != null && huaSha.first == false,
                     xiongOverride = fanWang || zhiDuo,
                 )
