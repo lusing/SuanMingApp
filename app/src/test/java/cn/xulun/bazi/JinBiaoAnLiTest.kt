@@ -1702,6 +1702,35 @@ class JinBiaoAnLiTest {
         assertTrue("甲寅运泄子星——平（早年无子）", jb.yuns[0].verdict == JinBiaoVerdict.PING)
     }
 
+    // ── 案六十一 · 壬寅 癸丑 戊午 丙辰（1963-01-15 辰时，坤）——子女章四例·土得局夺财生女 ──
+
+    @Test
+    fun `案六十一 坤 壬寅癸丑戊午丙辰 土得局身旺喜财坏印用神水财 地支不载没生儿子 戌运火局生闺女 金水运高学历`() {
+        val bazi = chart(1963, 1, 15, 8)
+        assertTrue(bazi.fullBazi.startsWith("壬寅 癸丑 戊午 丙辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阳年坤造逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬子(1966)", "辛亥(1976)", "庚戌(1986)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("丑月土得局＋午刃丙印——身旺", jb.strength == DayStrength.STRONG)
+        assertTrue("官不透而弱不用官——身旺印重喜财坏印，用神壬癸水财（寅木不旺，拿金水取用）",
+            jb.quYongWay == JinBiaoQuYongWay.HUAI_YIN && jb.yongShenElement == Element.WATER)
+
+        // 子女章：身旺财为子——土得局夺财地支不载：没生儿子；亥运可生儿；戌运火局生闺女
+        val zn = jb.ziNv!!
+        assertTrue("无儿有女", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("子星＝偏财水", zn.ziXing == cn.xulun.bazi.model.TenGod.PIAN_CAI && zn.ziEl == Element.WATER)
+        assertTrue("判据含地支不载、没生儿子、生女儿、火土局生女",
+            zn.basis.contains("地支不载") && zn.basis.contains("没生儿子") &&
+                zn.basis.contains("生女儿") && zn.basis.contains("必是闺女"))
+
+        // 壬子辛亥金水旺——高学历（医生）；戌运火土局克用——生女之运非吉
+        assertTrue("壬子辛亥金水运皆吉（高学历应期）", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("庚戌运戌支克用非吉（火局生女之运）", jb.yuns[2].verdict != JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

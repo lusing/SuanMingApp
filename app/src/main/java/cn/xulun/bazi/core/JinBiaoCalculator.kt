@@ -886,7 +886,10 @@ object JinBiaoCalculator {
                     },
                 )
                 // 五理②/第七讲·财滋弱杀（案八/案十/案廿二）：身旺而官在局（官废不能用——案十二）——有财有官杀优先用杀
-                guanS >= FOLLOW_MIN_SCORE && !guanFei -> Choice(
+                // 案六十一戒：官须**透干**方用官配财（案廿二丙透）——官只藏支而弱（寅不旺）不用官：
+                // 身旺印重则喜财坏印（HUAI_YIN 殿后接手），金水（食伤生财）为取用
+                guanS >= FOLLOW_MIN_SCORE && !guanFei &&
+                    bazi.stems.any { it != dayMaster && it.element == guanEl } -> Choice(
                     JinBiaoQuYongWay.PEI_CAI, guanEl,
                     buildString {
                         append("财滋弱杀格（案廿二）：身旺（${if (ruoZhongBianWang) "弱中变旺——坐贴身印比、月令敌党之支被日支泄克转衰" else "土金两旺通根得气"}），官杀露而弱（党力${format(guanS)}）${if (shiS < FOLLOW_MIN_SCORE) "、无食伤" else ""}——有财有官杀优先用杀，命主用官")
@@ -958,10 +961,12 @@ object JinBiaoCalculator {
                         if (caiS < FOLLOW_MIN_SCORE) append("——虽财不现，食伤够旺亦必发泄，也是好命")
                     },
                 )
-                // 五理①财坏印（殿后）：无官可用、食伤亦无力，而印坏事且财地支有载——用财星坏印
-                yinS >= YIN_HUAI && caiZai -> Choice(
+                // 五理①财坏印（殿后）：无官可用、食伤亦无力，而印坏事且财地支有载或双透得气——用财星坏印
+                // （案六十一：壬癸双透虽地支不载，财混杂而得气——喜财坏印，用神财）
+                yinS >= YIN_HUAI && (caiZai || bazi.stems.count { it != dayMaster && it.element == caiEl } >= 2) -> Choice(
                     JinBiaoQuYongWay.HUAI_YIN, caiEl,
-                    "正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用而官食俱不可用——必用财星坏印（财党力 ${format(caiS)}，地支有载）",
+                    "正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用而官食俱不可用——必用财星坏印（财党力 ${format(caiS)}，${if (caiZai) "地支有载" else "双透得气"}）。" +
+                        "身足够旺——**喜财坏印，财好大家都好**（财官就是机会：身板够硬就差机会）；财富值取决于用神财之力（案六十一）",
                 )
                 else -> {
                     val best = listOf(
@@ -1115,14 +1120,19 @@ object JinBiaoCalculator {
             val yinTouZuoBen = bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl }
             data class ZN(val el: Element, val er: Boolean, val nv: Boolean, val text: String)
             val zn: ZN = if (strength == DayStrength.STRONG) {
-                // 身旺：基准财为子——比劫夺财找官杀；无财无官食伤泄秀；食被枭夺找财
+                // 身旺：基准财为子——查比劫夺财（重夺/地支得局不载）→官旺救或食伤得局化劫；无财无官食伤泄秀；食被枭夺找财
+                // 「鲁莽地说就错了」——有财不可遽断有子，必来回检查螳螂捕蝉黄雀在后
+                val duoCai = biS >= 1.2 * caiS ||
+                    (bazi.branches.count { it.element == biEl } >= 2 && bazi.monthPillar.branch.element == biEl)
                 when {
-                    caiS > 0.0 && biS >= 1.5 * caiS -> {
-                        // 比劫夺财——找官杀：有官杀一样有儿子；没有就没儿子
-                        if (guanS >= FOLLOW_MIN_SCORE) {
-                            ZN(guanEl, true, false, "身旺财为子而**比劫旺夺财**——官杀克劫解放财：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
-                        } else {
-                            ZN(caiEl, false, false, "身旺财为子而**比劫旺夺财、又无官杀救**——**没儿子**")
+                    caiS > 0.0 && duoCai -> {
+                        // 比劫夺财（重夺／地支得局——财虽有根而地支不载）——官旺救或食伤得局化劫
+                        when {
+                            guanS >= GUAN_WANG -> ZN(guanEl, true, false, "身旺财为子而**比劫夺财**——官杀旺（克劫有力）解放财：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
+                            shiS >= GUAN_WANG && shiS >= biS -> ZN(shiEl, true, false, "身旺财为子而比劫夺财——**食伤得局完全把比劫化了**（劫不至重、间接解放财）：**还能有儿子**（案六十补笔）")
+                            caiS > 0.0 && shiS > 0.0 -> ZN(caiEl, false, true,
+                                "身旺财为子而**比劫地支得局夺财——财虽有根而地支不载**（终究土得局）；官弱救不动、食伤弱化不动——**没生儿子**；然有食伤生财（财透得气）——**有生育能力，生女儿不生儿**；运注：子星得地之运（如亥水之属）可生儿；若火土局之运生子——必是闺女（火生土旺，财不载）")
+                            else -> ZN(caiEl, false, false, "身旺财为子而**比劫夺财、官救食化俱无**——**没儿子**")
                         }
                     }
                     caiS > 0.0 -> ZN(caiEl, true, false, "**身旺财为子**（有财即有子；怕劫地——比劫给我克了）")
