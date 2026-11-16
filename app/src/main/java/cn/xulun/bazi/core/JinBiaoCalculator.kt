@@ -560,6 +560,17 @@ object JinBiaoCalculator {
                         "逆者${keEl.chinese}（克${kunLunEl.chinese}止${kunLunEl.chinese}）与${kunLunEl.controls.chinese}（克${kunLunSource.chinese}逆金水之局）——顺来逆去贫之意，逆则贫命出灾",
                 )
             }
+            // 第八讲续·去杀留官／去官留杀·取清（案四十）：官杀重混杂（党力≥6、通根）——
+            // 官太旺之混杂仍要合去一个（任一干合去其一：劫财合杀、食伤合官皆可）＝取清——依然当官
+            strength == DayStrength.STRONG && !ruoJi && !wangJi && guanS >= 6.0 &&
+                bazi.stems.count { it.element == guanEl } >= 2 &&
+                bazi.stems.filterIndexed { i, s -> i != 2 && (s.element == shiEl || s.element == biEl) }.any { hg ->
+                    val p = GAN_HE[hg]
+                    p != null && p.element == guanEl && bazi.stems.any { it == p }
+                } -> Choice(
+                JinBiaoQuYongWay.HE_LIU, guanEl,
+                "去杀留官·取清（案四十）：官杀通根重、两透混杂（党力${format(guanS)}）——官杀旺加上混杂更旺，**还是要合去一个＝取清**（劫财合杀＝去杀留官，与合官留杀一体两面）。留下之${guanEl.chinese}为用神清纯——**依然当官**。与案卅八成对：官旺混杂宜合取清；官弱赖混杂加力则不宜合".replace("**", ""),
+            )
             // 第八讲续·合去混杂（案卅七）：身弱官杀两透混杂（混杂加力克身）而食伤干合去其一——
             // 去留清纯＝有情豁免（不用考虑留下官杀旺而克身）；留下之官杀为用
             strength == DayStrength.WEAK && !ruoJi &&

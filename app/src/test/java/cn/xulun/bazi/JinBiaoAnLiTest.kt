@@ -1210,6 +1210,23 @@ class JinBiaoAnLiTest {
         assertTrue("丙寅比运帮身当官吉", jb.yuns[2].verdict == JinBiaoVerdict.JI)
     }
 
+    // ── 案四十 · 甲辰 己巳 戊辰 乙卯（1964-05-19 卯时，乾）——去杀留官·取清 ──
+
+    @Test
+    fun `案四十 乾 甲辰己巳戊辰乙卯 官杀通三根混杂重 己合去甲取清 依然当官`() {
+        val bazi = chart(1964, 5, 19, 5)
+        assertTrue(bazi.fullBazi.startsWith("甲辰 己巳 戊辰 乙卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚午(1970)", "辛未(1980)", "壬申(1990)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("官杀通三根（卯辰辰）两透混杂、己劫合去甲杀——去杀留官取清",
+            jb.quYongWay == JinBiaoQuYongWay.HE_LIU && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含取清与依然当官", jb.quYongBasis.contains("取清") && jb.quYongBasis.contains("依然当官"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
