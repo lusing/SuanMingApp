@@ -1248,6 +1248,25 @@ class JinBiaoAnLiTest {
         assertTrue("甲午乙未南方火财皆吉", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案四十二 · 丙辰 辛卯 乙酉 庚辰（1976-04-03 辰时，坤）——旺中变弱·合杀留官 ──
+
+    @Test
+    fun `案四十二 坤 丙辰辛卯乙酉庚辰 辰酉化金旺中变弱 丙辛合杀留官有情 地级市领导夫团长`() {
+        val bazi = chart(1976, 4, 3, 7)
+        assertTrue(bazi.fullBazi.startsWith("丙辰 辛卯 乙酉 庚辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "逆行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚寅(1985)", "己丑(1995)", "戊子(2005)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("两辰合酉化金、金旺克木冲木（卯酉冲）——旺中变弱", jb.strength == DayStrength.WEAK)
+        assertTrue("丙辛合杀留官——合去混杂有情有格局",
+            jb.quYongWay == JinBiaoQuYongWay.HE_LIU && jb.yongShenElement == Element.METAL)
+        assertTrue("取用依据含化不化不论", jb.quYongBasis.contains("化不化不论"))
+        assertTrue("女命官星双得断（命主地级市领导、夫团长）", jb.duanYu.contains("官星双得"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

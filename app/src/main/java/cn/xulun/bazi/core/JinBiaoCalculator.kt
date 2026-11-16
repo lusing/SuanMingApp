@@ -420,6 +420,22 @@ object JinBiaoCalculator {
         val luGen = luZhi in bazi.branches
         val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen)
 
+        // ── 旺中变弱（案四十二）：旺基调（比月）而辰酉化金（辰随酉走——藏乙癸叛向、辰作金论）
+        //    官杀党力压倒（≥1.5×折减印比）且月支被六冲（卯酉冲——禄根被杀根冲伤）——旺中变弱
+        val chenYouHua = EarthlyBranch.CHEN in bazi.branches && EarthlyBranch.YOU in bazi.branches
+        val guanSAdj2 = if (chenYouHua) guanS + 1.5 * bazi.branches.count { it == EarthlyBranch.CHEN } else guanS
+        val biSAdj2 = if (chenYouHua) biS - 0.5 * bazi.branches.count { it == EarthlyBranch.CHEN } else biS
+        val yinSAdj2 = if (chenYouHua) yinS - 0.5 * bazi.branches.count { it == EarthlyBranch.CHEN } else yinS
+        if (strength == DayStrength.STRONG &&
+            bazi.monthPillar.branch.element == biEl &&
+            guanSAdj2 >= 1.5 * (yinSAdj2 + biSAdj2) &&
+            bazi.branches.indexOf(bazi.monthPillar.branch).let { mi ->
+                mi in bazi.branches.indices && LIU_CHONG[bazi.monthPillar.branch] == bazi.branches.getOrElse(mi + 1) { bazi.monthPillar.branch }
+            }
+        ) {
+            strength = DayStrength.WEAK
+        }
+
         // ── 弱中变旺（案十定则；案廿六护栏）：弱基调而日主坐贴身印比本气／月干印比透，
         //    且月令敌党之支被「印比之支」贴身泄克（官被泄克转衰）——弱中变旺。
         //    护栏①财克印不算（档五十一仍身弱用印）；护栏②敌党压倒性（≥1.5×印比）不翻——
@@ -580,7 +596,7 @@ object JinBiaoCalculator {
                     partner != null && partner.element == guanEl && bazi.stems.any { it == partner }
                 } -> Choice(
                 JinBiaoQuYongWay.HE_LIU, guanEl,
-                "合去混杂·有情（案卅七/卅九）：${guanEl.chinese}官杀两透混杂——身弱不喜混杂（壬癸一混杂，${guanEl.chinese}之力更大、克身更重；身旺用官而官弱反喜混杂——混杂能加力）。身弱官杀混杂必须去一个或用印化；无印则食伤干去一官也算有情——**化不化不论，合了这个官就叫有情；有情就是有格局，不在于命局旺弱——不用考虑留下的${guanEl.chinese}很旺克身的问题**。虽仍身弱，走帮身运也当官。留下${guanEl.chinese}为用神，有情就加分要富贵".replace("**", ""),
+                "合去混杂·有情（案卅七/卅九/四十二）：${guanEl.chinese}官杀两透混杂——身弱不喜混杂（壬癸一混杂，${guanEl.chinese}之力更大、克身更重；身旺用官而官弱反喜混杂——混杂能加力）。身弱官杀混杂必须去一个或用印化；无印则食伤干去一官也算有情——**化不化不论，合了这个官就叫有情；有情就是有格局，不在于命局旺弱——不用考虑留下的${guanEl.chinese}很旺克身的问题**。虽仍身弱，走帮身运也当官。留下${guanEl.chinese}为用神，有情就加分要富贵".replace("**", ""),
             )
             // 案廿四·财党杀攻身（财滋弱杀之反例）：身弱而财旺党杀克身、财先破有力之印、日主有根非从——非贫即夭
             strength == DayStrength.WEAK && caiS >= GUAN_WANG && guanS >= FOLLOW_MIN_SCORE && yinS >= FOLLOW_MIN_SCORE &&
@@ -1045,6 +1061,12 @@ object JinBiaoCalculator {
             if (ruoJi) append("此为弱极从势之命，行比劫印地必凶（反常之判，勿以普通身弱喜扶论）。")
             if (ruoJi && !zhengDou) append("随势而走：走财走官走食伤皆顺皆吉（富贵显达、高人一等）；唯走印比帮身运帮之反害，必大凶或贫穷。")
             if (choice.way == JinBiaoQuYongWay.QU_GUA) append("此为去寡之命——不用之官尽可去：违背官杀之运好运（把官杀坏得越严重越好），顺着官杀之运一世无成；日主已旺，不可用水激之。")
+            if (choice.way == JinBiaoQuYongWay.HE_LIU) {
+                append("此为合留清格之命——有情即格局：留下之官杀清纯为用，有情就要富贵（当官）。")
+                if (gender == cn.xulun.bazi.model.Gender.FEMALE) {
+                    append("女命官星得用而清——官星要么代表国家、要么代表丈夫：本人在官方体制有职权，夫亦贵（官星双得之应）。")
+                }
+            }
             if (choice.way == JinBiaoQuYongWay.GONG_SHEN) {
                 append("此为财党杀攻身之命——旺财党杀攻身、财先破印：身衰撑不住，非贫即夭（重病之属——肾病严重放弃治疗，身太衰）；丙寅之类印透化杀之运能稍安，然难救本。")
             }
