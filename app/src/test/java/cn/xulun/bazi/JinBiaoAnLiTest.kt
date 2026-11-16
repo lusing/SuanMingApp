@@ -1614,6 +1614,32 @@ class JinBiaoAnLiTest {
         assertTrue("丙辰火土帮比劫——可小富", jb.yuns[7].verdict == JinBiaoVerdict.JI)
     }
 
+    // ── 案五十七 · 庚辰 乙酉 丁丑 乙巳（1940-10-01 巳时，乾）——昆仑让位·财得局坏印清枯 ──
+
+    @Test
+    fun `案五十七 乾 庚辰乙酉丁丑乙巳 金局得局然两印贴身有禄不从 用印财得局坏印 财有多旺他就有多穷 印运温饱食伤财运负债`() {
+        val bazi = chart(1940, 10, 1, 10)
+        assertTrue(bazi.fullBazi.startsWith("庚辰 乙酉 丁丑 乙巳"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丙戌(1943)", "丁亥(1953)", "戊子(1963)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("金局得局而两印贴身＋有禄——肯定不是从格：不作昆仑正常分析", jb.quYongWay != JinBiaoQuYongWay.KUN_LUN)
+        assertTrue("身弱首要用印——用神乙木（两印贴身）",
+            jb.strength == DayStrength.WEAK && jb.quYongWay == JinBiaoQuYongWay.FU_SHEN && jb.yongShenElement == Element.WOOD)
+        assertTrue("财得局坏印入据：财有多旺他就有多穷、温饱、身无分文负债",
+            jb.quYongBasis.contains("财星得局坏印") && jb.quYongBasis.contains("财有多旺他就有多穷") &&
+                jb.quYongBasis.contains("温饱") && jb.quYongBasis.contains("身无分文"))
+        assertTrue("清枯第二型（财坏印——印运温饱食伤财运负债）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING_KU && jb.qingZhuoBasis.contains("财坏"))
+
+        // 丙戌己丑食伤生财之运——身无分文负债（凶）；庚寅辛卯干财凶支印温饱（分论）
+        assertTrue("丙戌己丑食伤生财运负债——凶", listOf(0, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("庚寅辛卯干财坏印凶、支印温饱——干支分论", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.GAN_ZHI_FEN })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

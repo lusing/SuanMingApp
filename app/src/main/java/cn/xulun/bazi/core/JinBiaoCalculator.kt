@@ -422,7 +422,12 @@ object JinBiaoCalculator {
             !(kunLunEl == shiEl && (guanS >= GUAN_WANG || (guanS >= FOLLOW_MIN_SCORE && guanZuoYouQi))) &&
             // 案廿七裁：得局之五行恰为日主之印、坐下印本气、官杀旺克身——杀重用印优先于昆仑
             // （辰贴申必生金、申子辰会局被夺——拱局辩证；印在坐下化旺杀即有情）
-            !(kunLunEl == yinEl && bazi.dayPillar.branch.element == yinEl && guanS >= GUAN_WANG)
+            !(kunLunEl == yinEl && bazi.dayPillar.branch.element == yinEl && guanS >= GUAN_WANG) &&
+            // 案五十七裁：金局得局而日主有两印贴身相生＋有禄根——**肯定不是从格，是正常的命**：
+            // 印比有力可依（身有靠），势虽成不作昆仑——正常分析（身弱用印，财得局坏印）
+            !(kunLunEl != yinEl &&
+                (bazi.monthPillar.stem.element == yinEl || bazi.hourPillar.stem.element == yinEl) &&
+                hasBenQiRoot(bazi, biEl))
 
         // ── 气象调候（案十五~案二十一）：寒甚要暖有气，暖至要寒有根 ──
         // 寒面（冬水/水局）调候神＝丙火：有气（火藏根（寅中丙/戌中丁亦是根），或透木紧贴生火且木有地载）→用之暖局；
@@ -781,6 +786,10 @@ object JinBiaoCalculator {
                         if (shiS >= GUAN_WANG) {
                             append("；**泄体过必须帮身**——比劫虽泄印之气，然帮日主扛食伤之泄（身不倒则印有用武之地）：南方比劫、东方印皆帮身方向，行运不违背即好命（用印显贵多，当官）")
                         }
+                        // 案五十七·财得局坏印：金局坏印——财有多旺他就有多穷；印运温饱、食伤生财运身无分文负债
+                        if (caiS >= GUAN_WANG && hasBenQiRoot(bazi, caiEl)) {
+                            append("；**财星得局坏印（案五十七）**：${caiEl.chinese}得局（辰酉化金＋巳酉丑支全三合）坏印——**财越旺他就越穷：财有多旺他就有多穷**（用印局财为夺印之忌；食伤生财＝给忌神添粮）；运：印运把印补起来**还能温饱**，食伤生财之运**身无分文、负债**——清枯之命（好运仅温饱）")
+                        }
                         // 案五十三·忌神潜伏律：忌神透干不贴克（干支异途）而藏根党旺——仍为大忌；去忌神之运最好
                         val keYongStems = bazi.stems.filterIndexed { i, s -> i != 2 && s.element.controls == yinEl }
                         if (keYongStems.isNotEmpty() && !hasBenQiRoot(bazi, Element.entries.first { it.controls == yinEl })) {
@@ -1000,10 +1009,13 @@ object JinBiaoCalculator {
         ).firstOrNull { trio -> trio.all { it in bazi.branches } && trio.first().let { _ -> true } }
         val keYinBound = guanSanHe != null &&
             bazi.branches.filter { it.element == keYinEl }.all { it in guanSanHe }
-        val qingKu = choice.way == JinBiaoQuYongWay.HUA_SHA && strength == DayStrength.WEAK &&
+        val qingKu = (choice.way == JinBiaoQuYongWay.HUA_SHA && strength == DayStrength.WEAK &&
             !hasBenQiRoot(bazi, biEl) &&
             partyScore(bazi, keYinEl) >= FOLLOW_MIN_SCORE && hasBenQiRoot(bazi, keYinEl) &&
-            guanS >= GUAN_WANG && !keYinBound
+            guanS >= GUAN_WANG && !keYinBound) ||
+            // 案五十七·清枯变体：身弱用印而财得局坏印（财有多旺他就有多穷）——印运仅温饱、食伤生财运身无分文负债
+            (choice.way == JinBiaoQuYongWay.FU_SHEN && yongEl == yinEl && strength == DayStrength.WEAK &&
+                caiS >= GUAN_WANG && hasBenQiRoot(bazi, caiEl))
         // 案五十三：病神透干而无本气根、用神坐日支本气根——干支异途（干不克支），病不贴克用神：
         // 有格局（坐下印在），行运不违背即好命；未中印根被冲掉仅降一点格局
         val bingYiTU = bingS2 > 0.0 && !hasBenQiRoot(bazi, bingEl) &&
@@ -1046,7 +1058,11 @@ object JinBiaoCalculator {
             append("病神＝${bingEl.chinese}（克${yongEl.chinese}用神，党力${format(bingS2)}）；用神党力${format(yongS2)}${if (yongDeLi) "（得力）" else "（不得力）"}")
             if (jianBing != null) append("；$jianBing")
             when (qingZhuo) {
-                JinBiaoQingZhuo.QING_KU -> append("——用神${yongEl.chinese}（印）虽可取（帮身扛杀），然生印之${guanEl.chinese}过旺蒸之（火炎土焦，燥土难以生金——生金有点难，但也只能用土）、又被${keYinEl.chinese}克（党力${format(partyScore(bazi, keYinEl))}有根）——病太大，一点救都没有：**清枯之命**，走好运只得温饱，走克用生忌之运一事无成（贫穷清枯）".replace("**", ""))
+                JinBiaoQingZhuo.QING_KU -> append(
+                    if (choice.way == JinBiaoQuYongWay.FU_SHEN)
+                        "——用神${yongEl.chinese}（印）被得局之${caiEl.chinese}财坏（财有多旺他就有多穷——食伤生财＝给忌神添粮）：病大难救——**清枯之命**：印运把印补起来还能温饱，食伤生财之运身无分文、负债"
+                    else "——用神${yongEl.chinese}（印）虽可取（帮身扛杀），然生印之${guanEl.chinese}过旺蒸之（火炎土焦，燥土难以生金——生金有点难，但也只能用土）、又被${keYinEl.chinese}克（党力${format(partyScore(bazi, keYinEl))}有根）——病太大，一点救都没有：**清枯之命**，走好运只得温饱，走克用生忌之运一事无成（贫穷清枯）".replace("**", ""),
+                )
                 JinBiaoQingZhuo.QUAN_ZHUO -> append("——官（${guanEl.chinese}）被${keGuan.chinese}克且财源被断、食（${shiEl.chinese}）被印克无本气根、财（${caiEl.chinese}）被比劫冲克——三者俱废，用神无着落：全浊，一事无成（学什么都不会、干什么都有人捣乱），比普通老百姓还差")
                 JinBiaoQingZhuo.QING -> append(
                     if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）"
@@ -1674,7 +1690,7 @@ object JinBiaoCalculator {
                     biJianGen -> "运支${zhi.chinese}为透干比劫${ctx.biTouGan.joinToString("") { it.chinese }}之根（禄/长生）——比劫见根变强，复与局支拱${ctx.biEl.chinese}局——通关之神被焚（${ctx.biEl.chinese}旺则${ctx.shiEl.chinese}燥，燥${ctx.shiEl.chinese}不生${ctx.caiEl.chinese}）：比劫直接克掉用神${ctx.caiEl.chinese}——大凶（死亡级大祸）；若局有官星则官克比劫护财，不至于此（配置论）"
                     sanHeCheng -> "运支${zhi.chinese}填实${sanHeChengEl!!.chinese}三合局（原局拱合待成——局中两支早等着${zhi.chinese}来，${sanHeChengEl.chinese}旺了）——局神得势克掉用神，就要出事（伤官见官为祸百端）"
                     quJiShen && ctx.yongCai -> "运干${gan.chinese}官杀克透干比劫${ctx.jiShenTouGans.joinToString("") { j -> j.chinese }}——**官护财**（用财怕比劫夺财，首要找官：有官就没事，没官就不行——干护支凶仍以支论）"
-                    quJiShen -> "运干${gan.chinese}克去透干忌神${ctx.jiShenTouGans.joinToString("") { j -> j.chinese }}——去忌神即去病，用神无克（去忌之运最好，当官）"
+                    quJiShen -> "运干${gan.chinese}克去透干忌神${ctx.jiShenTouGans.joinToString("") { j -> j.chinese }}——去忌神即去病，用神无克（去忌之运最好）"
                     huaSha != null -> huaSha.second
                     else -> ctx.daXiongText[el] ?: ctx.zhongPingText[el]
                         ?: (if (!(ctx.wangJiFamily && ctx.yinZhong && el == ctx.shiEl)) ctx.favorText[el] else null)
@@ -1712,7 +1728,8 @@ object JinBiaoCalculator {
         }
     }
 
-    /** 运支填实原局拱合待成之局（局中已有两支，如亥未拱木待卯——卯来即成亥卯未）：返回所成局之五行。 */
+    /** 运支填实原局拱合待成之局（局中已有两支，如亥未拱木待卯——卯来即成亥卯未）：返回所成局之五行。
+     *  案五十七戒：原局三支已全者（巳酉丑本全），运支重复其一支非「填实」——不作成局论。 */
     private fun sanHeCompletedEl(branch: EarthlyBranch, chartBranches: List<EarthlyBranch>): Element? {
         val sanHe = listOf(
             setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
@@ -1720,7 +1737,9 @@ object JinBiaoCalculator {
             setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
             setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
         )
-        return sanHe.firstOrNull { (t, _) -> branch in t && t.all { it == branch || it in chartBranches } }?.second
+        return sanHe.firstOrNull { (t, _) ->
+            branch in t && t.all { it == branch || it in chartBranches } && !t.all { it in chartBranches }
+        }?.second
     }
 
     /** 运支与局中支成三合印局（寅午戌火/申子辰水/亥卯未木/巳酉丑金）或六合化印。 */
