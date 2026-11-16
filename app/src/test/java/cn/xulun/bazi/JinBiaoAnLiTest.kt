@@ -1188,6 +1188,28 @@ class JinBiaoAnLiTest {
         assertTrue("庚戌辛亥壬子癸丑金水四步皆吉", listOf(2, 3, 4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案卅九 · 戊午 癸亥 丙戌 壬辰（1978-11-20 辰时，乾）——合去混杂·有情有格局 ──
+
+    @Test
+    fun `案卅九 乾 戊午癸亥丙戌壬辰 身弱混杂戊去一官 化不化不论有情有格局 帮身运当官`() {
+        val bazi = chart(1978, 11, 20, 7)
+        assertTrue(bazi.fullBazi.startsWith("戊午 癸亥 丙戌 壬辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("甲子(1984)", "乙丑(1994)", "丙寅(2004)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱官杀混杂、戊去一癸——合去混杂有情",
+            jb.quYongWay == JinBiaoQuYongWay.HE_LIU && jb.yongShenElement == Element.WATER)
+        assertTrue("化不化不论——有情就是有格局，不在命局旺弱",
+            jb.quYongBasis.contains("化不化不论") && jb.quYongBasis.contains("不在于命局旺弱"))
+
+        // 虽仍身弱，八字有格局——走帮身运（印比）也当官
+        assertTrue("甲子乙丑印运当官吉", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("丙寅比运帮身当官吉", jb.yuns[2].verdict == JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

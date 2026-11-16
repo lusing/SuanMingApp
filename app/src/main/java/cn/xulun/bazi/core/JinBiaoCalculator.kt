@@ -569,7 +569,7 @@ object JinBiaoCalculator {
                     partner != null && partner.element == guanEl && bazi.stems.any { it == partner }
                 } -> Choice(
                 JinBiaoQuYongWay.HE_LIU, guanEl,
-                "合去混杂·有情（案卅七）：${guanEl.chinese}官杀两透混杂——身弱不喜混杂（壬癸一混杂，${guanEl.chinese}之力更大、克身更重；身旺用官而官弱反喜混杂——混杂能加力）。食伤干合去其一＝去留清纯：**任意合去一个也是有情了——不用考虑留下的${guanEl.chinese}很旺克身的问题**。留下${guanEl.chinese}为用神，有情就加分要富贵".replace("**", ""),
+                "合去混杂·有情（案卅七/卅九）：${guanEl.chinese}官杀两透混杂——身弱不喜混杂（壬癸一混杂，${guanEl.chinese}之力更大、克身更重；身旺用官而官弱反喜混杂——混杂能加力）。身弱官杀混杂必须去一个或用印化；无印则食伤干去一官也算有情——**化不化不论，合了这个官就叫有情；有情就是有格局，不在于命局旺弱——不用考虑留下的${guanEl.chinese}很旺克身的问题**。虽仍身弱，走帮身运也当官。留下${guanEl.chinese}为用神，有情就加分要富贵".replace("**", ""),
             )
             // 案廿四·财党杀攻身（财滋弱杀之反例）：身弱而财旺党杀克身、财先破有力之印、日主有根非从——非贫即夭
             strength == DayStrength.WEAK && caiS >= GUAN_WANG && guanS >= FOLLOW_MIN_SCORE && yinS >= FOLLOW_MIN_SCORE &&
@@ -882,9 +882,14 @@ object JinBiaoCalculator {
             }
             // 案卅五：合官留杀局——印运制食留杀（解病清格）好运；食伤再到＝复克用神
             // 案卅六：合而化局——食伤党杀再克用神（火生土），差运
+            // 案卅九：身弱合去混杂有情有格局——帮身运当官
             if (choice.way == JinBiaoQuYongWay.HE_LIU) {
                 put(yinEl, "制${shiEl.chinese}留${guanEl.chinese}——解病清格，好运")
                 put(shiEl, "食伤再到——复克${guanEl.chinese}用神，病")
+                if (strength == DayStrength.WEAK) {
+                    put(biEl, "帮身之运——八字有格局，走帮身运当官")
+                    put(yinEl, "帮身化杀之运——当官")
+                }
             }
             // 案九：身旺泄秀——财为泄口；印病时财运兼去病之神（甲克戊）
             // 案卅三：退而求其次食制局——印运化杀帮身反是好运（非夺食；日主太衰不能弃）
