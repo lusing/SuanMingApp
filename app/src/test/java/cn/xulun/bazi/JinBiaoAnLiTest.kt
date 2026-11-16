@@ -14,6 +14,7 @@ import cn.xulun.bazi.model.Gender
 import cn.xulun.bazi.model.HeavenlyStem
 import cn.xulun.bazi.model.JinBiaoQuYongWay
 import cn.xulun.bazi.model.JinBiaoQingZhuo
+import cn.xulun.bazi.model.JinBiaoHealth
 import cn.xulun.bazi.model.JinBiaoRuoJiType
 import cn.xulun.bazi.model.JinBiaoStance
 import cn.xulun.bazi.model.JinBiaoVerdict
@@ -1582,6 +1583,35 @@ class JinBiaoAnLiTest {
         // 北方坎（壬子通关之神到——通关更力反吉）→东方震（甲寅乙卯食伤生财）——一路水木发大财
         assertTrue("壬子通关之神到反吉", jb.yuns[0].verdict == JinBiaoVerdict.JI)
         assertTrue("甲寅乙卯食伤生财发财", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
+    // ── 案五十六 · 壬子 戊申 戊戌 辛酉（1972-09-04 酉时，乾）——三会化劫·用神无力 ──
+
+    @Test
+    fun `案五十六 乾 壬子戊申戊戌辛酉 申酉戌三会把比劫都化了 身弱用劫用神无力格局不高 金水穷困 甲寅七杀死亡`() {
+        val bazi = chart(1972, 9, 4, 18)
+        assertTrue(bazi.fullBazi.startsWith("壬子 戊申 戊戌 辛酉"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己酉(1973)", "庚戌(1983)", "辛亥(1993)", "壬子(2003)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("申酉戌三会金局泄体——身弱", jb.strength == DayStrength.WEAK)
+        assertTrue("身弱用神肯定是比劫（土）", jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE && jb.yongShenElement == Element.EARTH)
+        assertTrue("三会化劫入据：把比劫都化了、用神无力、格局不高、财越旺越穷",
+            jb.quYongBasis.contains("三会化劫") && jb.quYongBasis.contains("把比劫都化了") &&
+                jb.quYongBasis.contains("用神无力") && jb.quYongBasis.contains("财越旺他越穷"))
+        assertTrue("戌申随三会局化尽——用神无气受伤",
+            jb.health.level == JinBiaoHealth.WU_QI && jb.health.rootNote.contains("随三会局化"))
+        assertTrue("用神无力格局不高——浊档（穷困潦倒，唯火土小富）",
+            jb.qingZhuo == JinBiaoQingZhuo.MAN_ZHUO && jb.qingZhuoBasis.contains("用神无力") && jb.qingZhuoBasis.contains("小富"))
+
+        // 西北金水穷困潦倒；甲寅乙卯七杀克比劫用神——死亡；丙辰火土帮比劫可小富
+        assertTrue("辛亥壬子西北金水——穷困潦倒（泄耗不作中平）", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        assertTrue("甲寅运七杀死亡", jb.yuns[5].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("甲寅运标注七杀死亡", jb.yuns[5].items.any { it.action.contains("死亡") })
+        assertTrue("丙辰火土帮比劫——可小富", jb.yuns[7].verdict == JinBiaoVerdict.JI)
     }
 
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
