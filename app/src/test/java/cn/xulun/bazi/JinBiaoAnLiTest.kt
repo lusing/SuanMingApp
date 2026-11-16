@@ -1518,6 +1518,35 @@ class JinBiaoAnLiTest {
         assertTrue("甲子癸亥官生印皆吉", listOf(6, 7).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案五十四 · 丙申 戊戌 丁卯 乙巳（1956-10-27 巳时，乾）——身旺食伤生财用财星·寅运死亡 ──
+
+    @Test
+    fun `案五十四 乾 丙申戊戌丁卯乙巳 卯戌合火身旺食伤生财 用神申金财 通关化劫无官配置不足 寅运比劫见根死亡`() {
+        val bazi = chart(1956, 10, 27, 10)
+        assertTrue(bazi.fullBazi.startsWith("丙申 戊戌 丁卯 乙巳"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己亥(1960)", "庚子(1970)", "辛丑(1980)", "壬寅(1990)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("卯戌六合化火叛向——身强（坐下印归禄帮身）", jb.strength == DayStrength.STRONG)
+        assertTrue("财星有力（申本气根戌生金）——用神即财星申金",
+            jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && jb.yongShenElement == Element.METAL)
+        assertTrue("取用依据含用财、通关化劫、官护财配置论",
+            jb.quYongBasis.contains("用神肯定就是财星") && jb.quYongBasis.contains("通关化劫") &&
+                jb.quYongBasis.contains("有官星就一直富") && jb.quYongBasis.contains("配置不足"))
+        assertTrue("通关化病而水官全无——半浊半清（配置不足起伏大）",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("配置不足"))
+
+        // 亥子平常（泄用）；辛丑丑生申金发财；壬寅寅戌拱火＋丙见根——死亡级大祸
+        assertTrue("己亥庚子泄用平常——干支分论", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.GAN_ZHI_FEN })
+        assertTrue("辛丑运丑生申金——发财", jb.yuns[2].verdict == JinBiaoVerdict.JI)
+        assertTrue("壬寅运比劫见根拱火克用——大凶（死亡级）", jb.yuns[3].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("寅运标注丙见根拱火通关被焚死亡级", jb.yuns[3].items.any { it.action.contains("见根") && it.action.contains("通关之神被焚") })
+        assertTrue("寅运干壬官护财注记", jb.yuns[3].items.any { it.action.contains("官护财") })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
@@ -1580,6 +1609,7 @@ class JinBiaoAnLiTest {
                                     JinBiaoQuYongWay.YI_SHEN, JinBiaoQuYongWay.ZHI_SHA,
                                     JinBiaoQuYongWay.PEI_CAI, JinBiaoQuYongWay.HUAI_YIN,
                                     JinBiaoQuYongWay.SHI_SHENG_CAI, JinBiaoQuYongWay.QU_GUA,
+                                    JinBiaoQuYongWay.SHI_CAI_YONG_CAI,
                                 ) && category in setOf("财星", "官杀", "食伤"),
                             )
                         }
