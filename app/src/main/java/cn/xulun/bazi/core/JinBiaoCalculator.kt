@@ -470,7 +470,9 @@ object JinBiaoCalculator {
                 bazi.monthPillar.stem.element == yinEl || bazi.monthPillar.stem.element == biEl) &&
             ((monthElAdj.generates == dayBranchEl && (dayBranchEl == yinEl || dayBranchEl == biEl)) ||
                 (dayBranchEl.controls == monthElAdj && dayBranchEl == biEl) ||
-                // 案卅八：月干比透＋月支藏日主余气根（丁透于未月，未中丁两见）——身旺
+                // 案卅八：月干比透＋月支藏日主余气根（丁透于未月，未中丁两见）——身旺；
+                // 案四十九：月干比透＋坐下比劫本气根（己透＋坐戌——两戌厚土）——身旺
+                (bazi.monthPillar.stem.element == biEl && dayBranchEl == biEl) ||
                 (bazi.monthPillar.stem.element == biEl &&
                     branchHiddenStems.getValue(monthBranch).any { it.element == biEl }))
         ) {
@@ -772,6 +774,20 @@ object JinBiaoCalculator {
                     "食神制杀格（案四十八·身旺杀旺可制）：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}。" +
                         "食神制杀条件第一条：日主必须有根气（印得局生身亦是依）——无根无气者承载不了食神之泄（食神制杀反贫夭、负债）；日主得根气，承载得动食神之泄，食神制杀得富贵。" +
                         "格局高低看杀之强弱存续：杀旺可制不贫夭——官贵之格（官二代、处长之子之属）；杀之根被拔克绝（制杀太过——子午冲根之属）则落普通人之列",
+                )
+                // 第十讲·伤官喜官（案四十九）：身旺伤官生财、财被比劫夺、官克比劫救财——用神转官，
+                // 伤官格可以见官（非祸百端而喜官）——破「金水伤官喜见官、土金伤官忌见官」之市面口诀，一切以喜用定。
+                strength == DayStrength.STRONG && !ruoJi && !wangJi &&
+                    shiS >= FOLLOW_MIN_SCORE &&
+                    bazi.stems.any { it.element == caiEl } &&
+                    bazi.stems.filterIndexed { i, s -> i != 2 && s.element == biEl }.isNotEmpty() &&
+                    guanS >= FOLLOW_MIN_SCORE && hasBenQiRoot(bazi, guanEl) -> Choice(
+                    JinBiaoQuYongWay.SHANG_JIAN_GUAN, guanEl,
+                    buildString {
+                        append("伤官喜官·克劫护财（案四十九）：身旺（土厚比劫通根透干），${shiEl.chinese}食伤秉令生${caiEl.chinese}财（食伤生财，财为喜用）——最怕比劫：${caiEl.chinese}财被${biEl.chinese}比劫所夺（差命底子）。螳螂捕蝉黄雀在后——${guanEl.chinese}官有力（${guanS.let { format(it) }}）克${biEl.chinese}比劫、解放${caiEl.chinese}财：**用神转官——伤官格可以见官，非祸百端而喜官**。")
+                        append("市面口诀「金水伤官喜见官、土金伤官忌见官」不成立——土金伤官反喜官，一切以喜用定（用神中心论：一切围绕用神说事，不考虑伤官死活、财的死活，闲神关系不虑）")
+                        append("；官根被食伤冲克＝病（如卯酉冲），泄食生官之运（${shiEl.chinese}生${caiEl.chinese}生${guanEl.chinese}）＝药——大运走助官泄金生木就要当官显贵；帮${shiEl.chinese}（食伤）克用神之运凶")
+                    },
                 )
                 // 五理②/第七讲·财滋弱杀（案八/案十/案廿二）：身旺而官在局（官废不能用——案十二）——有财有官杀优先用杀
                 guanS >= FOLLOW_MIN_SCORE && !guanFei -> Choice(

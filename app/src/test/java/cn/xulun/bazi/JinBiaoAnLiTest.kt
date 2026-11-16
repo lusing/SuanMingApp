@@ -1394,6 +1394,29 @@ class JinBiaoAnLiTest {
         assertTrue("甲午乙未火运非吉", listOf(1, 2).all { jb.yuns[it].verdict != JinBiaoVerdict.JI })
     }
 
+    // ── 案四十九 · 壬戌 己酉 戊戌 乙卯（1982-09-12 卯时，乾）——土金伤官反喜官 ──
+
+    @Test
+    fun `案四十九 乾 壬戌己酉戊戌乙卯 两戌厚土身旺伤官生财被劫 官克比劫用神转官当官显贵`() {
+        val bazi = chart(1982, 9, 12, 5)
+        assertTrue(bazi.fullBazi.startsWith("壬戌 己酉 戊戌 乙卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运与师传表一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚戌(1991)", "辛亥(2001)", "壬子(2011)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("酉月两戌厚土＋己透比劫——身旺（月干比透＋坐下比劫本气根补臂）", jb.strength == DayStrength.STRONG)
+        assertTrue("伤官生财被劫、乙卯官克比劫救财——用神转官（伤官可以见官）",
+            jb.quYongWay == JinBiaoQuYongWay.SHANG_JIAN_GUAN && jb.yongShenElement == Element.WOOD)
+        assertTrue("取用依据含破口诀与用神中心论",
+            jb.quYongBasis.contains("伤官格可以见官") && jb.quYongBasis.contains("用神转官") && jb.quYongBasis.contains("土金伤官"))
+
+        // 壬子泄金生木（水生木帮用）吉——当官显贵；癸丑丑生酉克卯病大非吉
+        assertTrue("壬子水运泄金生木皆吉", jb.yuns[2].verdict == JinBiaoVerdict.JI)
+        assertTrue("癸丑丑生酉克用神卯非吉", jb.yuns[3].verdict != JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
