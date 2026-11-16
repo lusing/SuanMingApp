@@ -1098,6 +1098,32 @@ class JinBiaoAnLiTest {
         assertTrue("丁未火土凶", jb.yuns[0].verdict == JinBiaoVerdict.XIONG)
     }
 
+    // ── 案卅五 · 癸丑 戊午 丙午 壬辰（合成盘，乾）——合官留杀·清格 ──
+
+    @Test
+    fun `案卅五 乾 癸丑戊午丙午壬辰 两刃身旺官杀先用 戊癸合官留杀清格 有情豁免旺衰当官`() {
+        val bazi = BaziResult(
+            Pillar(HeavenlyStem.GUI, EarthlyBranch.CHOU), Pillar(HeavenlyStem.WU, EarthlyBranch.WU),
+            Pillar(HeavenlyStem.BING, EarthlyBranch.WU), Pillar(HeavenlyStem.REN, EarthlyBranch.CHEN),
+            LocalDateTime.of(1973, 6, 20, 7, 0),
+        )
+        val daYun = DaYunInfo(true, "合成（顺行自戊午）", LocalDateTime.of(1977, 6, 20, 0, 0), listOf(
+            DaYun(Pillar(HeavenlyStem.DING, EarthlyBranch.SI), 4, 1977, emptyList()),
+            DaYun(Pillar(HeavenlyStem.BING, EarthlyBranch.CHEN), 14, 1987, emptyList()),
+            DaYun(Pillar(HeavenlyStem.YI, EarthlyBranch.MAO), 24, 1997, emptyList()),
+            DaYun(Pillar(HeavenlyStem.JIA, EarthlyBranch.YIN), 34, 2007, emptyList()),
+            DaYun(Pillar(HeavenlyStem.WU, EarthlyBranch.CHEN), 44, 2017, emptyList()),
+        ))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("两刃身旺、官杀在局先用；癸合戊＝合官留杀清格，留下壬水为用",
+            jb.quYongWay == JinBiaoQuYongWay.HE_LIU && jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据含有情豁免旺衰与留一即可",
+            jb.quYongBasis.contains("合官留杀") && jb.quYongBasis.contains("有情豁免旺衰") && jb.quYongBasis.contains("留一即可"))
+
+        // 乙卯甲寅印运制戊留壬——解病清格好运
+        assertTrue("乙卯甲寅制戊留壬皆吉", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

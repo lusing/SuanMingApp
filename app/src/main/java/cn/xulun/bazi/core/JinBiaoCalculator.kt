@@ -159,7 +159,9 @@ object JinBiaoCalculator {
             ).firstOrNull { (trio, _) -> trio.all { it in bazi.branches } }
                 ?.takeIf { monthBranch in it.first }?.let { return@run it.second }
             val partner = LIU_HE[monthBranch]
-            if (partner != null && partner in bazi.branches) {
+            if (partner != null && partner in bazi.branches &&
+                bazi.branches.indexOf(partner) in listOf(0, 2) // 案廿戒：六合调整须与月支相邻（年支/日支），隔位不合
+            ) {
                 val key = listOf(monthBranch.ordinal, partner.ordinal).sorted().joinToString(",")
                 val canonical = mapOf(
                     "0,1" to "子丑", "2,11" to "寅亥", "3,10" to "卯戌", "4,9" to "辰酉",
@@ -430,7 +432,7 @@ object JinBiaoCalculator {
             (dayBranchEl == yinEl || dayBranchEl == biEl ||
                 bazi.monthPillar.stem.element == yinEl || bazi.monthPillar.stem.element == biEl) &&
             ((monthElAdj.generates == dayBranchEl && (dayBranchEl == yinEl || dayBranchEl == biEl)) ||
-                (dayBranchEl.controls == monthElAdj && (dayBranchEl == yinEl || dayBranchEl == biEl)))
+                (dayBranchEl.controls == monthElAdj && dayBranchEl == biEl))
         ) {
             strength = DayStrength.STRONG
             ruoZhongBianWang = true
@@ -504,6 +506,20 @@ object JinBiaoCalculator {
                         append(if (yinS < YIN_QING) "；局中印轻（${format(yinS)}），食伤顺泄而行也是好运" else "；局中印重（${format(yinS)}），走食伤运印夺食，不可行")
                     }
                 },
+            )
+            // 第八讲·合官留杀（案卅五）：身旺有官杀先定官杀；食伤有力制官杀本是差命，
+            // 然一官干合住食伤干（戊癸合）——食伤不克官杀＝清格：留下之官杀为用，有情豁免旺衰
+            strength == DayStrength.STRONG && !ruoJi && !wangJi && guanS >= FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE &&
+                shiS >= guanS &&
+                bazi.stems.filterIndexed { i, s -> i != 2 && s.element == shiEl }.any { sg ->
+                    val partner = GAN_HE[sg]
+                    partner != null && partner.element == guanEl &&
+                        bazi.stems.any { it == partner } && // 被合之官干在局
+                        bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == guanEl } } && // 有根不化
+                        bazi.stems.count { it.element == guanEl } >= 2 // 留下另一官杀
+                } -> Choice(
+                JinBiaoQuYongWay.HE_LIU, guanEl,
+                "合官留杀格（案卅五）：身旺（刃刃通根月令）——有官杀先定官杀（有气不能去尽；身旺不能用食伤，因官杀在局）。${shiEl.chinese}食伤通根有力本克${guanEl.chinese}官杀（用神被制＝差命），然官干合住食伤干（戊癸之合）＝**合官留杀，清格**——食伤不克官杀，留下${guanEl.chinese}为用神。有情豁免旺衰：不必虑${guanEl.chinese}之衰，只要有情就可以（无此合则官杀太衰＝贫夭命）——有情就加分，要富贵（命主当官）。被合之干有根气故不化（化则${biEl.chinese}生${shiEl.chinese}接着克＝无情）；${guanEl.chinese}官杀留一即可——解掉${shiEl.chinese}克${guanEl.chinese}就富贵。制${shiEl.chinese}之运（${yinEl.chinese}）亦好——制${shiEl.chinese}留${guanEl.chinese}".replace("**", ""),
             )
             // 第六讲·气象调候（案十五/案十七/案二十）：先不按生克、按气象论——得气之寒遇暖而发
             tiaoHou -> Choice(
@@ -822,6 +838,11 @@ object JinBiaoCalculator {
                 put(kunLunSource!!, "${kunLunSource.chinese}生${kunLunEl!!.chinese}——顺其势，好运")
                 put(kunLunEl, "本势得局——顺其势，好运")
                 put(kunLunEl.generates, "顺泄——${kunLunEl.chinese}生${kunLunEl.generates.chinese}（金生水水生木），好运")
+            }
+            // 案卅五：合官留杀局——印运制食留杀（解病清格）好运；食伤再到＝复克用神
+            if (choice.way == JinBiaoQuYongWay.HE_LIU) {
+                put(yinEl, "制${shiEl.chinese}留${guanEl.chinese}——解病清格，好运")
+                put(shiEl, "食伤再到——复克${guanEl.chinese}用神，病")
             }
             // 案九：身旺泄秀——财为泄口；印病时财运兼去病之神（甲克戊）
             // 案卅三：退而求其次食制局——印运化杀帮身反是好运（非夺食；日主太衰不能弃）
