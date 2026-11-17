@@ -2368,6 +2368,45 @@ class JinBiaoAnLiTest {
                 zn16.basis.contains("比劫生的儿子不是你的儿子") && zn16.basis.contains("这说的是事业"))
     }
 
+    // ── 案八十七 · 戊午 甲寅 甲辰 甲戌（1978-02-11 戌时，坤）——子女章三十例·食伤半通关 ──
+
+    @Test
+    fun `案八十七 坤 戊午甲寅甲辰甲戌 三甲建禄身旺用财 食伤午火化劫半通关财富全凭食伤一字定之 戌填寅午才挣钱 没官没儿子不孝婆婆戌运和解`() {
+        val bazi = chart(1978, 2, 11, 20)
+        assertTrue(bazi.fullBazi.startsWith("戊午 甲寅 甲辰 甲戌"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阳年坤造逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸丑(1980)", "壬子(1990)", "辛亥(2000)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("三甲建禄身旺用财（土）——食伤午火为喜神", jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && jb.yongShenElement == Element.EARTH)
+        assertTrue("食伤半通关——财富全凭食伤一字定之（半浊半清非满盘浊）",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("食伤半通关") &&
+                jb.qingZhuoBasis.contains("财富全凭食伤一字定之"))
+
+        // 子女：比劫贴克财＋没官——一定没有儿子（有钱也不一定有儿子——功能层面废）
+        val zn17 = jb.ziNv!!
+        assertTrue("必无儿", zn17.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+
+        // 庚戌运戌临寅午戌火局——通关化劫兑现才挣到钱（此前子水运穷困潦倒）
+        assertTrue("庚戌运戌临寅午戌食伤局——才挣到钱", jb.yuns[3].items.any { it.action.contains("寅午戌") && it.action.contains("才挣到钱") })
+        assertTrue("壬子水运克食伤之源——穷困潦倒（凶）", jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
+    }
+
+    // ── 案六十补柱 · 乙巳 戊寅 乙未 己卯（1965-02-10 卯时，坤）——理发师八字 ──
+
+    @Test
+    fun `案六十补柱 坤 乙巳戊寅乙未己卯 比劫旺夺财无官没儿子 巳火食伤也不管事 不孝婆婆婆媳差`() {
+        val bazi = chart(1965, 2, 10, 6)
+        assertTrue(bazi.fullBazi.startsWith("乙巳 戊寅 乙未 己卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue("逆行运：己卯1973 庚辰 辛巳 壬午 癸未", daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己卯(1973)", "庚辰(1983)", "辛巳(1993)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("春木比劫旺身旺用财（木火土三行无官无印）", jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && jb.yongShenElement == Element.EARTH)
+        assertTrue("比劫旺夺财没官——没儿子（巳火食伤也不管事）", jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

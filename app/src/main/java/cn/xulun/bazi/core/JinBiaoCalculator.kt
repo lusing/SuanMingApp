@@ -1213,6 +1213,11 @@ object JinBiaoCalculator {
             SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }?.let { (bs, el) ->
                 el != yongEl && bazi.branches.any { it.element == yongEl && it in bs }
             } == true
+        // 案八十七·食伤半通关（化得没那么好）：用财局病比劫而食伤有本气根（午火化解比劫生财）——
+        // 病压用神而通关之桥在（异于案五四食伤≥劫之全通关）——财富全凭食伤一字定之：
+        // 差运（克食伤之源如子水）穷困潦倒；食伤局成之运（戌填寅午）才挣到钱——小康非满盘浊
+        val shiBanTongGuan = choice.way == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && bingEl == biEl &&
+            hasBenQiRoot(bazi, shiEl) && bingS2 >= 1.5 * yongS2
         // 案八十四·财气通门户：病神（枭印）虽大而拱财暗存（药待运填）——财星有情：
         // 走差运小康（生意也不差选对行）、好运发大财——非满盘浊
         val gongCaiTongMen = bingEl == yinEl &&
@@ -1231,7 +1236,8 @@ object JinBiaoCalculator {
             bingZhi -> JinBiaoQingZhuo.QING
             bingYiTU -> JinBiaoQingZhuo.QING
             bingTongGuanTou && huaJuBuYong -> JinBiaoQingZhuo.QING
-            hasBenQiRoot(bazi, bingEl) && bingS2 >= 1.5 * yongS2 && !bingTongGuanTou && !gongCaiTongMen -> JinBiaoQingZhuo.MAN_ZHUO
+            hasBenQiRoot(bazi, bingEl) && bingS2 >= 1.5 * yongS2 && !bingTongGuanTou && !gongCaiTongMen && !shiBanTongGuan -> JinBiaoQingZhuo.MAN_ZHUO
+            shiBanTongGuan -> JinBiaoQingZhuo.BAN_QING
             gongCaiTongMen -> JinBiaoQingZhuo.QING
             else -> JinBiaoQingZhuo.BAN_QING
         }
@@ -1266,6 +1272,7 @@ object JinBiaoCalculator {
                 )
                 JinBiaoQingZhuo.BAN_QING -> append(
                     if (bingTongGuanTou) "——病神（透干比劫）有食伤通关（${biEl.chinese}生${shiEl.chinese}生${caiEl.chinese}），原局不夺财、不会有事；然${guanEl.chinese}官全无——**配置不足：起伏就要大**（一会儿天上一会儿地下）——帮用（${shiEl.chinese}${caiEl.chinese}）之运发财显贵、比劫见根之运大祸；配置好的八字（有官护财）人生就一路平坦（案四十九对勘）"
+                    else if (shiBanTongGuan) "——**食伤半通关（案八十七·化得没那么好）**：用财局病比劫（${bingEl.chinese}${format(bingS2)}）压用（${yongEl.chinese}${format(yongS2)}），然${shiEl.chinese}食伤有本气根**化解比劫生财（午火化甲木）——财富全凭食伤一字定之**：克${shiEl.chinese}之源的差运（如子水）穷困潦倒；${shiEl.chinese}局成之运（戌填寅午——三合局兑现）**才挣到钱（小康）**——财富稍微还可以（对照案六十理发师：一个理发一个卖衣裳——同层都没儿子）"
                     else "——病在而力未制（药为假药或力不足），半浊半清——普通人之命：多成多败，好两年坏两年（帮用去病之运好、帮病之运差），跟清命不一样",
                 )
             }
@@ -2223,6 +2230,16 @@ object JinBiaoCalculator {
                     ctx.yongEl == ctx.yinEl && ctx.caiEl.controls == ctx.yinEl && zhi.element.generates == ctx.yongEl
                 // 案八十四·运支填拱：财拱局暗存而运支填其所缺（亥未待卯——卯来填拱）——
                 // 财局兑现：发大财＋一下就有子（玄机暗里存——应期）
+                // 案八十七·运支填成食伤局：用财局而运支填成食伤三合局（寅午待戌——戌来寅午戌成）——
+                // 通关化劫之局兑现：才挣到钱（小康）；此前比劫夺财挣不着
+                val tianShiJu = i == 1 &&
+                    listOf(
+                        setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                        setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                        setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                        setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                    ).any { (trio, el) -> el == ctx.shiEl && zhi in trio &&
+                        chartBranches.count { it in trio } >= 2 }
                 val tianGong = i == 1 && zhi.element == ctx.caiEl &&
                     listOf(
                         setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
@@ -2255,6 +2272,7 @@ object JinBiaoCalculator {
                     haiSiQuHuo -> "运支亥冲局中巳（**亥巳逢冲——去火存金**）：官被冲去、${ctx.biEl.chinese}比劫复旺来克${ctx.caiEl.chinese}财——**老破财**（各种各样的事儿来捣乱：今儿挣一百，明儿破八十——虽有亥卯化木亦不作吉论）"
                     yinHaiFanShen -> "运支寅合局中亥（**寅亥化木**——合去坏印之${ctx.caiEl.chinese}财根）＋木生火帮${ctx.yinEl.chinese}印——**翻身**（三十年河东河西：坎离震兑四方各管三十年——北方差三十年，东方翻身农民把歌唱；走木生火运就要翻身了——福报在后面）"
                     tianGong -> "运支${zhi.chinese}填${ctx.caiEl.chinese}拱局（玄机暗里存——财局兑现）：**财气通门户应期——发大财＋一下就有子**（儿子也有出息——往后好运越来越好）"
+                    tianShiJu -> "运支${zhi.chinese}临${ctx.shiEl.chinese}食伤三合局（寅午戌——通关化劫之局兑现／叠强）：**才挣到钱（小康）**——此前比劫太旺夺财挣不着（食伤化比劫化得没那么好）；克${ctx.shiEl.chinese}之源的运（子水之属）穷困潦倒——财富全凭食伤一字定之（案八十七）"
                     fanWang -> "官干直克身——犯旺激怒（权在一人，不可触犯），大凶"
                     zhiDuo -> "地支食伤被印枭夺——地支不能泄，凶"
                     shunXieGan -> "天干泄秀（天干无${ctx.yinEl.chinese}不夺）——顺其旺势，可行"
@@ -2273,7 +2291,7 @@ object JinBiaoCalculator {
                     element = el,
                     stance = stance,
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
-                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen || tianGong,
+                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen || tianGong || tianShiJu,
                     pingOverride = huaSha != null && huaSha.first == false,
                     xiongOverride = fanWang || zhiDuo || sanHeCheng || biJianGen || haiSiQuHuo,
                 )
