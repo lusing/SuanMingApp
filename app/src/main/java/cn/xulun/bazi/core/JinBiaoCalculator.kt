@@ -567,7 +567,11 @@ object JinBiaoCalculator {
         var ruoZhongBianWang = false
         if (!ruoJi && !wangJi && strength == DayStrength.WEAK &&
             monthElAdj != yinEl && monthElAdj != biEl &&
-            partyScore(bazi, monthElAdj) < 1.5 * (yinS + biS) &&
+            // 案七十九豁免：自坐羊刃（「自坐刃就够旺的了」——羊刃跟别的禄不一样，重于禄）＋通根身库＋
+            // 比劫透干——一路帮身：食伤泄虽过（护栏②1.5×）亦翻旺——刃98公斤vs食伤100公斤之辨
+            (partyScore(bazi, monthElAdj) < 1.5 * (yinS + biS) ||
+                (bazi.dayPillar.branch == YANG_REN[dayMaster] && hasBenQiRoot(bazi, biEl) &&
+                    bazi.stems.any { it != dayMaster && it.element == biEl })) &&
             (dayBranchEl == yinEl || dayBranchEl == biEl ||
                 bazi.monthPillar.stem.element == yinEl || bazi.monthPillar.stem.element == biEl) &&
             ((monthElAdj.generates == dayBranchEl && (dayBranchEl == yinEl || dayBranchEl == biEl)) ||
@@ -576,10 +580,14 @@ object JinBiaoCalculator {
                 // 护栏：限食伤月令＋非寒燥调候局（案廿子月寒局调候优先不翻——财月令被印克亦不翻）
                 (dayBranchEl == yinEl && dayBranchEl.controls == monthElAdj && monthElAdj == shiEl && !hanJu && !zaoJu) ||
                 // 案卅八：月干比透＋月支藏日主余气根（丁透于未月，未中丁两见）——身旺；
-                // 案四十九：月干比透＋坐下比劫本气根（己透＋坐戌——两戌厚土）——身旺
+                // 案四十九：月干比透＋坐下比劫本气根（己透＋坐戌——两戌厚土）——身旺；
+                // 案七十九：自坐刃（羊刃跟别的禄不一样——重于禄）＋通根身库＋比劫透——
+                // 刃98公斤足以扛食伤100公斤之泄（「伤官强不代表日主衰」）
                 (bazi.monthPillar.stem.element == biEl && dayBranchEl == biEl) ||
                 (bazi.monthPillar.stem.element == biEl &&
-                    branchHiddenStems.getValue(monthBranch).any { it.element == biEl }))
+                    branchHiddenStems.getValue(monthBranch).any { it.element == biEl }) ||
+                (bazi.dayPillar.branch == YANG_REN[dayMaster] && hasBenQiRoot(bazi, biEl))
+            )
         ) {
             strength = DayStrength.STRONG
             ruoZhongBianWang = true

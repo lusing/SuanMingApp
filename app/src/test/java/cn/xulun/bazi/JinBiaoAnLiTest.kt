@@ -2160,6 +2160,28 @@ class JinBiaoAnLiTest {
         assertTrue("壬寅运寅亥化木翻身——吉覆写（支）", jb.yuns[4].items.any { it.action.contains("寅亥化木") && it.action.contains("翻身") })
     }
 
+    // ── 案七十九 · 癸卯 乙卯 壬子 甲辰（1963-03-10 辰时，乾）——子女章廿二例·刃库扛泄 ──
+
+    @Test
+    fun `案七十九 乾 癸卯乙卯壬子甲辰 自坐刃通身库比劫透弱中变旺 伤官泄秀没财也有儿 刃98公斤扛食伤100 丁未土克刃去世`() {
+        val bazi = chart(1963, 3, 10, 8)
+        assertTrue(bazi.fullBazi.startsWith("癸卯 乙卯 壬子 甲辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("甲寅(1964)", "癸丑(1974)", "壬子(1984)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("自坐刃（刃重于禄）＋通根身库＋癸透——食伤泄虽过亦弱中变旺（伤官强不代表日主衰）",
+            jb.strength == DayStrength.STRONG)
+        assertTrue("身旺无财无官——伤官泄秀（秀气流行）——用神食伤木", jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI)
+
+        // 子女：食伤秀气——没财也有儿子（多子）；走帮身运绝对有儿（水运把壬子补成一百公斤）
+        val zn9 = jb.ziNv!!
+        assertTrue("必有儿（食伤泄秀——没财也有儿子）", zn9.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("子星＝伤官木（食伤秀气为儿）", zn9.ziEl == Element.WOOD)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
