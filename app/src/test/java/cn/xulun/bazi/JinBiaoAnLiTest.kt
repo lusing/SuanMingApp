@@ -1965,6 +1965,27 @@ class JinBiaoAnLiTest {
             zn2.basis.contains("人一出生就决定了") && zn2.basis.contains("因果全息") && zn2.basis.contains("祖坟"))
     }
 
+    // ── 案七十一（＝案四盘复看子女）· 癸亥 癸亥 戊辰 甲寅（1983-12-06 寅时，乾）──
+
+    @Test
+    fun `案七十一 乾 癸亥癸亥戊辰甲寅复看子女 弱极从势特殊格局不走正常树 走好运就可以生儿子 辰为震位虚土自顾不暇`() {
+        val bazi = chart(1983, 12, 6, 3)
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("弱极孤立无气从势随财（旧锚案四）", jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.SUI_CAI)
+
+        // 从势局子女另裁：特殊格局——只要走好运（顺势之运）就可以生儿子；最忌帮身
+        val zn = jb.ziNv!!
+        assertTrue("从势局必有儿（走好运即生）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含特殊格局不走正常树、走好运生儿、辰为震位虚土、最忌帮身",
+            zn.basis.contains("特殊格局") && zn.basis.contains("只要走好运") &&
+                zn.basis.contains("震位虚土") && zn.basis.contains("最忌帮身"))
+
+        // 辛酉庚申金顺势吉（事业不错）；戌运比劫帮身逆局——凶（学习不好）
+        assertTrue("辛酉庚申金顺势皆吉", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("壬戌比劫帮身逆局——凶（学习不好）", jb.yuns[0].verdict == JinBiaoVerdict.XIONG)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

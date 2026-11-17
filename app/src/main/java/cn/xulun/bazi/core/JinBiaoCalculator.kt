@@ -1203,8 +1203,19 @@ object JinBiaoCalculator {
 
         // ── 子女判读（第十一讲·子女章判定树：子星按原局喜忌而定，来回检查；子星要昌） ──
         // 四情况铁律：必有儿／必无儿／无儿有女／无儿无女损子——逃不出这个圈。
-        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = if (ruoJi || wangJi) {
-            null // 从势／专旺之子女另裁——待师传
+        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = if (ruoJi) {
+            // 案七十一（案四盘复看）·从势局子女另裁：特殊格局不按身衰印做儿/身旺财为子正常树断——
+            // 只要走好运（顺势之运）就可以生儿子；此命不需要印（帮身反而不好——最忌帮身）
+            cn.xulun.bazi.model.JinBiaoZiNv(
+                qingKuang = cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER,
+                ziXing = representativeGod(bazi, dayMaster, choice.el),
+                ziEl = choice.el,
+                basis = "**特殊格局（弱极从势）——不按「身衰印做儿／身旺财为子」正常判定树来断**" +
+                    "（辰为震位虚土：气虚而薄〔未戌为六九月实土，辰异于彼〕、寅亥化木木得局——辰自顾不暇不能帮身）：**只要走好运（顺势之运）就可以生儿子**——顺运内应期。" +
+                    "此命**不需要印**：帮身反而不好——**最忌帮身**；走金运金生水水生木（不帮身即好运）——学历事业不错（唯戌运比劫帮身学习不好）；水旺则金木顺流，水不旺则金木争克而平庸",
+            )
+        } else if (wangJi) {
+            null // 专旺之子女另裁——待师传
         } else {
             val yinYouLi = bazi.stems.any { it != dayMaster && it.element == yinEl } || hasBenQiRoot(bazi, yinEl)
             val yinTouZuoBen = bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl }
