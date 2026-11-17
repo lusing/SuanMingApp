@@ -2031,6 +2031,30 @@ class JinBiaoAnLiTest {
         assertTrue("丙申运申克印——凶（财富值低）", jb.yuns[2].verdict != JinBiaoVerdict.JI)
     }
 
+    // ── 案七十四 · 丙辰 甲午 丙申 丁酉（1976-06-13 酉时，乾）——子女章十七例·羊刃肆逞 ──
+
+    @Test
+    fun `案七十四 乾 丙辰甲午丙申丁酉 羊刃当令带印生飞刃透干肆逞 无官制刃功能废 投胎待不住流产克子 食伤生财享妻家福`() {
+        val bazi = chart(1976, 6, 13, 18)
+        assertTrue(bazi.fullBazi.startsWith("丙辰 甲午 丙申 丁酉"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("乙未(1984)", "丙申(1994)", "丁酉(2004)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("夏天火加成羊刃当令印生刃——身旺用财（申酉）", jb.strength == DayStrength.STRONG &&
+            jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && jb.yongShenElement == Element.METAL)
+
+        // 子女：羊刃肆逞（带源＋飞刃）贴克财而无官制刃——功能废：必无儿（纵生流产/童子命/早年克子）
+        val zn4 = jb.ziNv!!
+        assertTrue("必无儿（羊刃肆逞功能废）", zn4.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+        assertTrue("判据含羊刃肆逞、飞刃、精卵气血、投胎、流产克子",
+            zn4.basis.contains("羊刃肆逞") && zn4.basis.contains("飞刃") &&
+                zn4.basis.contains("精卵") && zn4.basis.contains("投胎") &&
+                zn4.basis.contains("流产") && zn4.basis.contains("克子"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
