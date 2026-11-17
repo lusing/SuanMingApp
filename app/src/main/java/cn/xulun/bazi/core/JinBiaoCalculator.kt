@@ -501,7 +501,19 @@ object JinBiaoCalculator {
         val tiaoHouGenShuangChong = tiaoHouEl != null &&
             bazi.branches.count { LIU_CHONG[it] != null && bazi.branches.contains(LIU_CHONG[it]) && it.element == tiaoHouEl } >= 2 ||
             (tiaoHouEl != null && bazi.branches.any { br -> br.element == tiaoHouEl && bazi.branches.count { it == LIU_CHONG[br] } >= 2 })
-        val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen) && !heZhuHunZa && !tiaoHouGenShuangChong
+        // 案七十戒：调候神贴克透干之印（丙贴庚——调候神即克用神之忌）——不走调候线走生克（身衰印做儿·财坏印）
+        val tiaoHouTieYin = bazi.stems.anyIndexed { i, s -> i != 2 && s.element == tiaoHouEl && tiaoHouEl != null && tiaoHouEl != yinEl &&
+            ((i - 1 in bazi.stems.indices && bazi.stems[i - 1].element == yinEl && i - 1 != 2) ||
+                (i + 1 in bazi.stems.indices && bazi.stems[i + 1].element == yinEl && i + 1 != 2)) }
+        val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen) && !heZhuHunZa && !tiaoHouGenShuangChong && !tiaoHouTieYin
+
+        // ── 旺中变弱（案七十）：月令建禄占令（即使身弱也弱不到哪去）然地支食伤本气支≥3
+        //    （三木过泄、食伤混杂）——对日主过泄——旺中变弱（地支是重要的）
+        if (strength == DayStrength.STRONG && bazi.monthPillar.branch.element == biEl &&
+            bazi.branches.count { it.element == shiEl } >= 3
+        ) {
+            strength = DayStrength.WEAK
+        }
 
         // ── 旺中变弱（案六十九）：月令建禄（日主有力量）然官杀本气支两重冲比劫月支
         //    （两酉冲一卯——比劫禄没有杀旺：日主有力量不假，但对立面敌人劲更大）——旺中变弱
@@ -1196,6 +1208,12 @@ object JinBiaoCalculator {
         } else {
             val yinYouLi = bazi.stems.any { it != dayMaster && it.element == yinEl } || hasBenQiRoot(bazi, yinEl)
             val yinTouZuoBen = bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl }
+            // 案七十·财贴克印（全线优先）：财干贴克印干（丙贴庚之类）——螳螂捕蝉黄雀在后：
+            // 没有生儿子的功能——能不能生儿子人一出生就决定了（大运走水也生不出来）
+            val caiIdxsW = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+            val yinIdxsW = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+            val caiTieYin = caiIdxsW.isNotEmpty() && yinIdxsW.isNotEmpty() &&
+                caiIdxsW.any { ci -> yinIdxsW.any { yi -> kotlin.math.abs(ci - yi) == 1 } }
             data class ZN(val el: Element, val er: Boolean, val nv: Boolean, val text: String)
             // 案六十三·调候优先：寒暖特殊气象局——一切以寒暖为规范，不用分析生克：
             // 走东南暖运就是好——什么都有什么都顺——必然有儿子有孙子，没有缺陷
@@ -1273,6 +1291,9 @@ object JinBiaoCalculator {
                 val keYinS = partyScore(bazi, caiEl) // 财坏印（克印之神）
                 val guQiS = guanS
                 when {
+                    // 案七十·贴克优先（非官旺线）：身衰印做儿而财贴克印——没有生儿子的功能
+                    caiTieYin && yinYouLi && guQiS < FOLLOW_MIN_SCORE -> ZN(yinEl, false, true,
+                        "**身衰印做儿（${yinEl.chinese}是我的儿子）然不变之中也有变化——螳螂捕蝉黄雀在后：${caiEl.chinese}财有力贴身克我（印）——那就生不出来**。**即使大运走帮身之运也是生不出来：这个人没有生儿子的功能——能不能生儿子，人一出生就决定了**（案七十）。因果全息：祖坟西方有变压器之类、父辈做事风格（${caiEl.chinese}老克印）、婆家积德行善——万物全息连着串儿（生女与否看解放之运）")
                     guQiS >= FOLLOW_MIN_SCORE && yinYouLi -> {
                         // 官杀欺衰主——除非有印：印为儿；螳螂捕蝉黄雀在后查财坏印；木坚金缺查子星所克过旺
                         val haoQueS = partyScore(bazi, yinEl.controls) // 子星所克之神过旺——木坚金缺（剩一点气生闺女）

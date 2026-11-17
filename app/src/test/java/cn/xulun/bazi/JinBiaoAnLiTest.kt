@@ -1942,6 +1942,29 @@ class JinBiaoAnLiTest {
                 zn.basis.contains("流产") && zn.basis.contains("没生出来不代表八字没格局"))
     }
 
+    // ── 案七十 · 丙寅 庚子 癸卯 甲寅（1986-12-25 寅时，坤）——子女章十三例·因果全息 ──
+
+    @Test
+    fun `案七十 坤 丙寅庚子癸卯甲寅 子月建禄然三木过泄旺中变弱 财贴克印没有生儿子功能 人一出生就决定 因果全息`() {
+        val bazi = chart(1986, 12, 25, 4)
+        assertTrue(bazi.fullBazi.startsWith("丙寅 庚子 癸卯 甲寅"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阳年坤造逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己亥(1992)", "戊戌(2002)", "丁酉(2012)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("子月建禄然地支三木过泄食伤混杂——旺中变弱", jb.strength == DayStrength.WEAK)
+        assertTrue("身衰印做儿——用神庚金印（调候神丙贴克印——调候让位生克线）",
+            jb.quYongWay == JinBiaoQuYongWay.FU_SHEN && jb.yongShenElement == Element.METAL)
+
+        // 子女：丙贴庚财贴克印——没有生儿子的功能（人一出生就决定）；因果全息（祖坟/父风/婆德）
+        val zn2 = jb.ziNv!!
+        assertTrue("无儿有女（贴克档）", zn2.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("判据含人一出生就决定、因果全息、祖坟",
+            zn2.basis.contains("人一出生就决定了") && zn2.basis.contains("因果全息") && zn2.basis.contains("祖坟"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
