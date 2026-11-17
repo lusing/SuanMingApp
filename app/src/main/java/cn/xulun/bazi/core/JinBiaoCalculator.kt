@@ -1082,7 +1082,20 @@ object JinBiaoCalculator {
                             append("；印星两坏（生身助旺＋贴身克用神）——印为格局之病，病去或用神强旺方能好")
                             if (!caiZai) append("；财地支不载（金旺土生金、支全金局）——用财无出息，不如用食伤（秋水通源，壬水有劲）")
                         }
-                        // 案五十·枭神夺食不可见官：印旺夺食为病、财护食制枭为药——最怕官（官生枭夺食更凶）
+                        // 案八十四·财气通门户（玄机暗里存）：枭夺食而找财——财不透而半合拱局暗存
+                        // （亥未拱木之属）——财起好作用即有俩钱：财星有情财来找他——不在乎财星旺衰
+                        if (yinS >= YIN_HUAI) {
+                            val gongTrio = listOf(
+                                setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                                setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                                setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                                setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                            ).firstOrNull { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { it in bazi.branches } }
+                            if (gongTrio != null) {
+                                val missingZhi = gongTrio.first.first { it !in bazi.branches }
+                                append("；**财气通门户（案八十四·玄机暗里存）**：枭夺食找财——财不透而**拱局暗存**（${gongTrio.first.filter { it in bazi.branches }.joinToString("") { it.chinese }}拱${caiEl.chinese}）——**财起好作用即有俩钱：财星有情、财来找他——不在乎财星旺衰，只要有情就叫财气通门户**（干${caiEl.chinese}之行必挣钱——走差运生意也不差〔选对行〕、小康；**运支${missingZhi.chinese}填拱——财局兑现发大财**〔东窗事发之属〕；燥土辨：秋土凉必生金——火多土烫才不生，勿刻舟求剑见未即谓不生）")
+                            }
+                        }
                         if (yinS >= YIN_HUAI && guanS == 0.0) {
                             append("；枭神夺食之局（印${format(yinS)}旺贴克食伤）——好在${caiEl.chinese}财护食制枭（${shiEl.chinese}生${caiEl.chinese}、${caiEl.chinese}克${yinEl.chinese}）＝药，是为好命；最怕官：财生官、官生枭——夺食更凶。伤官不可见官，见官为祸百端（身旺逢枭夺食最不可见官）；亥子丑坎卦克忌神好运，丙寅丁卯官星来即凶。金水伤官／土金伤官口诀皆不成立——一切用生克分析做最后判断（案四十九喜官、案五十忌官，分野即枭夺食有无）")
                         }
@@ -1189,6 +1202,15 @@ object JinBiaoCalculator {
             SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }?.let { (bs, el) ->
                 el != yongEl && bazi.branches.any { it.element == yongEl && it in bs }
             } == true
+        // 案八十四·财气通门户：病神（枭印）虽大而拱财暗存（药待运填）——财星有情：
+        // 走差运小康（生意也不差选对行）、好运发大财——非满盘浊
+        val gongCaiTongMen = bingEl == yinEl &&
+            listOf(
+                setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+            ).any { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { it in bazi.branches } }
         val qingZhuo = when {
             qingKu -> JinBiaoQingZhuo.QING_KU
             quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO
@@ -1198,7 +1220,8 @@ object JinBiaoCalculator {
             bingZhi -> JinBiaoQingZhuo.QING
             bingYiTU -> JinBiaoQingZhuo.QING
             bingTongGuanTou && huaJuBuYong -> JinBiaoQingZhuo.QING
-            hasBenQiRoot(bazi, bingEl) && bingS2 >= 1.5 * yongS2 && !bingTongGuanTou -> JinBiaoQingZhuo.MAN_ZHUO
+            hasBenQiRoot(bazi, bingEl) && bingS2 >= 1.5 * yongS2 && !bingTongGuanTou && !gongCaiTongMen -> JinBiaoQingZhuo.MAN_ZHUO
+            gongCaiTongMen -> JinBiaoQingZhuo.QING
             else -> JinBiaoQingZhuo.BAN_QING
         }
         // 案十：用官局双浊源——克用神者（如未土克官）之外，克喜神财者（比劫丁火之类）亦是浊
@@ -1222,6 +1245,7 @@ object JinBiaoCalculator {
                     if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）"
                     else if (bingHua) "——病神不透干，经${tongGuanEl.chinese}通关转而相生有情（${bingEl.chinese}生${tongGuanEl.chinese}生${yongEl.chinese}），病不为病——此为清（贵命，走什么运都不怕）"
                     else if (bingYiTU) "——病神透干而无本气根、用神坐日支本气根——干支异途（干不克支），病不贴克用神：有格局（坐下印在），行运不违背即好命（用印显贵多，当官）"
+                    else if (gongCaiTongMen) "——**财气通门户（玄机暗里存）**：病神（枭印）虽大而**拱财暗存**（药待运填）——**财星有情不在乎旺衰：财来找他**——走差运生意也不差（选对行）小康；运填拱局——**发大财**（有钱人没走好运：好运一发就是大的——幸福的人还有三十年好日子）"
                     else if (bingTongGuanTou && huaJuBuYong) "——**破格→有情救格**：${yongEl.chinese}用神被${bingEl.chinese}重重围克本已破格，无${guanEl.chinese}官护财；然${shiEl.chinese}通关化劫＋六合化局补用神（绝处逢生）——**有情就有格局**：水木运助起用神发大财；土金旺运（克${shiEl.chinese}生${bingEl.chinese}）则破"
                     else "——病神被药${yaoEl.chinese}所制（药力${format(yaoS)}），此为清（贵命）",
                 )
@@ -1346,8 +1370,23 @@ object JinBiaoCalculator {
                                 hasBenQiRoot(bazi, guanEl) &&
                                 partyScore(bazi, Element.entries.first { it.controls == guanEl }) < FOLLOW_MIN_SCORE -> ZN(guanEl, true, false,
                                 "身旺财为子而**比劫盖头贴克财支**（${biEl.chinese}坐${caiEl.chinese}——同柱贴克：没儿子？**不一定——还要看有没有官：转官了**。${guanEl.chinese}官支在局**没有被克**（克${guanEl.chinese}之神无）——**有这个官我就有儿子：有这个功能可以生儿子——官来的年就生了**（案七十六）。**能生儿子不代表能发财**（能生儿的穷人有的是）：没被克只说明有生儿子的功能，但都是泄我的——**财官皆弱顶多小康、衣食无忧（这就算好命）**：化官生印转印身更旺；用神弱而**无克我捣乱者＝无灾无难（没有什么大疾病车祸——这不错了）**")
-                            caiS > 0.0 && shiS > 0.0 -> ZN(caiEl, false, true,
-                                "身旺财为子而**比劫地支得局夺财——财虽有根而地支不载**（终究土得局）；官弱救不动、食伤弱化不动——**没生儿子**；然有食伤生财（财透得气）——**有生育能力，生女儿不生儿**；运注：子星得地之运（如亥水之属）可生儿；若火土局之运生子——必是闺女（火生土旺，财不载）")
+                            // 案八十四·拱暗财档：财半合拱局暗存（亥未拱木）——有暗财＝有子（不仅有子还有钱）
+                            caiS > 0.0 && shiS > 0.0 -> run {
+                                val gongTrio2 = listOf(
+                                    setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                                    setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                                    setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                                    setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                                ).firstOrNull { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { it in bazi.branches } }
+                                if (gongTrio2 != null) {
+                                    val missing2 = gongTrio2.first.first { it !in bazi.branches }
+                                    ZN(caiEl, true, false,
+                                        "身旺财为子而**财拱局暗存**（${gongTrio2.first.filter { it in bazi.branches }.joinToString("") { it.chinese }}拱${caiEl.chinese}——玄机暗里存）：**有暗财的——命主是有子的（不仅有子，他还有钱——财气通门户：财星有情不在乎旺衰）**。**运支${missing2.chinese}填拱——一下就有子了**（且财局兑现发大财——儿子也有出息：往后好运越来越好）。取象：干${caiEl.chinese}之行（衣饰／古玩把件／家具／二手车／工艺品之属——同样八字不一定同行、五行同类）——走差运生意也不差（选对行）、小康；好运发大财（案八十四）")
+                                } else {
+                                    ZN(caiEl, false, true,
+                                        "身旺财为子而**比劫地支得局夺财——财虽有根而地支不载**（终究土得局）；官弱救不动、食伤弱化不动——**没生儿子**；然有食伤生财（财透得气）——**有生育能力，生女儿不生儿**；运注：子星得地之运（如亥水之属）可生儿；若火土局之运生子——必是闺女（火生土旺，财不载）")
+                                }
+                            }
                             else -> ZN(caiEl, false, false, "身旺财为子而**比劫夺财、官救食化俱无**——**没儿子**")
                         }
                     }
@@ -2152,6 +2191,16 @@ object JinBiaoCalculator {
                 // 三十年河东河西（坎离震兑各管三十年）：北方差三十年，东方翻身——农民翻身把歌唱
                 val yinHaiFanShen = i == 1 && zhi == EarthlyBranch.YIN && EarthlyBranch.HAI in chartBranches &&
                     ctx.yongEl == ctx.yinEl && ctx.caiEl.controls == ctx.yinEl && zhi.element.generates == ctx.yongEl
+                // 案八十四·运支填拱：财拱局暗存而运支填其所缺（亥未待卯——卯来填拱）——
+                // 财局兑现：发大财＋一下就有子（玄机暗里存——应期）
+                val tianGong = i == 1 && zhi.element == ctx.caiEl &&
+                    listOf(
+                        setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                        setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                        setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                        setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                    ).any { (trio, el) -> el == ctx.caiEl && zhi in trio &&
+                        chartBranches.count { it in trio } >= 2 && !trio.all { it in chartBranches } }
                 val sanHeCheng = sanHeChengEl != null && sanHeChengEl!!.controls == ctx.yongEl &&
                     sanHeChengEl !in ctx.favorEls && sanHeChengEl !in ctx.zhongPingEls
                 // 案五十三·去忌神：运干克去透干忌神——去忌神即去病，用神无克，去忌之运最好
@@ -2175,6 +2224,7 @@ object JinBiaoCalculator {
                     quRenBing -> "运支${zhi.chinese}冲去${ctx.biEl.chinese}刃之病——大运来药去掉这个病：学习好、财运好（就在好运上）"
                     haiSiQuHuo -> "运支亥冲局中巳（**亥巳逢冲——去火存金**）：官被冲去、${ctx.biEl.chinese}比劫复旺来克${ctx.caiEl.chinese}财——**老破财**（各种各样的事儿来捣乱：今儿挣一百，明儿破八十——虽有亥卯化木亦不作吉论）"
                     yinHaiFanShen -> "运支寅合局中亥（**寅亥化木**——合去坏印之${ctx.caiEl.chinese}财根）＋木生火帮${ctx.yinEl.chinese}印——**翻身**（三十年河东河西：坎离震兑四方各管三十年——北方差三十年，东方翻身农民把歌唱；走木生火运就要翻身了——福报在后面）"
+                    tianGong -> "运支${zhi.chinese}填${ctx.caiEl.chinese}拱局（玄机暗里存——财局兑现）：**财气通门户应期——发大财＋一下就有子**（儿子也有出息——往后好运越来越好）"
                     fanWang -> "官干直克身——犯旺激怒（权在一人，不可触犯），大凶"
                     zhiDuo -> "地支食伤被印枭夺——地支不能泄，凶"
                     shunXieGan -> "天干泄秀（天干无${ctx.yinEl.chinese}不夺）——顺其旺势，可行"
@@ -2193,7 +2243,7 @@ object JinBiaoCalculator {
                     element = el,
                     stance = stance,
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
-                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen,
+                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen || tianGong,
                     pingOverride = huaSha != null && huaSha.first == false,
                     xiongOverride = fanWang || zhiDuo || sanHeCheng || biJianGen || haiSiQuHuo,
                 )

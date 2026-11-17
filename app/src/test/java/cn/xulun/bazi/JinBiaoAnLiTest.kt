@@ -2285,6 +2285,38 @@ class JinBiaoAnLiTest {
                 zn13.basis.contains("土完了") && zn13.basis.contains("穷人也生儿子") && zn13.basis.contains("对勘系谱"))
     }
 
+    // ── 案八十四 · 己未 壬申 辛未 己亥（1979-09-01 亥时，乾）——子女章廿七例·财气通门户 ──
+
+    @Test
+    fun `案八十四 乾 己未壬申辛未己亥 秋土凉必生金身旺 枭夺食找财亥未拱木玄机暗里存 财气通门户不在乎旺衰 有子有钱卯运填拱发大财 克富老丈人`() {
+        val bazi = chart(1979, 9, 1, 22)
+        assertTrue(bazi.fullBazi.startsWith("己未 壬申 辛未 己亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("辛未(1987)", "庚午(1997)", "己巳(2007)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("秋土凉生金＋申月劫刃——身旺（非火多土烫）", jb.strength == DayStrength.STRONG)
+
+        // 格局：身旺没露财用伤官泄秀被印夺——找财：亥未拱木暗存——财气通门户（有情不论旺衰）
+        assertTrue("枭夺食找财亥未拱木——财气通门户（清——非满盘浊）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("财气通门户"))
+        assertTrue("取用依据含玄机暗里存、不在乎财星旺衰、选对行",
+            jb.quYongBasis.contains("玄机暗里存") && jb.quYongBasis.contains("不在乎财星旺衰") &&
+                jb.quYongBasis.contains("选对行"))
+
+        // 子女：有暗财＝有子有钱；运支卯填拱——一下就有子（儿子有出息）
+        val zn14 = jb.ziNv!!
+        assertTrue("必有儿（拱暗财——不仅有子还有钱）", zn14.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含拱局暗存、有暗财、一下就有子、取象",
+            zn14.basis.contains("拱局暗存") && zn14.basis.contains("有暗财的") &&
+                zn14.basis.contains("一下就有子了") && zn14.basis.contains("取象"))
+
+        // 卯运填拱——财局兑现发大财
+        assertTrue("丁卯运卯填亥未拱局——发大财＋得子应期", jb.yuns[4].items.any { it.action.contains("填木拱局") && it.action.contains("发大财") })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
