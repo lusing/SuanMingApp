@@ -497,7 +497,21 @@ object JinBiaoCalculator {
             } && tiaoHouEl == shiEl) ||
             // 案四十五：调候神即印而官杀两透混杂身弱——杀重用印化之以德为纲（生克故事更全），调候让位
             (tiaoHouEl == yinEl && bazi.stems.count { it.element == guanEl } >= 2 && strength == DayStrength.WEAK)
-        val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen) && !heZhuHunZa
+        // 案六十八戒：燥局调候神之根被两重冲（两巳夹冲亥）——根伤不可恃，不走调候线，走生克（比劫抗杀）
+        val tiaoHouGenShuangChong = tiaoHouEl != null &&
+            bazi.branches.count { LIU_CHONG[it] != null && bazi.branches.contains(LIU_CHONG[it]) && it.element == tiaoHouEl } >= 2 ||
+            (tiaoHouEl != null && bazi.branches.any { br -> br.element == tiaoHouEl && bazi.branches.count { it == LIU_CHONG[br] } >= 2 })
+        val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen) && !heZhuHunZa && !tiaoHouGenShuangChong
+
+        // ── 旺中变弱（案六十八）：亥巳逢冲＝去火存金（水把火冲去、巳中庚金独存——火根转金根）
+        //    ＋巳丑拱金／巳酉化金——金旺（财得局）——身旺经一系列反应旺中变弱（身弱财旺、财杀得局）
+        //    结构性转化（冲去即去）——不比分数
+        if (strength == DayStrength.STRONG && dayEl == Element.FIRE &&
+            bazi.branches.any { it == EarthlyBranch.HAI } && bazi.branches.any { it == EarthlyBranch.SI } &&
+            (EarthlyBranch.CHOU in bazi.branches || EarthlyBranch.YOU in bazi.branches)
+        ) {
+            strength = DayStrength.WEAK
+        }
 
         // ── 旺中变弱（案四十二）：旺基调（比月）而辰酉化金（辰随酉走——藏乙癸叛向、辰作金论）
         //    官杀党力压倒（≥1.5×折减印比）且月支被六冲（卯酉冲——禄根被杀根冲伤）——旺中变弱
@@ -760,6 +774,13 @@ object JinBiaoCalculator {
                             append("；日主之根为禄（${luZhi.chinese}＝${dayMaster.chinese}之禄）——禄根不克泄日主，异于库根之泄身（案卅二/卅三）：玄机正在根之质性——为什么有的命走印运好、有的走别的运好，原因就在这里。禄根型食制层次高：只要把食伤帮起来、身偏弱再把自身补起来——帮食（${shiEl.chinese}）兼帮身（${biEl.chinese}）俱吉，这种的食神制杀是要做官的")
                         }
                         append("；条件铁律：日主必须有根气——无根气还用食神强制官杀，叫克泄交加，更差更穷困，比普通人还要差（贫夭负债）")
+                        // 案六十八·去火存金＋身弱财大负债论
+                        if (dayEl == Element.FIRE && bazi.branches.any { it == EarthlyBranch.HAI } &&
+                            bazi.branches.any { it == EarthlyBranch.SI } &&
+                            (EarthlyBranch.CHOU in bazi.branches || EarthlyBranch.YOU in bazi.branches)
+                        ) {
+                            append("；**亥巳逢冲＝去火存金**（水把火冲去、金独存——火根转金根）＋巳丑拱金／巳酉化金——**金旺财得局：旺中变弱（身弱财旺、财杀得局）**。**身弱财大＝负债论：财星有多旺，就要负多大的债**（财星弱点还行——贪欲小平台小，欠一千两千一万两万；财星特别大——数额巨大的负债）——财星生杀攻身，在财上出事，不能有钱、要负债（中年西方金运即是）")
+                        }
                     },
                 )
                 // 案五十九戒：印须有力（透干／本气根／半合拱局之势）方可化杀——孤藏之印（戌中辛之类）不算有印，
@@ -871,6 +892,13 @@ object JinBiaoCalculator {
                                     append("；**三会化劫（案五十六）**：地支${bs.joinToString("") { it.chinese }}三会${el.chinese}局——**把比劫都化了**（日主本来坐个根可以，这么一化就身弱了）；劫被化**用神无力——八字格局就不高**：走火土一路帮比劫可**小富**；走食伤运财运（本来就身弱还要食伤生财）**穷困潦倒——即使财再旺也不管用，财越旺他越穷、食伤越旺他越穷**（身弱不任财）；**最怕七杀**克无力之比劫——**死亡**")
                                 }
                                 append("；**财富值取决于用神比劫之力**（${biEl.chinese}有多旺就多大财、有多衰就多衰的财运；做功之神〔如木克土工程〕的力量与财富值一点儿关系都没有——同样做功，有的挣一千万有的挣一万：**用神好财才是真的好**）")
+                                // 案六十八·去火存金＋身弱财大负债论
+                                if (dayEl == Element.FIRE && bazi.branches.any { it == EarthlyBranch.HAI } &&
+                                    bazi.branches.any { it == EarthlyBranch.SI } &&
+                                    (EarthlyBranch.CHOU in bazi.branches || EarthlyBranch.YOU in bazi.branches)
+                                ) {
+                                    append("；**亥巳逢冲＝去火存金**（水把火冲去、金独存——火根转金根）＋巳丑拱金／巳酉化金——**金旺财得局：旺中变弱（身弱财旺、财杀得局）**。**身弱财大＝负债论：财星有多旺，就要负多大的债**（财星弱点还行——贪欲小平台小，欠一千两千一万两万；财星特别大——数额巨大的负债）——财星生杀攻身，在财上出事，不能有钱、要负债")
+                                }
                             },
                     )
                 }
@@ -1269,7 +1297,7 @@ object JinBiaoCalculator {
                             biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "**官杀欺衰主，无印、比劫又扛不住**——**没儿子**（官杀无制化攻身——生了儿子也得夭折）")
                             biKeS >= 0.75 * biS && biXieS >= 1.5 * biS -> ZN(biEl, false, true,
                                 "**官杀欺衰主而无印——比劫扛得住（坐根有气）＝比劫为儿**；然**子星被克泄得太重**（两杀克＋食伤泄＋会局泄根——${biKeS}克${biXieS}泄压过子星${format(biS)}）：大运帮起来（壬子之属）**凑合生出来儿子——终究损子**（运补暂生而生出来没活成之属——**墓中子星要送出**破解）；**比劫有气坐根——生女儿百分之百**（有生育能力；若无会局之泄，走帮身运是可以有儿子的）")
-                            else -> ZN(biEl, true, false, "**官杀欺衰主而无印**——比劫扛得住（够旺）**比劫为儿也有子**（身弱杀日之间很旺比劫挡杀护我＝我有儿子；扛不住则无子）")
+                            else -> ZN(biEl, true, false, "**官杀欺衰主而无印**——比劫扛得住（够旺）**比劫为儿也有子**（身弱杀日之间比劫卡住挡杀护我＝我有儿子——**即使走差运也有儿子：有这个功能，走到好流年就可以生**；扛不住则无子。**详推反向**：身旺喜杀克我——中间比劫卡住杀克不到我——**反而生不了儿子（此时有侄儿——子归挡者）**；身弱怕杀克我——比劫卡住——**可以生儿子**——案六十八）")
                         }
                     }
                     yinYouLi && keYinS < FOLLOW_MIN_SCORE -> {

@@ -1891,6 +1891,33 @@ class JinBiaoAnLiTest {
         assertTrue("甲寅乙卯东方生火助病——凶", listOf(3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
     }
 
+    // ── 案六十八 · 癸亥 丁巳 丁巳 辛丑（1983-05-29 丑时，坤）——子女章十一例·去火存金 ──
+
+    @Test
+    fun `案六十八 坤 癸亥丁巳丁巳辛丑 亥巳冲去火存金巳丑拱金旺中变弱 比劫卡杀有儿 身弱财大负债论 西方运凶`() {
+        val bazi = chart(1983, 5, 29, 2)
+        assertTrue(bazi.fullBazi.startsWith("癸亥 丁巳 丁巳 辛丑"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阴年坤造顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("戊午(1986)", "己未(1996)", "庚申(2006)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("亥巳冲去火存金＋巳丑拱金——金旺财得局：旺中变弱（身弱）", jb.strength == DayStrength.WEAK)
+        assertTrue("取用依据含去火存金与身弱财大负债论",
+            jb.quYongBasis.contains("去火存金") && jb.quYongBasis.contains("身弱财大＝负债论"))
+
+        // 子女：比劫卡杀（月干丁挡住年杀癸）——身弱怕克被卡＝有儿（功能在）；身旺反向卡＝无儿有侄儿
+        val zn = jb.ziNv!!
+        assertTrue("必有儿（比劫卡杀）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含卡住、有这个功能、反向侄儿",
+            zn.basis.contains("卡住") && zn.basis.contains("有这个功能") && zn.basis.contains("侄儿"))
+
+        // 戊午己未帮身吉；庚申辛酉西方金运——财生杀攻身在财上出事负债——凶
+        assertTrue("戊午己未帮身运吉", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("庚申辛酉西方运不行（负债）——凶", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
