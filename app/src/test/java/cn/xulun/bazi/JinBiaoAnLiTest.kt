@@ -2499,6 +2499,30 @@ class JinBiaoAnLiTest {
                 zn21.basis.contains("财是命中情缘线") && zn21.basis.contains("念头"))
     }
 
+    // ── 案九十二 · 壬戌 戊申 癸亥 乙卯（1982-08-08 卯时，乾）——婚姻章·官看比劫 ──
+
+    @Test
+    fun `案九十二 乾 壬戌戊申癸亥乙卯 秋水通源身旺 月令印化官必须用官 食克官病无学历财富低 官弱管不住比劫必离婚 官杀为儿不看运`() {
+        val bazi = chart(1982, 8, 8, 6)
+        assertTrue(bazi.fullBazi.startsWith("壬戌 戊申 癸亥 乙卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己酉(1992)", "庚戌(2002)", "辛亥(2012)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("秋水通源金水旺身强", jb.strength == DayStrength.STRONG)
+        assertTrue("月令印当令化官＋比劫通根——必须用官（非去寡非食制——官弱不任制）",
+            jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.EARTH)
+        assertTrue("取用依据含必须用官、没有学历、财富值也低、看着妻子的力度",
+            jb.quYongBasis.contains("必须得用官") && jb.quYongBasis.contains("没有学历") &&
+                jb.quYongBasis.contains("财富值也低") && jb.quYongBasis.contains("看着妻子"))
+
+        // 子女：有官杀贴着克——不管走什么运一定有儿子（具备生儿子的功能——不看大运）
+        val zn22 = jb.ziNv!!
+        assertTrue("必有儿（官杀克劫护财——不看大运）", zn22.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

@@ -979,6 +979,10 @@ object JinBiaoCalculator {
                 // 食神制杀格（五理④＋条件一＋案四十八）：官有本气根之真旺、财不滋官（无财或财不透干）、食伤有力——
                 // 且【日主必须有根气】：食伤泄体，无根无气承载不了食神之泄（食神制杀反贫夭负债）；得根气则制杀得富贵。
                 // 根气三途：本气根／藏干通根≥3（案三十）／坐下印得局压杀（案四十八：印6.5对杀4.5——印生身有依）。
+                // 案九十二戒：月令印当令（化官生印）＋比劫有本气根（秋水通源）——官之气尽泄于印、
+                // 官弱不任食制：必须得用官（官为用神被食伤克＝病——层次低无学历财富值低）；
+                // 案四十八比劫无本气根（印虽得局身旺然杀真旺可制）各保其位
+                !(bazi.monthPillar.branch.element == yinEl && hasBenQiRoot(bazi, biEl)) &&
                 !ruoZhongBianWang && guanS >= GUAN_WANG && hasBenQiRoot(bazi, guanEl) &&
                     (caiS < FOLLOW_MIN_SCORE || bazi.stems.none { it.element == caiEl }) &&
                     // 案八十二戒：印干贴克食干而官透有力——印看住食伤不使犯官（把官给解放了）——
@@ -1012,12 +1016,20 @@ object JinBiaoCalculator {
                 // 五理②/第七讲·财滋弱杀（案八/案十/案廿二）：身旺而官在局（官废不能用——案十二）——有财有官杀优先用杀
                 // 案六十一戒：官须**透干**方用官配财（案廿二丙透）——官只藏支而弱（寅不旺）不用官：
                 // 身旺印重则喜财坏印（HUAI_YIN 殿后接手），金水（食伤生财）为取用
-                guanS >= FOLLOW_MIN_SCORE && !guanFei &&
+                guanS >= FOLLOW_MIN_SCORE && (!guanFei ||
+                    // 案九十二：月令印当令＋比劫通根（官气尽泄于印）——官虽被食克财绝，
+                    // 仍必须得用官（非去寡〔官支在〕非食制〔官弱不任制〕）——官为用神被食伤克＝病
+                    (bazi.monthPillar.branch.element == yinEl && hasBenQiRoot(bazi, biEl))) &&
                     bazi.stems.any { it != dayMaster && it.element == guanEl } -> Choice(
                     JinBiaoQuYongWay.PEI_CAI, guanEl,
                     buildString {
                         append("财滋弱杀格（案廿二）：身旺（${if (ruoZhongBianWang) "弱中变旺——坐贴身印比、月令敌党之支被日支泄克转衰" else "土金两旺通根得气"}），官杀露而弱（党力${format(guanS)}）${if (shiS < FOLLOW_MIN_SCORE) "、无食伤" else ""}——有财有官杀优先用杀，命主用官")
                         append("；财滋弱杀与财滋弱官不区分，是一样的（①身强②用官杀③财生）；财配置（党力${format(caiS)}）${if (caiZhuBing) "——原局${biEl.chinese}克${caiEl.chinese}财被劫，然杀弱无关系、财弱也无妨：只要大运解病（如${shiEl.chinese}运泄${biEl.chinese}生${caiEl.chinese}通关）一样发富发贵，勿见杀弱财弱断贫" else "——官星指着财来生，有财就是好格局"}")
+                        // 案九十二·印局化官用官：月令印当令＋比劫通根（秋水通源）——官气尽泄于印
+                        // 官弱被食伤克＝病——非去寡（官支在）非食制（官弱不任制）：必须用官
+                        if (bazi.monthPillar.branch.element == yinEl && hasBenQiRoot(bazi, biEl) && shiS >= FOLLOW_MIN_SCORE) {
+                            append("；**印局化官·必须用官（案九十二）**：月令${yinEl.chinese}当令化官生印＋比劫通根（秋水通源）——官之气尽泄于印转弱：**不是去官星之寡（地支官支在——没法去寡）也非食制（官弱不任制——除非强众敌寡身旺官食并见才可食去官寡）——必须得用官**。然用神${guanEl.chinese}官衰被${shiEl.chinese}食伤克＝病：**没有学历**（虽有食伤秀气然用神是官——犯官读书不好）、**财富值也低**——层次低（做功取象须先按用神定层次再取象：用神衰即往低层次看——木克土非工地即杂役之属）。**婚姻（劫财见财）**：财绝而壬戌自合比劫克财＋秋水通源比劫很强——基本要离婚；官星看比劫护财然官弱（印泄）＋走金水运化官（官星被泄管不住比劫）——**必须离婚**（官强旺则不管走什么运也离不了）；官＝**看着妻子的力度**（查手机管教之属——官星力量大小＝看得严不严／威严之有无——官弱管得松、运一化官干脆不管——比劫随时夺走）")
+                        }
                         if (biS >= 6.0 && EarthlyBranch.SI in bazi.branches && guanEl == Element.FIRE) {
                             append("；地支${biEl.chinese}旺——巳随${biEl.chinese}走（作${biEl.chinese}根不作火根），${guanEl.chinese}杀真弱而通寅根：杀有根气故不能去杀（去杀须杀无一丝根气），必须财滋弱杀、禁制杀（制杀贫穷欠债）")
                         }
