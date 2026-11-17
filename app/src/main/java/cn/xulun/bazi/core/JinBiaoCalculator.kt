@@ -717,7 +717,10 @@ object JinBiaoCalculator {
             )
             // 第八讲续·合去混杂（案卅七）：身弱官杀两透混杂（混杂加力克身）而食伤干合去其一——
             // 去留清纯＝有情豁免（不用考虑留下官杀旺而克身）；留下之官杀为用
+            // 案七十五戒：身弱而食伤当令成局泄体极重（克泄交加——王炸之泄）——制杀也没用（还不如不制）：
+            // 合杀有情不作数，走用劫（用神弱＝财富低——非制杀小故无钱）
             strength == DayStrength.WEAK && !ruoJi &&
+                !(bazi.monthPillar.branch.element == shiEl && shiS >= 2.0 * biS) &&
                 bazi.stems.count { it.element == guanEl } >= 2 &&
                 bazi.stems.filterIndexed { i, s -> i != 2 && s.element == shiEl }.any { sg ->
                     val partner = GAN_HE[sg]
@@ -1384,6 +1387,12 @@ object JinBiaoCalculator {
                                 (idx + 1 in bazi.branches.indices && bazi.branches[idx + 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx + 1])
                         }
                         when {
+                            // 案七十五·虚劫不管事档：比劫本气根尽是辰丑虚土（古训：辰丑之土非彼未戌之实也）
+                            // 而泄神会局得令（大王王炸）——比劫都虚了不管事：必须找印；无印＝没有功能——生闺女
+                            bazi.branches.filter { it.element == biEl }.all { it == EarthlyBranch.CHEN || it == EarthlyBranch.CHOU } &&
+                                bazi.branches.any { it.element == biEl } &&
+                                partyScore(bazi, shiEl) >= 6.0 && bazi.monthPillar.branch.element == shiEl -> ZN(biEl, false, true,
+                                "**比劫都虚了不管事**（比劫本气根尽是${biEl.chinese}之辰丑虚土——古训：**辰丑之土非彼未戌月之实也**）而**泄神${shiEl.chinese}会局得令＝王炸大王**（会局在当令季节＝最大的牌；对勘案七十三夏局＝小王——同样是会局也不一样）——**必须找印；命局没有印，就不能生儿子了：八字没有这个功能——不能生儿子，生的是闺女**（泄体太过、金得局、克泄交加）。**穷人也可以生女儿**（贫富子嗣两轨）；用神只能用劫而劫很弱——**劫财决定财富，劫很弱＝没儿子也富不了**（无格局只能打工：并不是因为制的杀小没钱，而是用神弱了财富值才低；走帮用好运＝有积蓄〔破财少会理财攒钱〕而不发富）")
                             // 案六十九·身体条件档：月令比劫根被两官支冲＋食伤贴泄＋无印——克泄交加
                             // 身体不行（气血不足）：八字不具备生儿子功能——再有钱再格局也流产/生不了男孩
                             bazi.monthPillar.branch.element == biEl &&

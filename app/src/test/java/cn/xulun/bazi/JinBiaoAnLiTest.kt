@@ -2055,6 +2055,30 @@ class JinBiaoAnLiTest {
                 zn4.basis.contains("流产") && zn4.basis.contains("克子"))
     }
 
+    // ── 案七十五 · 庚申 乙酉 己丑 乙丑（1980-09-13 丑时，乾）——子女章十八例·虚劫不管事 ──
+
+    @Test
+    fun `案七十五 乾 庚申乙酉己丑乙丑 秋金会局王炸大王 比劫虚土不管事必须找印无印没有功能生闺女 用神弱财富低好运积蓄非发富`() {
+        val bazi = chart(1980, 9, 13, 2)
+        assertTrue(bazi.fullBazi.startsWith("庚申 乙酉 己丑 乙丑"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丙戌(1989)", "丁亥(1999)", "戊子(2009)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("秋金会局＋金库＝王炸大王——日主过泄克泄交加（制杀也没用不如不制）——用劫（劫弱财富低）",
+            jb.strength == DayStrength.WEAK && jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE && jb.yongShenElement == Element.EARTH)
+
+        // 子女：比劫都虚了（辰丑虚土古训）不管事——必须找印；无印＝没有功能——不能生儿子生闺女
+        val zn5 = jb.ziNv!!
+        assertTrue("无儿有女（虚劫不管事档）", zn5.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("判据含虚了不管事、辰丑虚土古训、王炸大王、没有功能、穷人也可以生女儿、用神弱财富低",
+            zn5.basis.contains("不管事") && zn5.basis.contains("辰丑之土非彼未戌月之实也") &&
+                zn5.basis.contains("王炸大王") && zn5.basis.contains("没有这个功能") &&
+                zn5.basis.contains("穷人也可以生女儿") && zn5.basis.contains("用神弱了财富值才低"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
