@@ -507,6 +507,16 @@ object JinBiaoCalculator {
                 (i + 1 in bazi.stems.indices && bazi.stems[i + 1].element == yinEl && i + 1 != 2)) }
         val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen) && !heZhuHunZa && !tiaoHouGenShuangChong && !tiaoHouTieYin
 
+        // ── 旺中变弱（案七十三）：巳月火日主而巳酉半合化金×2（巳火不专、变化性很大——
+        // 金旺跟着金走，火根尽化）＋官杀混杂加力＋财生杀——夏天本可以，一下变弱。
+        // 然夏金不至于绝（季节定性：夏天金再旺不至于那么厉害——非金得全局）
+        if (strength == DayStrength.STRONG && dayEl == Element.FIRE &&
+            bazi.monthPillar.branch == EarthlyBranch.SI &&
+            bazi.branches.count { it == EarthlyBranch.YOU } >= 2
+        ) {
+            strength = DayStrength.WEAK
+        }
+
         // ── 旺中变弱（案七十）：月令建禄占令（即使身弱也弱不到哪去）然地支食伤本气支≥3
         //    （三木过泄、食伤混杂）——对日主过泄——旺中变弱（地支是重要的）
         if (strength == DayStrength.STRONG && bazi.monthPillar.branch.element == biEl &&
@@ -1336,6 +1346,16 @@ object JinBiaoCalculator {
                         val caiTieKeYin = caiIdxs2.isNotEmpty() && yinIdxs2.isNotEmpty() &&
                             caiIdxs2.any { ci -> yinIdxs2.any { yi -> kotlin.math.abs(ci - yi) == 1 } }
                         when {
+                            // 案七十三·异性轻克档：印本气根被财支贴克而阴阳异性（酉是小刀寅是树——小刀刻不断树）
+                            // ＋印有官杀贴生（壬坐寅之属）——弱而不废：弱代表穷，不代表生不了儿子（可以生；
+                            // 若同性重克〔大申金贴寅〕则废——生不了）。印弱＝事业层次不行；儿子学习随印运
+                            bazi.branches.anyIndexed { i, br ->
+                                br.element == yinEl &&
+                                    ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl && (bazi.branches[i + 1].ordinal % 2) != (br.ordinal % 2)) ||
+                                        (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl && (bazi.branches[i - 1].ordinal % 2) != (br.ordinal % 2))) &&
+                                    bazi.stems.anyIndexed { j, s -> j != 2 && s.element == guanEl && bazi.branches[j] == br }
+                            } -> ZN(yinEl, true, false,
+                                "**印为儿而印本气根被财支贴克——然异性之克不重（${caiEl.chinese}是小刀、${yinEl.chinese}是树——小刀刻不断树）＋官杀贴生（壬坐寅之属）：印只是弱，没有被彻底克坏——弱代表她穷，不代表她生不了儿子**（**是可以生儿子的**；若是大${caiEl.chinese}〔同性重克〕贴着克——命主就生不了儿子了）。**一切由印星决定**：印弱＝事业层次不行、财富值低（又走克印之运则贫穷）；印星是儿子——**印运即子运：儿子学习随印运**（走克印之运儿子学习差）")
                             caiTieKeYin -> ZN(yinEl, false, true,
                                 "官杀欺衰主有印化（**印为儿**），然**财贴着我的印来克**（财有力贴着克——螳螂捕蝉黄雀在后；忌神深重贴着我克——他给我捣乱干扰）：**生理上没有生男孩的功能、染色体就不对了**——即使大运解决这个病也一样生不出来儿子（八字程序先天受损，医院拍片也是一样——**解决了病也没有用：运去病不修复生育功能**）；走好运把印解放了——**能生个闺女**；若再走克${yinEl.chinese}之运（如南方火地）——**连闺女都生不出——必无子之命**（八字里男女都是一样看的——案六十七）")
                             keYinS >= 1.5 * yinS && keYinS > 0 -> ZN(yinEl, false, false, "官杀欺衰主有印化（印为儿），然**财坏印坏成**（螳螂捕蝉黄雀在后）——**没儿子**")

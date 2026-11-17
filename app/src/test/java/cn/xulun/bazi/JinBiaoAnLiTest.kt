@@ -2004,6 +2004,33 @@ class JinBiaoAnLiTest {
                 zn2.basis.contains("接收得到信号") && zn2.basis.contains("若有贴克则不看大运"))
     }
 
+    // ── 案七十三 · 辛酉 癸巳 丁酉 壬寅（1981-05-19 寅时，坤）——子女章十六例·异性轻克 ──
+
+    @Test
+    fun `案七十三 坤 辛酉癸巳丁酉壬寅 巳酉化金火根尽化旺中变弱取弱印 酉是小刀寅是树异性轻克 弱代表穷不代表生不了儿子 儿子学习随印运`() {
+        val bazi = chart(1981, 5, 19, 4)
+        assertTrue(bazi.fullBazi.startsWith("辛酉 癸巳 丁酉 壬寅"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阴年坤造顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("甲午(1987)", "乙未(1997)", "丙申(2007)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("巳酉化金×2——巳火不专火根尽化＋官杀混杂加力——旺中变弱", jb.strength == DayStrength.WEAK)
+        assertTrue("取这个弱印——用神寅木正印（一切由印星决定）",
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WOOD)
+
+        // 子女：酉贴寅异性轻克（小刀刻不断树）＋壬坐寅官生印——弱而不废：可以生儿子；印弱＝穷；儿子学习随印运
+        val zn3 = jb.ziNv!!
+        assertTrue("必有儿（异性轻克档——弱而不废）", zn3.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含小刀刻不断树、弱代表穷不代表生不了、一切由印星决定、儿子学习随印运",
+            zn3.basis.contains("小刀刻不断树") && zn3.basis.contains("弱代表她穷，不代表她生不了儿子") &&
+                zn3.basis.contains("一切由印星决定") && zn3.basis.contains("儿子学习随印运"))
+
+        // 申运克寅——财富值低（贫穷）；儿子学习差
+        assertTrue("丙申运申克印——凶（财富值低）", jb.yuns[2].verdict != JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
