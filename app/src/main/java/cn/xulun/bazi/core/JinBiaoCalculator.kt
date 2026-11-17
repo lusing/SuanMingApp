@@ -1421,6 +1421,34 @@ object JinBiaoCalculator {
                                 yinIdxs2.any { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } } &&
                                 yinIdxs2.any { yi -> caiIdxs2.none { ci -> kotlin.math.abs(ci - yi) == 1 } } -> ZN(yinEl, true, false,
                                 "**隔克不算克**：${caiEl.chinese}财贴克一印（年干），然**另一印隔开未被贴克——功能在：能生儿子**（虽是异性的克贴着克，也是有影响的——但一印被克一印独存，具备生儿子的功能）。**况且走印运（帮身化杀）——很确定可以生儿子：百分之百有儿子**（对勘案六十七：独印被有力之财贴克＝功能废；本案一印独存＝功能在——案七十七）")
+                            // 案八十三·贴克三态（生儿子态）：财贴克印而①印有劲（印干坐支通源——秋水通源）
+                            // ②异性之克 ③财被局泄化（泄财之神得局——金得局泄土土完了：秋土本虚＋金旺泄土）
+                            // ——即使印被贴身克，命主也生儿子（穷人也生儿子）
+                            caiTieKeYin && run {
+                                val yinIdx = yinIdxs2.firstOrNull { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
+                                yinIdx != null &&
+                                    branchHiddenStems.getValue(bazi.branches[yinIdx]).any { it.element == yinEl } &&
+                                    bazi.stems[yinIdx].yang != bazi.stems[caiIdxs2.first { ci -> kotlin.math.abs(ci - yinIdx) == 1 }].yang &&
+                                    partyScore(bazi, caiEl.generates) >= 6.0 && bazi.monthPillar.branch.element == caiEl.generates &&
+                                    // 财无生源（生财之神党力<1.5——扣除随泄神成局之支：案八三巳随巳酉丑金局不作火源论；
+                                    // 案六七丁有卯源带源头——不入此态）
+                                    run {
+                                        val scEl = Element.entries.first { it.generates == caiEl }
+                                        var sc = partyScore(bazi, scEl)
+                                        // 泄神成局之支随局走——其本气（如金局中之巳火根）不作生财之源论
+                                        val juTrio = listOf(
+                                            setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                                            setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                                            setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                                            setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                                        ).firstOrNull { (trio, el) -> el == caiEl.generates && trio.all { it in bazi.branches } }
+                                        if (juTrio != null) {
+                                            sc -= 1.5 * juTrio.first.count { it.element == scEl && it in bazi.branches }
+                                        }
+                                        sc < 1.5
+                                    }
+                            } -> ZN(yinEl, true, false,
+                                "官杀欺衰主有印化（**印为儿**），财虽贴身克印——然**贴克三态（案八十三）**：①**印有劲**（${yinEl.chinese}干坐支通源——秋水通源）②**异性之克**（不重）③**财被局泄化**（泄财之${caiEl.generates.chinese}得局——${caiEl.chinese}土全被化了：秋土本虚＋${caiEl.generates.chinese}旺泄土＋得局——**土完了**）——**即使印被贴身克，命主也生儿子（穷人也生儿子）**。**对勘系谱**：案七三（夏＋异性克印有劲——生儿）↔ 案六七（带源头火旺贴克——生不了）↔ 案七四（大夏飞刃贴克——生不出来）↔ 案八一（贴克多大劲——生不了）——**贴克之废在三件俱反：印无劲／同性重／财带源有力**")
                             caiTieKeYin -> ZN(yinEl, false, true,
                                 "官杀欺衰主有印化（**印为儿**），然**财贴着我的印来克**（财有力贴着克——螳螂捕蝉黄雀在后；忌神深重贴着我克——他给我捣乱干扰）：**生理上没有生男孩的功能、染色体就不对了**——即使大运解决这个病也一样生不出来儿子（八字程序先天受损，医院拍片也是一样——**解决了病也没有用：运去病不修复生育功能**）；走好运把印解放了——**能生个闺女**；若再走克${yinEl.chinese}之运（如南方火地）——**连闺女都生不出——必无子之命**（八字里男女都是一样看的——案六十七）")
                             keYinS >= 1.5 * yinS && keYinS > 0 -> ZN(yinEl, false, false,

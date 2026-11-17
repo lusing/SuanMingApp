@@ -2262,6 +2262,29 @@ class JinBiaoAnLiTest {
         assertTrue("丁卯丙寅南方官地——事业发财皆吉", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案八十三 · 己酉 壬申 乙丑 辛巳（1969-08-18 巳时，乾）——子女章廿六例·贴克三态 ──
+
+    @Test
+    fun `案八十三 乾 己酉壬申乙丑辛巳 支全金局杀旺身弱用印秋水通源 财贴克印然印有劲异性克财被金局泄没了 生儿子穷人也生儿子`() {
+        val bazi = chart(1969, 8, 18, 10)
+        assertTrue(bazi.fullBazi.startsWith("己酉 壬申 乙丑 辛巳"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("辛未(1973)", "庚午(1983)", "己巳(1993)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("巳酉丑支全金局杀旺——身弱用印（秋水通源有通根——非从格）", jb.strength == DayStrength.WEAK &&
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WATER)
+
+        // 子女：财贴克印三态（印有劲＋异性克＋财被金局泄化——土完了）——生儿子（穷人也生儿子）
+        val zn13 = jb.ziNv!!
+        assertTrue("必有儿（贴克三态——生儿子态）", zn13.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含贴克三态、秋水通源、土完了、穷人也生儿子、对勘系谱",
+            zn13.basis.contains("贴克三态") && zn13.basis.contains("秋水通源") &&
+                zn13.basis.contains("土完了") && zn13.basis.contains("穷人也生儿子") && zn13.basis.contains("对勘系谱"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
