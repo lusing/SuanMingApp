@@ -2433,6 +2433,28 @@ class JinBiaoAnLiTest {
         assertTrue("甲辰乙巳帮身运凶", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
     }
 
+    // ── 案八十九 · 乙丑 庚辰 戊寅 乙卯（1985-04-09 卯时，乾）——子女章卅二例·官杀得局废比劫 ──
+
+    @Test
+    fun `案八十九 乾 乙丑庚辰戊寅乙卯 寅卯辰方局官杀得局 比劫根尽随局虚土全废 生不出儿子 食神去混杂牙医有层次白领存不住钱`() {
+        val bazi = chart(1985, 4, 9, 6)
+        assertTrue(bazi.fullBazi.startsWith("乙丑 庚辰 戊寅 乙卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己卯(1986)", "戊寅(1996)", "丁丑(2006)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("寅卯辰三会官杀得局＋乙乙双透庚合其一——食神去混杂（合留）", jb.quYongWay == JinBiaoQuYongWay.HE_LIU && jb.yongShenElement == Element.WOOD)
+
+        // 子女：官杀得局废比劫（辰随局丑虚土）——没这功能生不出来（走火运也不能）
+        val zn19 = jb.ziNv!!
+        assertTrue("必无儿", zn19.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+        assertTrue("判据含官杀得局废比劫、没这功能、白领存不住钱、邪淫破财",
+            zn19.basis.contains("官杀得局废比劫") && zn19.basis.contains("没这功能") &&
+                zn19.basis.contains("白领层次发不了财") && zn19.basis.contains("邪淫"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

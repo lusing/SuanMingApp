@@ -1552,7 +1552,22 @@ object JinBiaoCalculator {
                             (idx - 1 in bazi.branches.indices && bazi.branches[idx - 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx - 1]) ||
                                 (idx + 1 in bazi.branches.indices && bazi.branches[idx + 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx + 1])
                         }
+                        // 案八十九·官杀得局废比劫：官杀之支三会/三合成局而比劫之根尽随局（辰在寅卯辰中）
+                        // 或尽虚土（丑）——比劫全废扛不住：没儿子（走火运也生不出来——官杀得局功能废）
+                        val guanDeJu = SAN_HUI_JU.any { (bs, _) -> bs.all { it in bazi.branches } && bazi.monthPillar.branch in bs } ||
+                            listOf(
+                                setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN),
+                                setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI),
+                                setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU),
+                                setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
+                            ).any { trio -> guanS >= 6.0 && trio.all { it in bazi.branches } }
+                        val biGenFei = bazi.branches.filter { it.element == biEl }.all { b ->
+                            b in (SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }?.first ?: emptySet()) ||
+                                b == EarthlyBranch.CHOU || b == EarthlyBranch.CHEN
+                        }
                         when {
+                            guanDeJu && bazi.branches.any { it.element == biEl } && biGenFei -> ZN(biEl, false, false,
+                                "**官杀得局废比劫（案八十九）**：官杀之支会局（寅卯辰方局之属）——身衰印坐儿而无印，**生得出来儿子吗？不能——没这功能，生不出来儿子**（比劫之根尽随局〔辰在寅卯辰中随木〕或尽虚土〔丑〕——**比劫全废扛不住：走火运也生不出来**——官杀得局功能废）。日主有丑辰两根＋**食伤制杀有一定层次（食神去官杀之混杂——庚合乙之属）——国家单位上班（牙医之属）：有一定层次不代表有钱**——身弱只能用劫而劫废：**挣了钱也存不住——白领层次发不了财**（一路没走火土运一辈子发不了大财小财）；**食神制杀兼泄身——食神主生殖：老搞邪淫天天破财**（官杀混杂老来骚扰——今儿破明儿破——挣多少也没用）")
                             // 案七十五·虚劫不管事档：比劫本气根尽是辰丑虚土（古训：辰丑之土非彼未戌之实也）
                             // 而泄神会局得令（大王王炸）——比劫都虚了不管事：必须找印；无印＝没有功能——生闺女
                             bazi.branches.filter { it.element == biEl }.all { it == EarthlyBranch.CHEN || it == EarthlyBranch.CHOU } &&
