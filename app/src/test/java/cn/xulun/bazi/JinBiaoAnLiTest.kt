@@ -2317,6 +2317,33 @@ class JinBiaoAnLiTest {
         assertTrue("丁卯运卯填亥未拱局——发大财＋得子应期", jb.yuns[4].items.any { it.action.contains("填木拱局") && it.action.contains("发大财") })
     }
 
+    // ── 案八十五 · 乙丑 乙酉 甲戌 甲子（1985-10-02 子时，坤）——子女章廿八例·干多不如支重 ──
+
+    @Test
+    fun `案八十五 坤 乙丑乙酉甲戌甲子 三比劫透地支不载干多不如支重 戌大实土贴克子一克没儿子 印一字定之官再旺没用经济困难`() {
+        val bazi = chart(1985, 10, 2, 0)
+        assertTrue(bazi.fullBazi.startsWith("乙丑 乙酉 甲戌 甲子"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丙戌(1987)", "丁亥(1997)", "戊子(2007)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("三比劫透而地支不载（干多不如支重）——官旺欺衰只能用印（子水独印）——清枯",
+            jb.strength == DayStrength.WEAK && jb.quYongWay == JinBiaoQuYongWay.HUA_SHA &&
+                jb.qingZhuo == JinBiaoQingZhuo.QING_KU)
+        assertTrue("取用依据含干多不如支重、地支不载、官再旺没有用",
+            jb.quYongBasis.contains("干多不如支重") && jb.quYongBasis.contains("地支不载") &&
+                jb.quYongBasis.contains("官再旺没有用"))
+
+        // 子女：戌大实土贴身克子——一克没儿子（官杀旺也化不了——经济困难还没儿子）
+        val zn15 = jb.ziNv!!
+        assertTrue("必无儿", zn15.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+        assertTrue("判据含大实土贴身克本气支、一克没儿子、完全指着印星一字定之",
+            zn15.basis.contains("大实土贴身克") && zn15.basis.contains("一克没儿子") &&
+                zn15.basis.contains("完全指着印星一字定之"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
