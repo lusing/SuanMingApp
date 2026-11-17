@@ -1835,6 +1835,32 @@ class JinBiaoAnLiTest {
         assertTrue("辛丑运帮财——吉", jb.yuns[2].verdict == JinBiaoVerdict.JI)
     }
 
+    // ── 案六十六 · 甲辰 甲戌 庚戌 庚辰（1964-10-28 辰时，乾）——子女章九例·贴克无儿 ──
+
+    @Test
+    fun `案六十六 乾 甲辰甲戌庚戌庚辰 四土双冲身旺用财 比劫贴克财纵走三十年财运也生不了儿子 包工头发财`() {
+        val bazi = chart(1964, 10, 28, 8)
+        assertTrue(bazi.fullBazi.startsWith("甲辰 甲戌 庚戌 庚辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("乙亥(1968)", "丙子(1978)", "丁丑(1988)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("四土得局双冲而比劫透干——不作昆仑：土金旺身旺足以用财（用神甲木财）",
+            jb.quYongWay == JinBiaoQuYongWay.HUAI_YIN && jb.yongShenElement == Element.WOOD)
+
+        // 子女：比劫贴克财（天干贴克＋地支戌冲辰砍伐）——纵走三十年财运发财也生不了儿子
+        val zn = jb.ziNv!!
+        assertTrue("必无儿（贴克无儿）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+        assertTrue("判据含贴着克财、生不了儿子、有钱不一定有儿子",
+            zn.basis.contains("贴着克财") && zn.basis.contains("生不了儿子") &&
+                zn.basis.contains("有钱不一定有儿子"))
+
+        // 寅卯辰三十年支皆财地（干支分论）——助起财星发财（包工头）；纵发财亦不救子嗣
+        assertTrue("戊寅己卯庚辰寅卯辰支皆财地（发财运非凶）", listOf(3, 4, 5).all { jb.yuns[it].verdict != JinBiaoVerdict.XIONG })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

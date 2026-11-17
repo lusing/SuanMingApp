@@ -443,7 +443,10 @@ object JinBiaoCalculator {
             // 克泄交加身太衰，肯定要用印星帮身：用神庚申，正常分析不归昆仑（印好才是真的好）
             !(kunLunEl == shiEl && bazi.stems.anyIndexed { i, s ->
                 i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl
-            })
+            }) &&
+            // 案六十六裁：印局（kunLunEl=印）而比劫透干——身有比劫之助可依（非无根而漂），
+            // 不作昆仑：正常身旺用财（四土得局双冲互战——土金旺，日主身旺足以用财）
+            !(kunLunEl == yinEl && bazi.stems.anyIndexed { i, s -> i != 2 && s.element == biEl })
 
         // ── 气象调候（案十五~案二十一）：寒甚要暖有气，暖至要寒有根 ──
         // 寒面（冬水/水局）调候神＝丙火：有气（火藏根（寅中丙/戌中丁亦是根），或透木紧贴生火且木有地载）→用之暖局；
@@ -1155,11 +1158,38 @@ object JinBiaoCalculator {
                 // 「鲁莽地说就错了」——有财不可遽断有子，必来回检查螳螂捕蝉黄雀在后
                 val duoCai = biS >= 1.2 * caiS ||
                     (bazi.branches.count { it.element == biEl } >= 2 && bazi.monthPillar.branch.element == biEl)
+                // 案六十六·贴克无儿：比劫透干贴克财干而其间无食伤通关（地支复冲伐财根）——
+                // 「天干也是贴着财克、地支戌冲辰也砍伐」：纵走三十年财运发财——生不了儿子
+                // （走好运只说明财富事业好，不能说能生儿子——有钱不一定有儿子）
+                val caiIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+                val biIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == biEl }
+                val shiIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == shiEl }
+                // 财干与（比劫透干或日主）相邻＝贴克；食伤透干居比劫与财之间＝通关隔开（案六五戊隔——不贴克）
+                val keZhuIdxs = biIdxs + 2
+                val tieKe = biIdxs.isNotEmpty() && caiIdxs.isNotEmpty() &&
+                    caiIdxs.any { ci -> keZhuIdxs.any { k -> kotlin.math.abs(ci - k) == 1 } } &&
+                    !caiIdxs.any { ci ->
+                        keZhuIdxs.any { k ->
+                            val lo = minOf(ci, k)
+                            val hi = maxOf(ci, k)
+                            shiIdxs.any { si -> si in (lo + 1) until hi }
+                        }
+                    }
                 when {
+                    caiS > 0.0 && tieKe -> {
+                        val guanJiu = guanS >= GUAN_WANG ||
+                            bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl }
+                        if (guanJiu) {
+                            ZN(guanEl, true, false, "身旺财为子而**比劫贴克财**——然官杀克劫护财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
+                        } else {
+                            ZN(caiEl, false, false,
+                                "**比劫贴着克财**（天干贴克＋地支冲伐财根——戌冲辰也砍伐）：**生不了儿子**——即使走三十年好运助起财星发了财也一样（**走好运只说明财富事业好，不能说能生儿子——有钱不一定有儿子**；原局贴着克＝功能层面废——运不能救，类比案六十四辰酉贴克）")
+                        }
+                    }
                     caiS > 0.0 && duoCai -> {
                         // 比劫夺财（重夺／地支得局——财虽有根而地支不载）——官旺救或食伤得局化劫
                         when {
-                            guanS >= GUAN_WANG -> ZN(guanEl, true, false, "身旺财为子而**比劫夺财**——官杀旺（克劫有力）解放财：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
+                            guanS >= GUAN_WANG || bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl } -> ZN(guanEl, true, false, "身旺财为子而**比劫夺财**——官杀克劫解放财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
                             shiS >= GUAN_WANG && shiS >= biS -> ZN(shiEl, true, false,
                                 "身旺财为子而比劫夺财——**食伤得局完全把比劫化了**（劫不至重、间接解放财；比劫在年上、中间食伤${shiEl.chinese}隔着——不贴克）：**还能有儿子——更可以生儿子**（财得月令之气，帮的时候更旺；**对勘案六十二**：虚透无气之财——只因无比劫克才生、运过即损——**主要就是看季节：得气帮得起，无气帮不起**）（案六十补笔）")
                             caiS > 0.0 && shiS > 0.0 -> ZN(caiEl, false, true,
