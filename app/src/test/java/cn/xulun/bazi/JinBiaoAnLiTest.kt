@@ -2134,6 +2134,32 @@ class JinBiaoAnLiTest {
         assertTrue("甲寅乙卯木运好运——当处长", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案七十八 · 辛酉 丁酉 戊午 癸亥（1981-10-07 亥时，坤——案五十一同日异时）──
+
+    @Test
+    fun `案七十八 坤 辛酉丁酉戊午癸亥 癸隔位不贴丁隔克不算克印弱儿子衰能生 财运差用神一字定之 寅亥化木翻身三十年河东河西`() {
+        val bazi = chart(1981, 10, 7, 22)
+        assertTrue(bazi.fullBazi.startsWith("辛酉 丁酉 戊午 癸亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阴年坤造顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("戊戌(1982)", "己亥(1992)", "庚子(2002)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("两酉伤官旺泄体＋癸财克丁印——身弱配印（用神火）",
+            jb.strength == DayStrength.WEAK && jb.quYongWay == JinBiaoQuYongWay.FU_SHEN && jb.yongShenElement == Element.FIRE)
+
+        // 子女：癸隔位不贴丁——隔克不算克：印弱＝儿子不给力生得衰——不代表生不了儿子（能生）
+        val zn8 = jb.ziNv!!
+        assertTrue("必有儿（隔克不算克——儿子衰但能生）", zn8.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含没有贴着克、儿子不给力生得衰、不代表生不了、寅亥化木翻身",
+            zn8.basis.contains("没有贴着") && zn8.basis.contains("儿子不给力") &&
+                zn8.basis.contains("不代表我生不了儿子") && zn8.basis.contains("翻身"))
+
+        // 壬寅运寅亥化木（合去坏印财根＋木生火）——翻身吉覆写
+        assertTrue("壬寅运寅亥化木翻身——吉覆写（支）", jb.yuns[4].items.any { it.action.contains("寅亥化木") && it.action.contains("翻身") })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

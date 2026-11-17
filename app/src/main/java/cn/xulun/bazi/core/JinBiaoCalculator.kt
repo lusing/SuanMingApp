@@ -1424,8 +1424,18 @@ object JinBiaoCalculator {
                         else ZN(yinEl, true, false, "**身衰印做儿**（有印有比劫而无财——印肯定是儿子，印此时不作母亲论；怕财地）")
                     }
                     yinYouLi -> {
-                        if (biS >= FOLLOW_MIN_SCORE) ZN(biEl, true, false, "身衰印做儿而**财坏印**——**比劫克财护印：比劫为儿，有子**")
-                        else ZN(yinEl, false, false, "身衰印做儿而**财坏印、比劫又无**——**没儿子**")
+                        // 案七十八·隔克不算克（干层）：财干克印干而**隔位非贴**＋印贴身生（丁贴日主）——
+                        // 印弱＝儿子不给力、生得比较衰——不代表生不了儿子（能生；癸没贴着丁克）
+                        val caiIdxs3 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+                        val yinIdxs3 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+                        val caiGanGe = caiIdxs3.isNotEmpty() && yinIdxs3.isNotEmpty() &&
+                            caiIdxs3.any { ci -> yinIdxs3.all { yi -> kotlin.math.abs(ci - yi) > 1 } }
+                        when {
+                            caiGanGe && (bazi.monthPillar.stem.element == yinEl || bazi.dayPillar.branch.element == yinEl) -> ZN(yinEl, true, false,
+                                "身衰印做儿而财坏印——**得详推：${caiEl.chinese}财没有贴着${yinEl.chinese}印克（隔位）——印还是贴着生的**：**印弱是弱——儿子不给力、儿子生的比较衰——不代表我生不了儿子**（能生；只是儿子财富值低/${caiEl.chinese}运直接判死刑没有财富值——然三十年河东河西：坎离震兑四方各管三十年，北方差不一定东方差——**寅亥化木翻身在后面**——案七十八）")
+                            biS >= FOLLOW_MIN_SCORE -> ZN(biEl, true, false, "身衰印做儿而**财坏印**——**比劫克财护印：比劫为儿，有子**")
+                            else -> ZN(yinEl, false, false, "身衰印做儿而**财坏印、比劫又无**——**没儿子**")
+                        }
                     }
                     else -> {
                         if (biS >= FOLLOW_MIN_SCORE) ZN(biEl, true, false, "身弱局里没有印（必财旺或官杀旺）——**比劫就是儿子**（抗杀挡杀镇财给我力量）：有比劫才有儿子")
@@ -2066,6 +2076,10 @@ object JinBiaoCalculator {
                 // 官被冲去、比劫复旺来克财——老破财（今儿挣一百明儿破八十——各种事捣乱）
                 val haiSiQuHuo = i == 1 && zhi == EarthlyBranch.HAI && EarthlyBranch.SI in chartBranches &&
                     ctx.yongEl.generates == ctx.guanEl && ctx.guanEl == Element.FIRE
+                // 案七十八·寅亥化木翻身：配印局而运支寅合局中亥（合去坏印之财根）＋木生火帮印——
+                // 三十年河东河西（坎离震兑各管三十年）：北方差三十年，东方翻身——农民翻身把歌唱
+                val yinHaiFanShen = i == 1 && zhi == EarthlyBranch.YIN && EarthlyBranch.HAI in chartBranches &&
+                    ctx.yongEl == ctx.yinEl && ctx.caiEl.controls == ctx.yinEl && zhi.element.generates == ctx.yongEl
                 val sanHeCheng = sanHeChengEl != null && sanHeChengEl!!.controls == ctx.yongEl &&
                     sanHeChengEl !in ctx.favorEls && sanHeChengEl !in ctx.zhongPingEls
                 // 案五十三·去忌神：运干克去透干忌神——去忌神即去病，用神无克，去忌之运最好
@@ -2088,6 +2102,7 @@ object JinBiaoCalculator {
                     heChong -> "运支${zhi.chinese}合去冲神${ctx.chongShen!!.chinese}——用神绝处逢生，彻底有情（把印绶救起来了）"
                     quRenBing -> "运支${zhi.chinese}冲去${ctx.biEl.chinese}刃之病——大运来药去掉这个病：学习好、财运好（就在好运上）"
                     haiSiQuHuo -> "运支亥冲局中巳（**亥巳逢冲——去火存金**）：官被冲去、${ctx.biEl.chinese}比劫复旺来克${ctx.caiEl.chinese}财——**老破财**（各种各样的事儿来捣乱：今儿挣一百，明儿破八十——虽有亥卯化木亦不作吉论）"
+                    yinHaiFanShen -> "运支寅合局中亥（**寅亥化木**——合去坏印之${ctx.caiEl.chinese}财根）＋木生火帮${ctx.yinEl.chinese}印——**翻身**（三十年河东河西：坎离震兑四方各管三十年——北方差三十年，东方翻身农民把歌唱；走木生火运就要翻身了——福报在后面）"
                     fanWang -> "官干直克身——犯旺激怒（权在一人，不可触犯），大凶"
                     zhiDuo -> "地支食伤被印枭夺——地支不能泄，凶"
                     shunXieGan -> "天干泄秀（天干无${ctx.yinEl.chinese}不夺）——顺其旺势，可行"
@@ -2106,7 +2121,7 @@ object JinBiaoCalculator {
                     element = el,
                     stance = stance,
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
-                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing,
+                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen,
                     pingOverride = huaSha != null && huaSha.first == false,
                     xiongOverride = fanWang || zhiDuo || sanHeCheng || biJianGen || haiSiQuHuo,
                 )
