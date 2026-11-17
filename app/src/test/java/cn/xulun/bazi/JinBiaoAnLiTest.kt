@@ -2233,6 +2233,35 @@ class JinBiaoAnLiTest {
         assertTrue("丙戌运走戌——基本活不成（凶）", jb.yuns[4].verdict == JinBiaoVerdict.XIONG)
     }
 
+    // ── 案八十二 · 己未 壬申 庚午 丁亥（1979-08-31 亥时，乾）——子女章廿五例·印护官 ──
+
+    @Test
+    fun `案八十二 乾 己未壬申庚午丁亥 印贴食护官解放官百分之百有儿子富贵得子 走南方事业发财 儿子有出息`() {
+        val bazi = chart(1979, 8, 31, 22)
+        assertTrue(bazi.fullBazi.startsWith("己未 壬申 庚午 丁亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("辛未(1987)", "庚午(1997)", "己巳(2007)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("建禄当令秋金身旺——印护官格（己贴壬看住食伤——把官给解放了：身旺是用官的）",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.FIRE)
+        assertTrue("取用依据含印看住食伤不使犯官、走官地事业发财、儿子有出息",
+            jb.quYongBasis.contains("不让他犯官去") && jb.quYongBasis.contains("事业") &&
+                jb.quYongBasis.contains("儿子也有出息"))
+
+        // 子女：午亥暗克非冲不拔根＋壬克丁隔开＋印护官解放——百分之百有儿子（富贵得子）
+        val zn12 = jb.ziNv!!
+        assertTrue("必有儿", zn12.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含暗克非冲不拔根、把官给解放了、百分之百有儿子、富贵得子、辟谬",
+            zn12.basis.contains("暗克非冲不拔根") && zn12.basis.contains("把官给解放了") &&
+                zn12.basis.contains("百分之百有儿子") && zn12.basis.contains("富贵得子") && zn12.basis.contains("辟谬"))
+
+        // 走南方官地——事业发财（吉）
+        assertTrue("丁卯丙寅南方官地——事业发财皆吉", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

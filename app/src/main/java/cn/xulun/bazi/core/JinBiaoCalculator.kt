@@ -970,6 +970,13 @@ object JinBiaoCalculator {
                 // 根气三途：本气根／藏干通根≥3（案三十）／坐下印得局压杀（案四十八：印6.5对杀4.5——印生身有依）。
                 !ruoZhongBianWang && guanS >= GUAN_WANG && hasBenQiRoot(bazi, guanEl) &&
                     (caiS < FOLLOW_MIN_SCORE || bazi.stems.none { it.element == caiEl }) &&
+                    // 案八十二戒：印干贴克食干而官透有力——印看住食伤不使犯官（把官给解放了）——
+                    // 身旺是用官的（有印护官制食——不取食制；对勘案五十：官全无而财护食——仍用食）
+                    !(bazi.stems.any { it != dayMaster && it.element == yinEl } &&
+                        bazi.stems.any { it != dayMaster && it.element == guanEl } &&
+                        bazi.stems.indices.any { i -> i != 2 && bazi.stems[i].element == shiEl &&
+                            ((i - 1 in bazi.stems.indices && bazi.stems[i - 1].element == yinEl) ||
+                                (i + 1 in bazi.stems.indices && bazi.stems[i + 1].element == yinEl)) }) &&
                     shiS >= FOLLOW_MIN_SCORE &&
                     (hasBenQiRoot(bazi, biEl) || (bazi.dayPillar.branch.element == yinEl && yinS > guanS)) -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
@@ -1023,6 +1030,17 @@ object JinBiaoCalculator {
                             append("；官杀两透本赖混杂加力（官弱喜混杂），比肩合去其一——不宜合（愈合官愈弱）；幸被合之干坐强根（壬坐申金旺）合而不化（若化${yinEl.chinese}成印即无情）——走一路金水之运把官杀补起来亦发")
                         }
                     },
+                )
+                // 案八十二·印护官型：食干克官干而印干贴克食干（己贴壬之属）——印看住食伤不使犯官
+                // （把官给解放了）——身旺是用官的：走官地（南方）事业发财；对勘案五十（官全无——财护食用食）
+                guanS >= FOLLOW_MIN_SCORE && bazi.stems.any { it != dayMaster && it.element == guanEl } &&
+                    bazi.stems.any { it != dayMaster && it.element == yinEl } &&
+                    bazi.stems.indices.any { i -> i != 2 && bazi.stems[i].element == shiEl &&
+                        ((i - 1 in bazi.stems.indices && bazi.stems[i - 1].element == yinEl) ||
+                            (i + 1 in bazi.stems.indices && bazi.stems[i + 1].element == yinEl)) } -> Choice(
+                    JinBiaoQuYongWay.PEI_CAI, guanEl,
+                    "印护官格（案八十二）：身旺无争议——食干克官干而**印干贴克食干（印看住食伤、不让他犯官去——把官给解放了）**：身旺是用官的。" +
+                        "**印护官主要关系事业**（有伤官犯官、有印看着食伤——走官地〔南方〕事业上肯定发财）；又关系**儿子的学习与将来发展**（印看伤官＝给儿子一护卫：好条件、留遗产、教学习——捣乱儿子的东西全被印克了：**不但生儿子，儿子也有出息——儿子得你的福气**）。伤官被印看住＝有教养之人（官代表国家法律——管住不安分的伤官、遵纪守法看书学习——**给儿子做榜样、给后代积德**——一环扣一环）",
                 )
                 // 案五十四·身旺食伤喜生财而财有力（财有本气根，或得月令之气——案六十五：戌月秋金有气，
                 // 「即使是寅午戌也是秋天——烧再大的火，我的金也是有气的，像夏天下再大的雨天也是热的」；
@@ -1296,7 +1314,8 @@ object JinBiaoCalculator {
                                 !bazi.stems.any { it.element == guanEl } && !hasBenQiRoot(bazi, guanEl) -> ZN(caiEl, false, false,
                                 "**羊刃肆逞**（刃当令带印生〔带源头的羊刃〕＋飞刃透干〔羊刃飞到天上叫飞刃〕——贴着财克，远重于普通劫）而**无官杀制刃——没有这个功能：大运走的再好，也生不出来儿子**。财旺没错（还有食伤生财——俩人都旺）——**但财旺只代表财富还可以：财就是我的精卵、是我的气血——羊刃给我捣乱、破坏成分，就生不出来**。" +
                                     "**投胎论：申酉这俩儿子都过来投胎来了，但地支都是劫的——在我这待不住：生的也得流产，或者说童子命、或早年克子——只要他生了，肯定要克子的。没有这个功能，即使生了也得没了**（对勘案七十三：异性小刀轻克——没那么严重；本案羊刃带源飞刃——功能废）")
-                            guanS >= GUAN_WANG || bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl } -> ZN(guanEl, true, false, "身旺财为子而**比劫夺财**——官杀克劫解放财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
+                            guanS >= GUAN_WANG || bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl } -> ZN(guanEl, true, false,
+                                "身旺财为子（财没露）而**比劫夺财**——官杀克劫解放财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**。**暗克非冲不拔根**（如午亥之克——不是贴身的冲克：若亥换成子才叫拔根，午亥只作丁根弱论）；食神克官而**印贴克食神护官（把官给解放了）——百分之百有儿子**；再走官地（南方）之运——**直接锁定不可能没儿子（富贵得子）**。**不但生儿子，儿子也有出息**：印看住伤官＝给儿子一护卫（好条件、留遗产、教学习——捣乱儿子的东西全被印克了，儿子得福气）；**印护官主要关系事业**（身旺用官、印看食伤不使犯官——走官地事业发财）。**辟谬**：穿一下变女孩、阳男阴女之说——与生男生女无关（案八十二）")
                             // 案七十二·明暗子星＋信号投胎论：官透而虚（甚至被化）然无贴克——儿子在这飘着等投胎：
                             // 看大运（运帮子星＝接收得到信号就能生；运全克子星＝接收不到、生不出来；
                             // 贴克则不看运——功能废吃药也不管事）。明以官杀为子，暗仍以财星为子（官为护财而设）
