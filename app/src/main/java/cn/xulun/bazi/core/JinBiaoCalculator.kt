@@ -1326,7 +1326,15 @@ object JinBiaoCalculator {
                 val shiIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == shiEl }
                 // 财干与（比劫透干或日主）相邻＝贴克；食伤透干居比劫与财之间＝通关隔开（案六五戊隔——不贴克）
                 val keZhuIdxs = biIdxs + 2
-                val tieKe = biIdxs.isNotEmpty() && caiIdxs.isNotEmpty() &&
+                // 案九十一·劫合化财（财变没了）：财干被劫干合而化神得势（丁壬合化木——化神局）
+                // ——财变没了＋劫通根有力：生不出儿子只能生闺女；财是情缘线——财断克夫（念头论）
+                val caiIdx91 = caiIdxs.firstOrNull { ci ->
+                    val partner = GAN_HE[bazi.stems[ci]]
+                    partner != null && bazi.stems.anyIndexed { j, o -> j != 2 && j != ci && o == partner && o.element == biEl }
+                }
+                val huaShen91 = Element.entries.firstOrNull { el -> el != caiEl && el != biEl && partyScore(bazi, el) >= 6.0 }
+                val jieHeHuaCai = caiIdx91 != null && huaShen91 != null && biS >= FOLLOW_MIN_SCORE
+                val tieKe = !jieHeHuaCai && biIdxs.isNotEmpty() && caiIdxs.isNotEmpty() &&
                     caiIdxs.any { ci -> keZhuIdxs.any { k -> kotlin.math.abs(ci - k) == 1 } } &&
                     !caiIdxs.any { ci ->
                         keZhuIdxs.any { k ->
@@ -1336,6 +1344,8 @@ object JinBiaoCalculator {
                         }
                     }
                 when {
+                    caiS > 0.0 && jieHeHuaCai -> ZN(caiEl, false, true,
+                        "身旺财为子而**财干被劫干合化（${bazi.stems[caiIdx91!!].chinese}与劫合化${huaShen91!!.chinese}——化神得势，财变没了）**：劫通根有力（壬通根两亥之属）把财克了——**生不出儿子，只能生闺女**（案九十一）。**财是命中情缘线，男女财星不可断；情线一断财门关，男女皆是半路缘**——财是官杀（夫/六亲星）唯一的念头：**把念头去了就要克夫**（六亲死亡念头论：星弱被克不死——**把六亲星的念头克死了才死**——夫星全靠财生这口气，财被合化变没了＝希望没了；知道这点去离婚没事，90%去了念头要出人命）")
                     caiS > 0.0 && tieKe -> {
                         val guanJiu = guanS >= GUAN_WANG ||
                             bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl }

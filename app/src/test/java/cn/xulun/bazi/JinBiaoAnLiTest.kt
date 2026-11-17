@@ -2477,6 +2477,28 @@ class JinBiaoAnLiTest {
                 zn20.basis.contains("B超"))
     }
 
+    // ── 案九十一 · 丁未 壬寅 癸亥 癸亥（1967-02-28 亥时，坤）——婚姻章开讲·情缘线 ──
+
+    @Test
+    fun `案九十一 坤 丁未壬寅癸亥癸亥 两亥帝旺身强用财 丁壬合化木财变没了 劫有力生不出儿子只能生闺女 财是情缘线克夫念头论`() {
+        val bazi = chart(1967, 2, 28, 22)
+        assertTrue(bazi.fullBazi.startsWith("丁未 壬寅 癸亥 癸亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸卯(1969)", "甲辰(1979)", "乙巳(1989)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("两亥帝旺＋癸透——身强有力胜任财官", jb.strength == DayStrength.STRONG)
+
+        // 子女：财干丁被劫干壬合化木（化神得势财变没了）＋劫通根有力——生不出儿子只能生闺女
+        val zn21 = jb.ziNv!!
+        assertTrue("无儿有女（劫合化财——财变没了）", zn21.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("判据含财干被劫干合化、只能生闺女、财是情缘线、念头",
+            zn21.basis.contains("财干被劫干合化") && zn21.basis.contains("只能生闺女") &&
+                zn21.basis.contains("财是命中情缘线") && zn21.basis.contains("念头"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
