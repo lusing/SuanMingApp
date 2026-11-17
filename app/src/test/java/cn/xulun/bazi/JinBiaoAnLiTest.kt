@@ -1805,6 +1805,36 @@ class JinBiaoAnLiTest {
         assertTrue("丁亥运北方化杀——提升之运吉", jb.yuns[3].verdict == JinBiaoVerdict.JI)
     }
 
+    // ── 案六十五 · 丙寅 戊戌 丙午 庚寅（1986-10-29 寅时，乾）——子女章八例·季节至上 ──
+
+    @Test
+    fun `案六十五 乾 丙寅戊戌丙午庚寅 戌月秋金有气季节至上 得气帮得起用财 庚子去刃病 食伤隔劫更可以生儿子`() {
+        val bazi = chart(1986, 10, 29, 4)
+        assertTrue(bazi.fullBazi.startsWith("丙寅 戊戌 丙午 庚寅"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己亥(1990)", "庚子(2000)", "辛丑(2010)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("寅午戌三合火局然戌月秋金有气——身旺食伤生财用神财庚（得月令之气）",
+            jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && jb.yongShenElement == Element.METAL)
+        assertTrue("取用依据含季节至上（夏雨不冷）、月令季节＞局势",
+            jb.quYongBasis.contains("得月令之气") && jb.quYongBasis.contains("季节至上"))
+
+        // 子女：比劫被食伤隔开＋财得月气——更可以生儿子（对勘案六二无气帮不起）
+        val zn = jb.ziNv!!
+        assertTrue("必有儿", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含隔劫不贴克、更可以生儿子、得气帮得起无气帮不起",
+            zn.basis.contains("隔着——不贴克") && zn.basis.contains("更可以生儿子") &&
+                zn.basis.contains("得气帮得起，无气帮不起"))
+
+        // 庚子运冲去午刃之病——学习好财运好（吉）；辛丑北方金水帮财吉
+        assertTrue("庚子运去羊刃病——吉", jb.yuns[1].verdict == JinBiaoVerdict.JI)
+        assertTrue("庚子运标注去刃病", jb.yuns[1].items.any { it.action.contains("去掉这个病") })
+        assertTrue("辛丑运帮财——吉", jb.yuns[2].verdict == JinBiaoVerdict.JI)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

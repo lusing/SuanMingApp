@@ -939,12 +939,17 @@ object JinBiaoCalculator {
                         }
                     },
                 )
-                // 案五十四·身旺食伤喜生财而财有力（财有本气根、当令有源——戌生金秋金相）——用神即财星；
+                // 案五十四·身旺食伤喜生财而财有力（财有本气根，或得月令之气——案六十五：戌月秋金有气，
+                // 「即使是寅午戌也是秋天——烧再大的火，我的金也是有气的，像夏天下再大的雨天也是热的」；
+                // 月令季节＞局势，戌换他支金就完了）——用神即财星；
                 // 无枭夺食之病（印<印坏线——案五十印旺夺食仍用食伤金，财为药不为用）
-                shiS >= FOLLOW_MIN_SCORE && hasBenQiRoot(bazi, caiEl) && yinS < YIN_HUAI -> Choice(
+                shiS >= FOLLOW_MIN_SCORE && (hasBenQiRoot(bazi, caiEl) ||
+                    branchHiddenStems.getValue(monthBranch).any { it.element == caiEl }) && yinS < YIN_HUAI -> Choice(
                     JinBiaoQuYongWay.SHI_CAI_YONG_CAI, caiEl,
                     buildString {
-                        append("身旺食伤喜生财（案五十四）：身旺无官杀、食伤有力（党力${format(shiS)}）而**财星有力**（${caiEl.chinese}有本气根、得令有源——${shiEl.chinese}食伤贴生）——**用神肯定就是财星**")
+                        append("身旺食伤喜生财（案五十四/六十五）：身旺无官杀、食伤有力（党力${format(shiS)}）而**财星有力**（${caiEl.chinese}" +
+                            (if (hasBenQiRoot(bazi, caiEl)) "有本气根、得令有源" else "**得月令之气**——季节至上：局虽${biEl.chinese}旺，${monthBranch.chinese}月${caiEl.chinese}仍有气（如夏雨不冷）；月令季节＞局势，${monthBranch.chinese}换他支${caiEl.chinese}就完了") +
+                            "——${shiEl.chinese}食伤贴生）——**用神肯定就是财星**")
                         append("；盖头之劫无碍（毕竟当令食伤生之，${caiEl.chinese}还是旺的）")
                         val biTou = bazi.stems.filter { it != dayMaster && it.element == biEl }
                         if (biTou.isNotEmpty()) {
@@ -1155,7 +1160,8 @@ object JinBiaoCalculator {
                         // 比劫夺财（重夺／地支得局——财虽有根而地支不载）——官旺救或食伤得局化劫
                         when {
                             guanS >= GUAN_WANG -> ZN(guanEl, true, false, "身旺财为子而**比劫夺财**——官杀旺（克劫有力）解放财：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
-                            shiS >= GUAN_WANG && shiS >= biS -> ZN(shiEl, true, false, "身旺财为子而比劫夺财——**食伤得局完全把比劫化了**（劫不至重、间接解放财）：**还能有儿子**（案六十补笔）")
+                            shiS >= GUAN_WANG && shiS >= biS -> ZN(shiEl, true, false,
+                                "身旺财为子而比劫夺财——**食伤得局完全把比劫化了**（劫不至重、间接解放财；比劫在年上、中间食伤${shiEl.chinese}隔着——不贴克）：**还能有儿子——更可以生儿子**（财得月令之气，帮的时候更旺；**对勘案六十二**：虚透无气之财——只因无比劫克才生、运过即损——**主要就是看季节：得气帮得起，无气帮不起**）（案六十补笔）")
                             caiS > 0.0 && shiS > 0.0 -> ZN(caiEl, false, true,
                                 "身旺财为子而**比劫地支得局夺财——财虽有根而地支不载**（终究土得局）；官弱救不动、食伤弱化不动——**没生儿子**；然有食伤生财（财透得气）——**有生育能力，生女儿不生儿**；运注：子星得地之运（如亥水之属）可生儿；若火土局之运生子——必是闺女（火生土旺，财不载）")
                             else -> ZN(caiEl, false, false, "身旺财为子而**比劫夺财、官救食化俱无**——**没儿子**")
@@ -1439,6 +1445,7 @@ object JinBiaoCalculator {
             yongCai = choice.way == JinBiaoQuYongWay.SHI_CAI_YONG_CAI,
             biTouGan = bazi.stems.filterIndexed { i, s -> i != 2 && s.element == biEl },
             yongWuLi = yongWuLiHua,
+            renZhi = YANG_REN[dayMaster],
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -1748,6 +1755,16 @@ object JinBiaoCalculator {
         val yongCai: Boolean = false,          // 案五十四：用财局——运支为透干比劫之禄/长生根＝比劫见根，死亡级大祸
         val biTouGan: List<HeavenlyStem> = emptyList(), // 透干比劫（不含日主）
         val yongWuLi: Boolean = false,         // 案五十六：用神被三会化无力——泄耗亦穷困（不作中平），官杀克用神＝死亡
+        val renZhi: EarthlyBranch? = null,     // 案六十五：日主（阳干）之羊刃支——在局为病，运支冲之＝去刃病吉
+    )
+
+    /** 阳干羊刃支（甲刃卯、丙戊刃午、庚刃酉、壬刃子；阴干无刃）。 */
+    private val YANG_REN: Map<HeavenlyStem, EarthlyBranch> = mapOf(
+        HeavenlyStem.JIA to EarthlyBranch.MAO,
+        HeavenlyStem.BING to EarthlyBranch.WU,
+        HeavenlyStem.WU to EarthlyBranch.WU,
+        HeavenlyStem.GENG to EarthlyBranch.YOU,
+        HeavenlyStem.REN to EarthlyBranch.ZI,
     )
 
     /** 单步大运评断（含逐年流年；流年同用大运之档位口径，细分待壬寅专题）。[zhiBureauEl]＝连行方局之印比覆写；[forceJI]＝用印局印比连行方局整运作吉。 */
@@ -1838,6 +1855,11 @@ object JinBiaoCalculator {
                 // 局神克用神→克掉用神就要出事（伤官见官为祸百端之属）；局神为用神之印→用神得局大发（案十三吉向）；
                 // 局神为药神（通关解病，案廿二申子辰水局泄金生木）→不作凶论——药神到一样富贵
                 val sanHeChengEl = if (i == 1) sanHeCompletedEl(zhi, chartBranches) else null
+                // 案六十五·去刃病：用财局而**阳刃支在局**为病——运支六冲刃支＝大运来药去掉这个病
+                // （十几岁庚子运去掉羊刃病：学习好、上班后财运好——就在好运上；
+                //  案五四戒：禄支被冲非去刃病——平常论）
+                val quRenBing = i == 1 && ctx.yongCai && ctx.renZhi != null &&
+                    ctx.renZhi in chartBranches && zhi == LIU_CHONG[ctx.renZhi]
                 val sanHeCheng = sanHeChengEl != null && sanHeChengEl!!.controls == ctx.yongEl &&
                     sanHeChengEl !in ctx.favorEls && sanHeChengEl !in ctx.zhongPingEls
                 // 案五十三·去忌神：运干克去透干忌神——去忌神即去病，用神无克，去忌之运最好
@@ -1858,6 +1880,7 @@ object JinBiaoCalculator {
                 val shunXieGan = ctx.wangJiFamily && i == 0 && el == ctx.shiEl
                 val note = when {
                     heChong -> "运支${zhi.chinese}合去冲神${ctx.chongShen!!.chinese}——用神绝处逢生，彻底有情（把印绶救起来了）"
+                    quRenBing -> "运支${zhi.chinese}冲去${ctx.biEl.chinese}刃之病——大运来药去掉这个病：学习好、财运好（就在好运上）"
                     fanWang -> "官干直克身——犯旺激怒（权在一人，不可触犯），大凶"
                     zhiDuo -> "地支食伤被印枭夺——地支不能泄，凶"
                     shunXieGan -> "天干泄秀（天干无${ctx.yinEl.chinese}不夺）——顺其旺势，可行"
@@ -1876,7 +1899,7 @@ object JinBiaoCalculator {
                     element = el,
                     stance = stance,
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
-                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong,
+                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing,
                     pingOverride = huaSha != null && huaSha.first == false,
                     xiongOverride = fanWang || zhiDuo || sanHeCheng || biJianGen,
                 )
