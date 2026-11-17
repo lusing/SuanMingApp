@@ -565,6 +565,27 @@ object JinBiaoCalculator {
             strength = DayStrength.WEAK
         }
 
+        // ── 旺中变弱（案九十三）：未月终究一印（然与丑月戌月之印不一样——夏土）＋时支禄本可论旺，
+        //    然地支拱财局而财透干引化（乙木露干两亥拱未——亥未拱木：拱局透干则实＝财得局）——
+        //    财坏印＋食伤旺泄＋官杀克身：印星为用而财得局坏之——旺中变弱（运填拱则坏印成真）
+        val gongCaiTrio = listOf(
+            setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+            setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+            setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+            setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+        ).firstOrNull { (trio, el) ->
+            el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { it in bazi.branches }
+        }
+        val gongCaiYinHua = strength == DayStrength.STRONG &&
+            bazi.monthPillar.branch.element == yinEl &&
+            !bazi.stems.any { it != dayMaster && it.element == yinEl } &&
+            bazi.stems.any { it != dayMaster && it.element == caiEl } &&
+            gongCaiTrio != null &&
+            shiS >= FOLLOW_MIN_SCORE && guanS >= FOLLOW_MIN_SCORE
+        if (gongCaiYinHua) {
+            strength = DayStrength.WEAK
+        }
+
         // ── 弱中变旺（案十定则；案廿六护栏）：弱基调而日主坐贴身印比本气／月干印比透，
         //    且月令敌党之支被「印比之支」贴身泄克（官被泄克转衰）——弱中变旺。
         //    护栏①财克印不算（档五十一仍身弱用印）；护栏②敌党压倒性（≥1.5×印比）不翻——
@@ -866,6 +887,13 @@ object JinBiaoCalculator {
                             val keBingEl = Element.entries.first { it.controls == caiEl }
                             append("；**财贴克印（${caiEl.chinese}贴${yinEl.chinese}）——财有根有力（得生），即原局之病，原局无解决之物**：原局不行；**大运好给他解决了就一样行一样好——走${keBingEl.chinese}去病之运（如北方${keBingEl.chinese}地）＝有病得药，要加分：化官生印很厉害，很大的格局**——好运上学习好工作好；往后走生${caiEl.chinese}之运（助病）——不行：肯定破大财，前途不光明。**财富值一定取决于印的强弱、印的力量**（用神印之力）")
                         }
+                        // 案九十三·拱财引化坏印：亥未拱财而乙木露干引化（拱局透干则实——财得局）——
+                        // 印星为用最不喜欢财星得局来财坏印；财为妻而坏用神——妻起最坏的作用：
+                        // 克妻两义（一离婚、一丧妻）；口诀「男坐官星官为妻，官局三合丧贤妻」条件辨析
+                        if (gongCaiYinHua) {
+                            val gongZhis93 = gongCaiTrio!!.first.filter { it in bazi.branches }.distinct().joinToString("") { it.chinese }
+                            append("；**拱财引化·财坏印（案九十三）**：${monthBranch.chinese}月终究一印（然与丑月之印、戌月之印不一样——夏土）${if (luGen) "＋时支${luZhi.chinese}禄" else ""}，本可论旺；然地支${gongZhis93}拱${caiEl.chinese}财局而${caiEl.chinese}透干引化——**拱局透干则实：财得局**（${shiEl.chinese}食伤本旺还会了财局，更兼${guanEl.chinese}官杀克身）——**旺中变弱：印星为用；印星为用，最不喜欢财星得局来财坏印**。**婚姻·财星三合看妻**：以${caiEl.chinese}财为妻，财星三合≠必丧妻——**命中有印，财坏印了（或财党杀了），这时才丧妻**；本案${gongZhis93}拱财坏${monthBranch.chinese}印——**妻子起了最坏的作用（妻子让命主很难受）：一定要克妻——离婚或丧妻两义**。「男坐官星官为妻，官局三合丧贤妻」说的本是**财星党杀为日主所忌**——**不是官局三合就丧贤妻：一定按局里的喜用断**（日主身强有力量，反喜财星党杀，官局三合来增强官杀之力——为好；日主身衰财杀强旺，财杀还这么大力量——才要克妻或离婚）")
+                        }
                         if (bazi.dayPillar.branch.element == yinEl) {
                             append("；坐下有印（${bazi.dayPillar.branch.chinese}）——没有此印，这么旺的杀就要克死日主；有坐下印就得了贵：天干杀来克也没关系，坐下印持续生即可。坐下有印就叫有情——别处之气皆向我坐下生拱（杀生印），外界有情就加分，不用管印之旺弱，一样得贵——这叫情分；原命财杀旺，一定要走帮身运才能好")
                             if (guanS >= 10.0) {
@@ -895,7 +923,7 @@ object JinBiaoCalculator {
                         // 案四十七·制杀太过兼日主过泄：食伤有力泄重而官杀随季节虚（辰月春天木旺土虚）——
                         // 一定要走印运：一是护杀（克食），二是帮身（生身）
                         if (shiS >= GUAN_WANG && guanS >= FOLLOW_MIN_SCORE && shiS * 1.6 >= guanS) {
-                            append("；食伤得局（${format(shiS)}）——明面上制杀太过（${guanEl.chinese}官杀虚：辰土虽为根，春天木旺土虚）；更患日主过泄（食伤泄体、日主没那么旺）——**一定要走印运：一是护杀（印克食），二是帮身（印生身）**".replace("**", ""))
+                            append("；食伤得局（${format(shiS)}）——明面上制杀太过（${guanEl.chinese}官杀虚${if (monthBranch == EarthlyBranch.CHEN) "：辰土虽为根，春天木旺土虚" else ""}）；更患日主过泄（食伤泄体、日主没那么旺）——**一定要走印运：一是护杀（印克食），二是帮身（印生身）**".replace("**", ""))
                         }
                         // 案四十六·制杀太过：需用杀而食伤制之将绝尚有余气——贫夭之基；喜印克食护卫七杀＋生身
                         if (shiS >= 6.0 && guanS < GUAN_WANG && guanS > 0.0) {
@@ -1506,6 +1534,17 @@ object JinBiaoCalculator {
                         val caiTieKeYin = caiIdxs2.isNotEmpty() && yinIdxs2.isNotEmpty() &&
                             yinIdxs2.all { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
                         when {
+                            // 案九十三·拱财坏印未贴克档：财拱局透干引化得局（亥未拱木乙露干）而印当令——
+                            // 财未透干贴克印干（隔不贴克）＝生育功能在：生得出儿子（走官杀运生儿子——印星应期）；
+                            // 然拱财坏用神印——财为妻起最坏的作用：他得离婚；
+                            // 反事实：印边之支若换作两财本气支贴克——不光离婚，儿子也生不出来
+                            gongCaiYinHua && !caiTieKeYin &&
+                                !bazi.branches.anyIndexed { i, br ->
+                                    br.element == yinEl &&
+                                        ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl) ||
+                                            (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl))
+                                } -> ZN(yinEl, true, false,
+                                "**身衰印做儿（案九十三）**：${guanEl.chinese}官杀克身＋${shiEl.chinese}食伤旺泄——日主转弱，${yinEl.chinese}印当令为儿。财虽得局（${gongCaiTrio!!.first.filter { it in bazi.branches }.distinct().joinToString("") { it.chinese }}拱${caiEl.chinese}——拱局透干则实）而坏印，然**财毕竟没有露出来贴着克**（${caiEl.chinese}干隔位不贴印、${yinEl.chinese}印本气支亦未被${caiEl.chinese}本气支贴克）——**生育功能在：生得出儿子**（${monthBranch.chinese}土当令，他可以生出来儿子）。**运注：走${guanEl.chinese}运的时候生儿子**（官杀生${yinEl.chinese}印——印星应期）。**然拱财坏${monthBranch.chinese}印——财为妻而毁用神（妻子起了最坏的作用，妻子让命主很难受）：他得离婚**（克妻两义：一离婚、一丧妻）。**反事实**：${monthBranch.chinese}边之支若换成两${caiEl.chinese}（财本气支贴克印本气支）——**他不光离婚，而且也生不出来儿子**（贴克＝功能废）")
                             // 案七十三·异性轻克档：印本气根被财支贴克而阴阳异性（酉是小刀寅是树——小刀刻不断树）
                             // ＋印有官杀贴生（壬坐寅之属）——弱而不废：弱代表穷，不代表生不了儿子（可以生；
                             // 若同性重克〔大申金贴寅〕则废——生不了）。印弱＝事业层次不行；儿子学习随印运
@@ -2299,6 +2338,8 @@ object JinBiaoCalculator {
                     ).any { (trio, el) -> el == ctx.shiEl && zhi in trio &&
                         chartBranches.count { it in trio } >= 2 }
                 val tianGong = i == 1 && zhi.element == ctx.caiEl &&
+                    // 案九十三戒：所填财局之神克用神（拱财坏印之局——填拱＝坏印成真）不作财气通门户论
+                    ctx.caiEl.controls != ctx.yongEl &&
                     listOf(
                         setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
                         setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
@@ -2336,7 +2377,8 @@ object JinBiaoCalculator {
                     shunXieGan -> "天干泄秀（天干无${ctx.yinEl.chinese}不夺）——顺其旺势，可行"
                     yinJuBu -> "运支合补印局（${zhi.chinese}与局支合成${ctx.yinEl.chinese}局）——亥卯未拱局补成，用神得局大发"
                     biJianGen -> "运支${zhi.chinese}为透干比劫${ctx.biTouGan.joinToString("") { it.chinese }}之根（禄/长生）——比劫见根变强，复与局支拱${ctx.biEl.chinese}局——通关之神被焚（${ctx.biEl.chinese}旺则${ctx.shiEl.chinese}燥，燥${ctx.shiEl.chinese}不生${ctx.caiEl.chinese}）：比劫直接克掉用神${ctx.caiEl.chinese}——大凶（死亡级大祸）；若局有官星则官克比劫护财，不至于此（配置论）"
-                    sanHeCheng -> "运支${zhi.chinese}填实${sanHeChengEl!!.chinese}三合局（原局拱合待成——局中两支早等着${zhi.chinese}来，${sanHeChengEl.chinese}旺了）——局神得势克掉用神，就要出事（伤官见官为祸百端）"
+                    sanHeCheng -> "运支${zhi.chinese}填实${sanHeChengEl!!.chinese}三合局（原局拱合待成——局中两支早等着${zhi.chinese}来，${sanHeChengEl.chinese}旺了）——局神得势克掉用神，就要出事（伤官见官为祸百端）" +
+                        (if (sanHeChengEl == ctx.caiEl && ctx.yongEl == ctx.yinEl) "；所填乃坏印之财局——**财局兑现＝财坏印成真（财为妻而毁用神——克妻之应之属：离婚或丧妻）**" else "")
                     quJiShen && ctx.yongCai -> "运干${gan.chinese}官杀克透干比劫${ctx.jiShenTouGans.joinToString("") { j -> j.chinese }}——**官护财**（用财怕比劫夺财，首要找官：有官就没事，没官就不行——干护支凶仍以支论）"
                     quJiShen -> "运干${gan.chinese}克去透干忌神${ctx.jiShenTouGans.joinToString("") { j -> j.chinese }}——去忌神即去病，用神无克（去忌之运最好）"
                     huaSha != null -> huaSha.second

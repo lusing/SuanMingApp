@@ -2523,6 +2523,43 @@ class JinBiaoAnLiTest {
         assertTrue("必有儿（官杀克劫护财——不看大运）", zn22.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
     }
 
+    // ── 案九十三 · 乙亥 癸未 辛亥 丁酉（1995-07-19 酉时，乾）——婚姻章·财星三合看妻 ──
+
+    @Test
+    fun `案九十三 乾 乙亥癸未辛亥丁酉 亥未拱财乙透引化旺中变弱印星为用 拱财坏印克妻两义 印做儿走火运生儿子但他得离婚`() {
+        val bazi = chart(1995, 7, 19, 18)
+        assertTrue(bazi.fullBazi.startsWith("乙亥 癸未 辛亥 丁酉"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬午(1999)", "辛巳(2009)", "庚辰(2019)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("未月印＋酉禄本可论旺，然亥未拱财乙透引化（拱局透干则实——财得局坏印）——旺中变弱",
+            jb.strength == DayStrength.WEAK)
+        assertTrue("印星为用（未土印）", jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.EARTH)
+        assertTrue("取用依据含拱局透干则实、最不喜欢财星得局来财坏印、克妻两义、口诀辨析",
+            jb.quYongBasis.contains("拱局透干则实") && jb.quYongBasis.contains("最不喜欢财星得局来财坏印") &&
+                jb.quYongBasis.contains("离婚或丧妻两义") && jb.quYongBasis.contains("不是官局三合就丧贤妻"))
+        assertTrue("财星三合看妻：财坏印了或财党杀了这时才丧妻", jb.quYongBasis.contains("这时才丧妻"))
+
+        // 子女：身衰印做儿——财没露出来贴着克（隔不贴克）功能在：生得出儿子、走火运生儿子；然拱财坏印他得离婚
+        val zn23 = jb.ziNv!!
+        assertTrue("必有儿（印做儿·未土当令）",
+            zn23.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER && zn23.ziEl == Element.EARTH)
+        assertTrue("判据含财毕竟没有露出来贴着克、走火运的时候生儿子、他得离婚、反事实",
+            zn23.basis.contains("没有露出来贴着克") && zn23.basis.contains("走火运的时候生儿子") &&
+                zn23.basis.contains("他得离婚") && zn23.basis.contains("不光离婚，而且也生不出来儿子"))
+
+        // 老引擎对照（双引擎铁律）：七杀格食神制杀成格——癸为相神；金镖门以印为用、拱财坏印为病——同一颗癸两派一贵一贱
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎七杀格·食神制杀", old.geJuName.contains("七杀格") && old.xiangShenRole.contains("食神制杀"))
+
+        // 己卯运填拱：坏印之财局兑现（不作财气通门户论）——凶
+        assertTrue("己卯运卯填亥未拱局——财局兑现坏印成真（克妻之应）",
+            jb.yuns[3].verdict == JinBiaoVerdict.XIONG && jb.yuns[3].items.any { it.action.contains("财坏印成真") })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
