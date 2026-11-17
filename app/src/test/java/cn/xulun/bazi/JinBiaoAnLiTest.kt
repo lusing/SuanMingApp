@@ -2107,6 +2107,33 @@ class JinBiaoAnLiTest {
         assertTrue("乙亥运标注去火存金破财", jb.yuns[4].items.any { it.action.contains("去火存金") && it.action.contains("老破财") })
     }
 
+    // ── 案七十七 · 壬寅 己酉 乙卯 壬午（1962-09-14 午时，乾）——子女章二十例·隔克不算克 ──
+
+    @Test
+    fun `案七十七 乾 壬寅己酉乙卯壬午 两禄被冲旺中变弱仍本强足以食制 卯隔克不算克一印独存功能在 百分之百有儿子 印运平庸木运处长`() {
+        val bazi = chart(1962, 9, 14, 12)
+        assertTrue(bazi.fullBazi.startsWith("壬寅 己酉 乙卯 壬午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚戌(1970)", "辛亥(1980)", "壬子(1990)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("两禄被酉冲克被午耗泄——旺中变弱（然本强足以食制有格局）", jb.strength == DayStrength.WEAK)
+        assertTrue("食神制杀格——用神火（午火护卫）", jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.FIRE)
+
+        // 子女：己贴年壬（财贴克一印）然时壬隔开未被贴克——隔克不算克：功能在——百分之百有儿子
+        val zn7 = jb.ziNv!!
+        assertTrue("必有儿（隔克不算克档）", zn7.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含隔克不算克、一印独存、百分之百有儿子、对勘案六十七",
+            zn7.basis.contains("隔克不算克") && zn7.basis.contains("一印独存") &&
+                zn7.basis.contains("百分之百有儿子") && zn7.basis.contains("案六十七"))
+
+        // 印运化杀亦解题——不过平庸算可以（中平非凶）；甲寅乙卯木运好运（快退休当处长）
+        assertTrue("辛亥壬子癸丑印运——平庸算可以（中平）", listOf(1, 2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.PING })
+        assertTrue("甲寅乙卯木运好运——当处长", listOf(4, 5).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

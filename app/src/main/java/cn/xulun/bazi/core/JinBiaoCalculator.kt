@@ -1236,8 +1236,9 @@ object JinBiaoCalculator {
             // 没有生儿子的功能——能不能生儿子人一出生就决定了（大运走水也生不出来）
             val caiIdxsW = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
             val yinIdxsW = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+            // 案七十七戒·隔克不算克：须**所有**印干皆被财干贴克才功能废——一印被克而另一印隔开独存＝功能在
             val caiTieYin = caiIdxsW.isNotEmpty() && yinIdxsW.isNotEmpty() &&
-                caiIdxsW.any { ci -> yinIdxsW.any { yi -> kotlin.math.abs(ci - yi) == 1 } }
+                yinIdxsW.all { yi -> caiIdxsW.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
             data class ZN(val el: Element, val er: Boolean, val nv: Boolean, val text: String)
             // 案六十三·调候优先：寒暖特殊气象局——一切以寒暖为规范，不用分析生克：
             // 走东南暖运就是好——什么都有什么都顺——必然有儿子有孙子，没有缺陷
@@ -1360,7 +1361,7 @@ object JinBiaoCalculator {
                         val caiIdxs2 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
                         val yinIdxs2 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
                         val caiTieKeYin = caiIdxs2.isNotEmpty() && yinIdxs2.isNotEmpty() &&
-                            caiIdxs2.any { ci -> yinIdxs2.any { yi -> kotlin.math.abs(ci - yi) == 1 } }
+                            yinIdxs2.all { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
                         when {
                             // 案七十三·异性轻克档：印本气根被财支贴克而阴阳异性（酉是小刀寅是树——小刀刻不断树）
                             // ＋印有官杀贴生（壬坐寅之属）——弱而不废：弱代表穷，不代表生不了儿子（可以生；
@@ -1372,6 +1373,11 @@ object JinBiaoCalculator {
                                     bazi.stems.anyIndexed { j, s -> j != 2 && s.element == guanEl && bazi.branches[j] == br }
                             } -> ZN(yinEl, true, false,
                                 "**印为儿而印本气根被财支贴克——然异性之克不重（${caiEl.chinese}是小刀、${yinEl.chinese}是树——小刀刻不断树）＋官杀贴生（壬坐寅之属）：印只是弱，没有被彻底克坏——弱代表她穷，不代表她生不了儿子**（**是可以生儿子的**；若是大${caiEl.chinese}〔同性重克〕贴着克——命主就生不了儿子了）。**一切由印星决定**：印弱＝事业层次不行、财富值低（又走克印之运则贫穷）；印星是儿子——**印运即子运：儿子学习随印运**（走克印之运儿子学习差）")
+                            // 案七十七·隔克不算克档：财贴克一印而另一印隔开未被贴克——功能在：能生儿子
+                            caiIdxs2.isNotEmpty() && yinIdxs2.size >= 2 &&
+                                yinIdxs2.any { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } } &&
+                                yinIdxs2.any { yi -> caiIdxs2.none { ci -> kotlin.math.abs(ci - yi) == 1 } } -> ZN(yinEl, true, false,
+                                "**隔克不算克**：${caiEl.chinese}财贴克一印（年干），然**另一印隔开未被贴克——功能在：能生儿子**（虽是异性的克贴着克，也是有影响的——但一印被克一印独存，具备生儿子的功能）。**况且走印运（帮身化杀）——很确定可以生儿子：百分之百有儿子**（对勘案六十七：独印被有力之财贴克＝功能废；本案一印独存＝功能在——案七十七）")
                             caiTieKeYin -> ZN(yinEl, false, true,
                                 "官杀欺衰主有印化（**印为儿**），然**财贴着我的印来克**（财有力贴着克——螳螂捕蝉黄雀在后；忌神深重贴着我克——他给我捣乱干扰）：**生理上没有生男孩的功能、染色体就不对了**——即使大运解决这个病也一样生不出来儿子（八字程序先天受损，医院拍片也是一样——**解决了病也没有用：运去病不修复生育功能**）；走好运把印解放了——**能生个闺女**；若再走克${yinEl.chinese}之运（如南方火地）——**连闺女都生不出——必无子之命**（八字里男女都是一样看的——案六十七）")
                             keYinS >= 1.5 * yinS && keYinS > 0 -> ZN(yinEl, false, false, "官杀欺衰主有印化（印为儿），然**财坏印坏成**（螳螂捕蝉黄雀在后）——**没儿子**")
@@ -1463,6 +1469,14 @@ object JinBiaoCalculator {
                 }
             ) {
                 put(caiEl, "官杀已重（贴冲比劫之根），生官之地助忌——提升不了（提升在帮身化杀之运：泄金生木；火运制杀以威＝大层次——庚寅、甲午年之属）")
+            }
+            // 案七十七·食制局印运中平档（限双印透干且印克食伤〔水克火夺食〕型——壬壬一被克一独存之式；
+            // 案卅四禄根通关型不入此档）：标准格是食伤制杀——印运虽克食伤亦可化杀（解决了问题），
+            // 不过平庸、算可以（走差运当普通人、一般运比普通人稍强——八字有层次；事实：印运事业单位平庸小头，快退休走木运当处长）
+            if (choice.way == JinBiaoQuYongWay.ZHI_SHA && !tuiErQici && yinEl.controls == shiEl &&
+                yinS >= FOLLOW_MIN_SCORE && bazi.stems.count { it != dayMaster && it.element == yinEl } >= 2
+            ) {
+                put(yinEl, "印运化杀亦解题——然标准格是食伤制杀（印克食伤＝夺食）：**不过平庸、算可以**（不差不穷——走差运当普通人、一般运比普通人稍强）")
             }
             if (choice.way == JinBiaoQuYongWay.CAI_JIE_WEI) {
                 put(guanEl, "解围局行此稍差无大碍")
