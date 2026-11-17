@@ -503,6 +503,14 @@ object JinBiaoCalculator {
             (tiaoHouEl != null && bazi.branches.any { br -> br.element == tiaoHouEl && bazi.branches.count { it == LIU_CHONG[br] } >= 2 })
         val tiaoHou = tiaoHouEl != null && !(guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && luGen) && !heZhuHunZa && !tiaoHouGenShuangChong
 
+        // ── 旺中变弱（案六十九）：月令建禄（日主有力量）然官杀本气支两重冲比劫月支
+        //    （两酉冲一卯——比劫禄没有杀旺：日主有力量不假，但对立面敌人劲更大）——旺中变弱
+        if (strength == DayStrength.STRONG && bazi.monthPillar.branch.element == biEl &&
+            bazi.branches.count { it.element == guanEl && LIU_CHONG[it] == bazi.monthPillar.branch } >= 2
+        ) {
+            strength = DayStrength.WEAK
+        }
+
         // ── 旺中变弱（案六十八）：亥巳逢冲＝去火存金（水把火冲去、巳中庚金独存——火根转金根）
         //    ＋巳丑拱金／巳酉化金——金旺（财得局）——身旺经一系列反应旺中变弱（身弱财旺、财杀得局）
         //    结构性转化（冲去即去）——不比分数
@@ -738,7 +746,10 @@ object JinBiaoCalculator {
                 // 无根气而食神强制＝克泄交加，更穷困比普通人还差（贫夭负债）。
                 // 案四十四戒：坐下即印（众杀混行一仁可化之局）——归杀重用印，不归食制
                 bazi.dayPillar.branch.element != yinEl &&
-                (guanS >= GUAN_WANG && shiS >= FOLLOW_MIN_SCORE && shiS * 1.25 < guanS && (yinS < FOLLOW_MIN_SCORE || luGen) && shiS < 6.0 &&
+                    // 案六十九·食制以威建禄臂：官旺贴身而日主月令建禄（根强拿得起刀）＋食伤有本气支
+                    // （午一位制杀卫护身体——虽有点泄，究竟泄比克强：食神制杀有格局，出身大富）
+                (guanS >= GUAN_WANG && (shiS >= FOLLOW_MIN_SCORE ||
+                    (bazi.monthPillar.branch.element == biEl && hasBenQiRoot(bazi, shiEl))) && shiS * 1.25 < guanS && (yinS < FOLLOW_MIN_SCORE || luGen) && shiS < 6.0 &&
                     bazi.stems.filterIndexed { i, s -> i != 2 && s.element == shiEl }.none { sg ->
                         val p = GAN_HE[sg]
                         p != null && p.element == guanEl && bazi.stems.any { it == p }
@@ -1292,6 +1303,12 @@ object JinBiaoCalculator {
                                 (idx + 1 in bazi.branches.indices && bazi.branches[idx + 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx + 1])
                         }
                         when {
+                            // 案六十九·身体条件档：月令比劫根被两官支冲＋食伤贴泄＋无印——克泄交加
+                            // 身体不行（气血不足）：八字不具备生儿子功能——再有钱再格局也流产/生不了男孩
+                            bazi.monthPillar.branch.element == biEl &&
+                                bazi.branches.count { it.element == guanEl && LIU_CHONG[it] == bazi.monthPillar.branch } >= 2 &&
+                                hasBenQiRoot(bazi, shiEl) -> ZN(biEl, false, false,
+                                "**克泄交加·身体条件不行**（两${guanEl.chinese}贴身克＋${shiEl.chinese}食伤贴泄＋**无一印生扶**）：**生小孩得看身体条件——再有钱、身体不行气血不足也生不出来**。**八字就不具备生儿子这个功能：再有格局（食神制杀以威出身大富）也要流产、生不了男孩**——走好运也没用、吃再多补品保健品也没用（**没生出来不代表八字没格局**——两轨并行；怀孕流掉之应〔己亥年之类〕）。身衰印坐儿——没有印，就没有儿")
                             tieChong && guanS >= biS -> ZN(biEl, false, true,
                                 "**官杀欺衰主而无印——比劫子星之根被官杀贴身冲克**（贴冲＋辰酉合化金力大——忌神深重贴身克用神）：**没儿子，只能生女儿**——属于**没有这个能力和功能**（即使走印化杀之运，生的也不是儿子——运化忌只说明财运事业好了，**不能说明有儿子**；看子女跟看财运不一样——富贵贫贱与有没有儿子没有关系）")
                             biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "**官杀欺衰主，无印、比劫又扛不住**——**没儿子**（官杀无制化攻身——生了儿子也得夭折）")

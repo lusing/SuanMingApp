@@ -1918,6 +1918,30 @@ class JinBiaoAnLiTest {
         assertTrue("庚申辛酉西方运不行（负债）——凶", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
     }
 
+    // ── 案六十九 · 庚午 己卯 乙酉 乙酉（1990-03-21 酉时，坤）——子女章十二例·身体条件论 ──
+
+    @Test
+    fun `案六十九 坤 庚午己卯乙酉乙酉 两酉冲一卯日主有力量而敌人更有力 食神制杀以威有格局出身大富 身体不行无儿流产`() {
+        val bazi = chart(1990, 3, 21, 18)
+        assertTrue(bazi.fullBazi.startsWith("庚午 己卯 乙酉 乙酉"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阳年坤造逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("戊寅(1995)", "丁丑(2005)", "丙子(2015)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("两酉冲一卯——比劫禄没有杀旺：旺中变弱", jb.strength == DayStrength.WEAK)
+        assertTrue("根强拿得起刀——午一位制杀卫护身体：食神制杀以威有格局（出身大富）",
+            jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.FIRE)
+
+        // 子女：克泄交加无一印——身体条件不行：八字不具备生儿子功能（怀孕流掉——己亥年）
+        val zn = jb.ziNv!!
+        assertTrue("必无儿（身体条件档）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+        assertTrue("判据含身体条件、不具备功能、流产、没格局两轨",
+            zn.basis.contains("身体条件") && zn.basis.contains("不具备生儿子") &&
+                zn.basis.contains("流产") && zn.basis.contains("没生出来不代表八字没格局"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
