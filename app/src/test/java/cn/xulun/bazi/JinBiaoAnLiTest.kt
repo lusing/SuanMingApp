@@ -1861,6 +1861,36 @@ class JinBiaoAnLiTest {
         assertTrue("戊寅己卯庚辰寅卯辰支皆财地（发财运非凶）", listOf(3, 4, 5).all { jb.yuns[it].verdict != JinBiaoVerdict.XIONG })
     }
 
+    // ── 案六十七 · 丁卯 庚戌 癸丑 己未（1987-10-31 未时，坤）——子女章十例·财贴克印 ──
+
+    @Test
+    fun `案六十七 坤 丁卯庚戌癸丑己未 杀重化官生印财贴克印 忌神深重贴克运去病不修复生育程序 生闺女必无子`() {
+        val bazi = chart(1987, 10, 31, 14)
+        assertTrue(bazi.fullBazi.startsWith("丁卯 庚戌 癸丑 己未"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阴年坤造顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("辛亥(1990)", "壬子(2000)", "癸丑(2010)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("丑戌未三刑官杀重——化官生印用神庚金（身弱怕财坏印）",
+            jb.strength == DayStrength.WEAK && jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.METAL)
+        assertTrue("取用依据含财贴克印病药论、有病得药加分、财富取决于印",
+            jb.quYongBasis.contains("财贴克印") && jb.quYongBasis.contains("有病得药，要加分") &&
+                jb.quYongBasis.contains("财富值一定取决于印"))
+
+        // 子女：财贴克印——忌神深重贴克：运去病也不修复生育程序——生闺女、必无子
+        val zn = jb.ziNv!!
+        assertTrue("无儿有女（解放生女）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("判据含贴着我的印来克、生不出来儿子、八字程序、生闺女、必无子",
+            zn.basis.contains("贴着我的印来克") && zn.basis.contains("生不出来儿子") &&
+                zn.basis.contains("八字程序") && zn.basis.contains("能生个闺女") && zn.basis.contains("必无子之命"))
+
+        // 北方壬癸去丁病——好运学习好工作好；东方甲寅乙卯生火助病——破大财凶
+        assertTrue("壬子癸丑北方去病运皆吉", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("甲寅乙卯东方生火助病——凶", listOf(3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

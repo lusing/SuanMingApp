@@ -780,6 +780,16 @@ object JinBiaoCalculator {
                     JinBiaoQuYongWay.HUA_SHA, yinEl,
                     buildString {
                         append("杀重用印格（五理③·身衰遇官煞，枭印乃可化）：官党力 ${format(guanS)} 旺克我、身弱——必用印化杀生印出格局。杀重之时要化之以德，不能用食神强制杀：「身弱制杀以威，不若化之以德」")
+                        // 案六十七·财贴克印病药论：财干贴克印干（丁贴庚）——财有根有力为原局之病、原局无解：
+                        // 走克病之运（北方壬癸）＝有病得药要加分——化官生印很厉害，很大的格局
+                        val caiIdxsH = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+                        val yinIdxsH = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+                        if (caiIdxsH.isNotEmpty() && yinIdxsH.isNotEmpty() &&
+                            caiIdxsH.any { ci -> yinIdxsH.any { yi -> kotlin.math.abs(ci - yi) == 1 } }
+                        ) {
+                            val keBingEl = Element.entries.first { it.controls == caiEl }
+                            append("；**财贴克印（${caiEl.chinese}贴${yinEl.chinese}）——财有根有力（得生），即原局之病，原局无解决之物**：原局不行；**大运好给他解决了就一样行一样好——走${keBingEl.chinese}去病之运（如北方${keBingEl.chinese}地）＝有病得药，要加分：化官生印很厉害，很大的格局**——好运上学习好工作好；往后走生${caiEl.chinese}之运（助病）——不行：肯定破大财，前途不光明。**财富值一定取决于印的强弱、印的力量**（用神印之力）")
+                        }
                         if (bazi.dayPillar.branch.element == yinEl) {
                             append("；坐下有印（${bazi.dayPillar.branch.chinese}）——没有此印，这么旺的杀就要克死日主；有坐下印就得了贵：天干杀来克也没关系，坐下印持续生即可。坐下有印就叫有情——别处之气皆向我坐下生拱（杀生印），外界有情就加分，不用管印之旺弱，一样得贵——这叫情分；原命财杀旺，一定要走帮身运才能好")
                             if (guanS >= 10.0) {
@@ -1227,7 +1237,14 @@ object JinBiaoCalculator {
                     guQiS >= FOLLOW_MIN_SCORE && yinYouLi -> {
                         // 官杀欺衰主——除非有印：印为儿；螳螂捕蝉黄雀在后查财坏印；木坚金缺查子星所克过旺
                         val haoQueS = partyScore(bazi, yinEl.controls) // 子星所克之神过旺——木坚金缺（剩一点气生闺女）
+                        // 案六十七·财贴克印：财干贴克印干——忌神深重贴着我克：运去病也不修复生育程序
+                        val caiIdxs2 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+                        val yinIdxs2 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+                        val caiTieKeYin = caiIdxs2.isNotEmpty() && yinIdxs2.isNotEmpty() &&
+                            caiIdxs2.any { ci -> yinIdxs2.any { yi -> kotlin.math.abs(ci - yi) == 1 } }
                         when {
+                            caiTieKeYin -> ZN(yinEl, false, true,
+                                "官杀欺衰主有印化（**印为儿**），然**财贴着我的印来克**（忌神深重贴着我克——他给我捣乱干扰）：**即使大运帮我去病也一样生不出来儿子——八字程序先天受损，精卵质量受破坏，医院拍片也是一样**（运去病不修复生育功能）；走好运把印解放了——**能生个闺女**；若再走克${yinEl.chinese}之运（如南方火地）——**连闺女都生不出——必无子之命**（案六十七）")
                             keYinS >= 1.5 * yinS && keYinS > 0 -> ZN(yinEl, false, false, "官杀欺衰主有印化（印为儿），然**财坏印坏成**（螳螂捕蝉黄雀在后）——**没儿子**")
                             haoQueS >= 2.0 * yinS && yinS > 0.5 -> ZN(yinEl, false, true, "**官杀欺衰主——除非有印，印为儿**（印星就是我的儿子，虽在年上——有没有儿子取决于他，印好才是真的好）；然**木坚金缺**（子星所克之神党力${format(haoQueS)}压过子星${format(yinS)}——食伤得局反克，金剩一点气；若是酉金被冲彻底毁，连闺女都生不出来）——**没儿子，可生闺女**")
                             haoQueS >= 2.0 * yinS -> ZN(yinEl, false, false, "官杀欺衰主有印化（印为儿），然子星被所克之旺神拖至**彻底缺绝**——**连闺女都生不出来**（若是酉金还走火运，必然不生育）")
