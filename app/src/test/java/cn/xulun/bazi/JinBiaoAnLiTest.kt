@@ -2182,6 +2182,31 @@ class JinBiaoAnLiTest {
         assertTrue("子星＝伤官木（食伤秀气为儿）", zn9.ziEl == Element.WOOD)
     }
 
+    // ── 案八十 · 丙午 庚子 庚申 丙戌（1966-12-27 戌时，乾）——子女章廿三例·拔根罪加一等 ──
+
+    @Test
+    fun `案八十 乾 丙午庚子庚申丙戌 坐禄戌随申身旺无财官煞为儿 子午贴冲拔根罪加一等 壬癸干克官百分之百不生 寅卯救官只救财富不救生育生闺女`() {
+        val bazi = chart(1966, 12, 27, 20)
+        assertTrue(bazi.fullBazi.startsWith("丙午 庚子 庚申 丙戌"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("辛丑(1970)", "壬寅(1980)", "癸卯(1990)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("坐禄＋戌随申——身旺（弱中变旺）", jb.strength == DayStrength.STRONG)
+
+        // 子女：无财官煞为儿——子午贴冲拔根（罪加一等）——没儿子生闺女；寅卯救官只救财富不救生育
+        val zn10 = jb.ziNv!!
+        assertTrue("无儿有女（拔根档）", zn10.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("判据含拔根罪加一等、百分之百生不出来、只说明财富好、生闺女",
+            zn10.basis.contains("拔根比虚透罪加一等") && zn10.basis.contains("百分之百生不出来") &&
+                zn10.basis.contains("只说明财富好") && zn10.basis.contains("生闺女"))
+
+        // 木火皆喜用（木化水生火）——一辈子平坦（核电站国企、有积蓄、会过日子攒钱不发大财）
+        assertTrue("壬寅癸卯寅卯救官支——财富好（吉）", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

@@ -1346,7 +1346,23 @@ object JinBiaoCalculator {
                             ZN(caiEl, true, false, "**身旺财为子**（有财即有子；怕劫地——比劫给我克了）")
                         }
                     }
-                    guanS >= FOLLOW_MIN_SCORE -> ZN(guanEl, true, false, "身旺无财——**官煞为儿**（喜官杀克我；怕食地——食伤制官杀捣乱；月上比劫劫住年官替我受克则子归挡者）")
+                    guanS >= FOLLOW_MIN_SCORE -> run {
+                        // 案八十·拔根档：官煞为儿而官之本气根支被贴冲拔根（子午冲——两丙之根被拔）——
+                        // 拔根比虚透罪加一等：没儿子生闺女（运支救根只救财富不救生育——子午冲在功能废；
+                        // 年轻走克官之干〔壬癸水〕百分之百生不出来；走生官支〔寅卯〕救起——不好说可生）
+                        val guanGenZhi = bazi.branches.filter { it.element == guanEl }
+                        val baGen = guanGenZhi.any { g ->
+                            val gi = bazi.branches.indexOf(g)
+                            (gi - 1 in bazi.branches.indices && LIU_CHONG[g] == bazi.branches[gi - 1]) ||
+                                (gi + 1 in bazi.branches.indices && LIU_CHONG[g] == bazi.branches[gi + 1])
+                        }
+                        if (baGen) {
+                            ZN(guanEl, false, true,
+                                "身旺无财——**官煞为儿，然${guanEl.chinese}官之本气根被贴冲拔根**（如子午冲——两${guanEl.chinese}之根被拔）：**拔根比虚透罪加一等**（虚透之${guanEl.chinese}〔坐辰申之属〕都比被拔根的强）——官衰弱、${guanEl.chinese}又坐随党之支——**基本上没儿子了**。运之解：年轻走克${guanEl.chinese}之干（壬癸之属）——**百分之百生不出来**；走生${guanEl.chinese}之支（寅卯之属）救起官根——**只说明财富好，解不了贴冲这事——没有生儿子的功能**（除非运支合去冲神）。**命主生闺女，财富还可以**（案八十·对勘案四十八印得局官二代）")
+                        } else {
+                            ZN(guanEl, true, false, "身旺无财——**官煞为儿**（喜官杀克我；怕食地——食伤制官杀捣乱；月上比劫劫住年官替我受克则子归挡者）")
+                        }
+                    }
                     shiS >= FOLLOW_MIN_SCORE && yinS < YIN_HUAI -> ZN(shiEl, true, false, "身旺无财无官——**食伤泄秀为儿**：泄得好没破坏＝**多子**")
                     shiS >= FOLLOW_MIN_SCORE -> {
                         if (caiS > 0.0) ZN(caiEl, true, false, "身旺食伤泄秀而**枭印夺食**——**财坏印解放食伤：仍以财为子，有子**")
