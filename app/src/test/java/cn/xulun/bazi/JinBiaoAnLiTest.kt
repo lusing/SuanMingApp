@@ -2407,6 +2407,32 @@ class JinBiaoAnLiTest {
         assertTrue("比劫旺夺财没官——没儿子（巳火食伤也不管事）", jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
     }
 
+    // ── 案八十八 · 丁未 癸卯 乙亥 壬午（1967-03-12 午时，坤）——子女章卅一例·多生终得一子 ──
+
+    @Test
+    fun `案八十八 坤 丁未癸卯乙亥壬午 亥卯未合局身旺财被劫尽 然木火两旺转而生土 多生终得一子生四个才出一个 儿子也好不了`() {
+        val bazi = chart(1967, 3, 12, 12)
+        assertTrue(bazi.fullBazi.startsWith("丁未 癸卯 乙亥 壬午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("甲辰(1975)", "乙巳(1985)", "丙午(1995)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("亥卯未三合木局＋双印——身旺（食伤火泄秀）", jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI && jb.yongShenElement == Element.FIRE)
+
+        // 子女：比劫得局夺财基本上生不出——然木火两旺转而生土：多生终得一子（生四个才出一个——南方运碰好流年）
+        val zn18 = jb.ziNv!!
+        assertTrue("必有儿（多生终得一子——使劲生）", zn18.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含木火两旺转而生土、生四个才出一个、生一百个也生不出来、儿子也好不了",
+            zn18.basis.contains("两旺转而生") && zn18.basis.contains("生四个才出一个") &&
+                zn18.basis.contains("生一百个也生不出来") && zn18.basis.contains("儿子也好不了"))
+
+        // 南方火运（丙午丁未）——食伤得地帮通关（好流年窗口）；甲辰乙巳帮身凶
+        assertTrue("丙午丁未南方火运吉（不停地生之窗）", listOf(2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("甲辰乙巳帮身运凶", listOf(0, 1).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

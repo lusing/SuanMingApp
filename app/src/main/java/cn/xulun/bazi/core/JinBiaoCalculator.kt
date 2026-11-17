@@ -1389,6 +1389,20 @@ object JinBiaoCalculator {
                                 partyScore(bazi, Element.entries.first { it.controls == guanEl }) < FOLLOW_MIN_SCORE -> ZN(guanEl, true, false,
                                 "身旺财为子而**比劫盖头贴克财支**（${biEl.chinese}坐${caiEl.chinese}——同柱贴克：没儿子？**不一定——还要看有没有官：转官了**。${guanEl.chinese}官支在局**没有被克**（克${guanEl.chinese}之神无）——**有这个官我就有儿子：有这个功能可以生儿子——官来的年就生了**（案七十六）。**能生儿子不代表能发财**（能生儿的穷人有的是）：没被克只说明有生儿子的功能，但都是泄我的——**财官皆弱顶多小康、衣食无忧（这就算好命）**：化官生印转印身更旺；用神弱而**无克我捣乱者＝无灾无难（没有什么大疾病车祸——这不错了）**")
                             // 案八十四·拱暗财档：财半合拱局暗存（亥未拱木）——有暗财＝有子（不仅有子还有钱）
+                            // 案八十八·木火两旺转而生土（多生终得一子）：比劫得局夺财而食伤通关有力
+                            // （木生火火生土——财有暗源）——基本上生不出儿子，然一路南方食伤运＋好流年
+                            // ——使劲生碰出来的（生四个才出一个；无这旺火生一百个也生不出来）
+                            caiS > 0.0 && shiS >= 2 * FOLLOW_MIN_SCORE && hasBenQiRoot(bazi, shiEl) &&
+                                biEl.generates == shiEl && shiEl.generates == caiEl &&
+                                // 护案八十四：财已拱局暗存（亥未拱木）者优先走财气通门户档——非多生型
+                                !listOf(
+                                    setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                                    setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                                    setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                                    setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                                ).any { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { b -> b in bazi.branches } }
+                            -> ZN(caiEl, true, false,
+                                "身旺财为子而**比劫得局夺财——基本上生不出来儿子，然${biEl.chinese}${shiEl.chinese}两旺转而生${caiEl.chinese}**（比劫生食伤、食伤生财——财有暗源通关）：**多生终得一子**——一路南方${shiEl.chinese}运不停的生，**碰着好流年就生出来儿子了（生四个才出一个——使劲生）**；**若没有这比较旺的${shiEl.chinese}，生一百个也生不出来儿子**。**即使生出来的儿子，儿子也好不了**（后面走克${caiEl.chinese}之运——儿子没好日子）；无${shiEl.chinese}通关之比劫夺财局则无儿只生女（案八十八）")
                             caiS > 0.0 && shiS > 0.0 -> run {
                                 val gongTrio2 = listOf(
                                     setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
