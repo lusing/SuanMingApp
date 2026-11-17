@@ -2079,6 +2079,34 @@ class JinBiaoAnLiTest {
                 zn5.basis.contains("穷人也可以生女儿") && zn5.basis.contains("用神弱了财富值才低"))
     }
 
+    // ── 案七十六 · 庚戌 庚辰 辛巳 辛卯（1970-05-01 卯时，坤）——子女章十九例·盖头官救 ──
+
+    @Test
+    fun `案七十六 坤 庚戌庚辰辛巳辛卯 两魁罡比劫旺 卯被辛盖头贴克然巳官未被克转官有功能生儿子 亥运去火存金破财`() {
+        val bazi = chart(1970, 5, 1, 6)
+        assertTrue(bazi.fullBazi.startsWith("庚戌 庚辰 辛巳 辛卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "阳年坤造逆行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己卯(1978)", "戊寅(1988)", "丁丑(1998)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("两魁罡比劫旺身旺——财坏印用神卯木（小弱而无克无捣乱）",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.HUAI_YIN && jb.yongShenElement == Element.WOOD)
+
+        // 子女：卯被辛盖头贴克——转官：巳火未被克（无水）——有官就有儿子（官年应期）
+        val zn6 = jb.ziNv!!
+        assertTrue("必有儿（盖头官救档）", zn6.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("判据含盖头贴克、转官、没有被克、官来的年就生了、能生儿子不代表能发财",
+            zn6.basis.contains("盖头贴克") && zn6.basis.contains("转官了") &&
+                zn6.basis.contains("没有被克") && zn6.basis.contains("官来的年就生了") &&
+                zn6.basis.contains("能生儿子不代表能发财"))
+
+        // 亥运亥巳冲去火存金——比劫复旺克财老破财（凶）
+        assertTrue("乙亥运去火存金——老破财（凶）", jb.yuns[4].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("乙亥运标注去火存金破财", jb.yuns[4].items.any { it.action.contains("去火存金") && it.action.contains("老破财") })
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
