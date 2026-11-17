@@ -2455,6 +2455,28 @@ class JinBiaoAnLiTest {
                 zn19.basis.contains("白领层次发不了财") && zn19.basis.contains("邪淫"))
     }
 
+    // ── 案九十 · 庚午 戊寅 丙辰 丙申（1990-02-20 申时，坤）——子女章卅三例·飞刃贴克财支 ──
+
+    @Test
+    fun `案九十 坤 庚午戊寅丙辰丙申 寅木生羊刃身旺财为子 比劫飞刃贴克财支生女儿 食伤生财只主财富不管子事 B超说儿子也没用`() {
+        val bazi = chart(1990, 2, 20, 16)
+        assertTrue(bazi.fullBazi.startsWith("庚午 戊寅 丙辰 丙申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丁丑(1995)", "丙子(2005)", "乙亥(2015)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("寅月初春木旺火相寅生羊刃——身旺", jb.strength == DayStrength.STRONG)
+
+        // 子女：时干比劫（丙）通根坐申贴克财——羊刃飞出来贴着捣乱——生女儿不生儿（B超也没用）
+        val zn20 = jb.ziNv!!
+        assertTrue("无儿有女", zn20.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV)
+        assertTrue("判据含羊刃飞出来贴着捣乱、食伤生财是指财富、B超",
+            zn20.basis.contains("贴着捣乱") && zn20.basis.contains("食伤生财是指财富") &&
+                zn20.basis.contains("B超"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

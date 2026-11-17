@@ -1423,7 +1423,14 @@ object JinBiaoCalculator {
                         }
                     }
                     caiS > 0.0 -> {
-                        if (!caiZai && !hasBenQiRoot(bazi, caiEl)) {
+                        // 案九十·飞刃贴克财支：比劫干同柱盖头坐财支（丙坐申——羊刃飞出来贴着捣乱）
+                        // 而官杀全无（无救）——食伤生财只主财富不管子事：生女儿不生儿（B超说儿子也没用）
+                        if (bazi.stems.anyIndexed { i, s -> i != 2 && s.element == biEl && bazi.branches[i].element == caiEl } &&
+                            !hasBenQiRoot(bazi, guanEl) && bazi.stems.none { it != dayMaster && it.element == guanEl }
+                        ) {
+                            ZN(caiEl, false, true,
+                                "身旺财为子而**比劫羊刃飞出来贴着捣乱**（${biEl.chinese}坐${caiEl.chinese}——同柱盖头贴克财支：时干比劫通根克财）：**生的是女儿——生不出来儿子**（食神生${caiEl.chinese}财也不管事儿——**食伤生财是指财富**，救不了子星）；**再走印比之运（寅亥化木之属）——百分之百生女儿**（即使B超检查说生个儿子也没用——B超也有错的时候——案九十）")
+                        } else if (!caiZai && !hasBenQiRoot(bazi, caiEl)) {
                             // 案六十二·财虚透而没被比劫克——生育能力在（贫富与子嗣两轨）：走财得根运得儿子
                             val deGenYuns = daYun?.yuns
                                 ?.filter { yun -> branchHiddenStems.getValue(yun.pillar.branch).any { it.element == caiEl } }
