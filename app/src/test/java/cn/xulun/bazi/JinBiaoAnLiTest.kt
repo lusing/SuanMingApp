@@ -2344,6 +2344,30 @@ class JinBiaoAnLiTest {
                 zn15.basis.contains("完全指着印星一字定之"))
     }
 
+    // ── 案八十六 · 庚戌 丙戌 丁丑 戊申（1970-10-24 申时，乾）——子女章廿九例·比劫为子本质 ──
+
+    @Test
+    fun `案八十六 乾 庚戌丙戌丁丑戊申 通根身库也在秋伤官生财得局泄体 比劫没法帮你生 明比劫暗财没儿子 跟着比劫挣钱银行上班`() {
+        val bazi = chart(1970, 10, 24, 16)
+        assertTrue(bazi.fullBazi.startsWith("庚戌 丙戌 丁丑 戊申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丁亥(1975)", "戊子(1985)", "己丑(1995)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("通根身库（戌中丁）不作昆仑——地支食伤得局泄体——身弱用劫（财富比劫一子定之）",
+            jb.strength == DayStrength.WEAK && jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE &&
+                jb.yongShenElement == Element.FIRE)
+
+        // 子女：明以比劫为子暗仍以财星为子——比劫被土泄太重没帮到身旺——比劫没法帮你生——没儿子
+        val zn16 = jb.ziNv!!
+        assertTrue("必无儿", zn16.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+        assertTrue("判据含明以比劫为子暗仍以财星为子、没法帮你生、不是你的儿子、说的是事业",
+            zn16.basis.contains("明以比劫为子，暗仍以财星为子") && zn16.basis.contains("没法帮你生儿子") &&
+                zn16.basis.contains("比劫生的儿子不是你的儿子") && zn16.basis.contains("这说的是事业"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

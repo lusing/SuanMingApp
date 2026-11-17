@@ -444,6 +444,12 @@ object JinBiaoCalculator {
             !(kunLunEl == shiEl && bazi.stems.anyIndexed { i, s ->
                 i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl
             }) &&
+            // 案八十六裁：日主通根身库（限四库辰戌丑未中藏日主五行——库根之依；长生藏如亥中甲不算）
+            // ——非无根而漂：不作昆仑（地支食伤得局泄体——走身弱泄体线；师「通根身库也是在秋天——伤官生财得局了」）
+            !(kunLunEl != null && bazi.branches.any { br ->
+                br in listOf(EarthlyBranch.CHEN, EarthlyBranch.XU, EarthlyBranch.CHOU, EarthlyBranch.WEI) &&
+                    branchHiddenStems.getValue(br).any { it.element == dayEl }
+            }) &&
             // 案六十六裁：印局（kunLunEl=印）而比劫透干——身有比劫之助可依（非无根而漂），
             // 不作昆仑：正常身旺用财（四土得局双冲互战——土金旺，日主身旺足以用财）
             !(kunLunEl == yinEl && bazi.stems.anyIndexed { i, s -> i != 2 && s.element == biEl })
@@ -1565,8 +1571,16 @@ object JinBiaoCalculator {
                         }
                     }
                     else -> {
-                        if (biS >= FOLLOW_MIN_SCORE) ZN(biEl, true, false, "身弱局里没有印（必财旺或官杀旺）——**比劫就是儿子**（抗杀挡杀镇财给我力量）：有比劫才有儿子")
-                        else ZN(biEl, false, false, "身弱无印无比劫——**没儿子**")
+                        // 案八十六·比劫为子的真正本质：明以比劫为子，暗仍以财星为子——比劫须真正
+                        // 把日主帮到身旺（方能胜任财）才有儿子；比劫被食伤泄太重（无力）——比劫没法
+                        // 帮你生（帮＝事业有情跟着挣钱；生孩子不能让人家帮生）——没儿子
+                        val biXieS2 = partyScore(bazi, biEl.generates)
+                        when {
+                            biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "身弱无印无比劫——**没儿子**")
+                            biXieS2 >= 2.0 * biS -> ZN(biEl, false, false,
+                                "身弱局里没有印——比劫线，然**比劫为子的真正本质（案八十六）**：**明以比劫为子，暗仍以财星为子——比劫得真正把你帮到身旺了、你才能胜任这个财，才有儿子**。此局比劫被${shiEl.chinese}食伤泄太重（${format(biXieS2)}泄对${format(biS)}——秋天土金两旺比劫没劲）——**比劫没法帮你生儿子**：有比劫帮＝比劫对你有情、有贵人帮——**这说的是事业**（跟着比劫挣钱、财富比劫一子定之——寅卯拱火东南运事业层次提升）；但**生儿子不能让比劫去帮你生——比劫帮代表比劫有儿子，比劫生的儿子不是你的儿子**（挣钱有让人家帮挣的——生孩子不能让人家帮生）→**比劫没帮到身旺——没儿子**（再走湿土泄火运，百分之百生不出）")
+                            else -> ZN(biEl, true, false, "身弱局里没有印（必财旺或官杀旺）——**比劫就是儿子**（抗杀挡杀镇财给我力量）：有比劫才有儿子")
+                        }
                     }
                 }
             }
