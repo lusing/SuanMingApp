@@ -1268,6 +1268,28 @@ object JinBiaoCalculator {
                         // 比劫夺财（重夺／地支得局——财虽有根而地支不载）——官旺救或食伤得局化劫
                         when {
                             guanS >= GUAN_WANG || bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl } -> ZN(guanEl, true, false, "身旺财为子而**比劫夺财**——官杀克劫解放财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
+                            // 案七十二·明暗子星＋信号投胎论：官透而虚（甚至被化）然无贴克——儿子在这飘着等投胎：
+                            // 看大运（运帮子星＝接收得到信号就能生；运全克子星＝接收不到、生不出来；
+                            // 贴克则不看运——功能废吃药也不管事）。明以官杀为子，暗仍以财星为子（官为护财而设）
+                            bazi.stems.any { it != dayMaster && it.element == guanEl } && run {
+                                val guanIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == guanEl }
+                                val keGuanEl = Element.entries.first { it.controls == guanEl }
+                                val keIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == keGuanEl }
+                                keIdxs.none { k -> guanIdxs.any { g -> kotlin.math.abs(k - g) == 1 } }
+                            } -> {
+                                val bangYun = daYun?.yuns?.take(5)?.count { y ->
+                                    y.pillar.stem.element == guanEl || y.pillar.branch.element == guanEl ||
+                                        y.pillar.stem.element.generates == guanEl || y.pillar.branch.element.generates == guanEl
+                                } ?: 0
+                                val keYun = daYun?.yuns?.take(5)?.count { y ->
+                                    val keGuanEl2 = Element.entries.first { it.controls == guanEl }
+                                    y.pillar.stem.element == keGuanEl2
+                                } ?: 0
+                                ZN(guanEl, bangYun > keYun, bangYun <= keYun,
+                                    "**明以官杀为子，暗仍以财星为子**（身旺财为子被劫——官护财克劫：官为护财而设，本质仍财——案七十二）；官透而虚（乙被巳化之属）然**无贴克——儿子就在这飘着等投胎：此时才看大运**——" +
+                                        (if (bangYun > keYun) "运帮子星（如东方${guanEl.chinese}旺之运）**接收得到信号——就能生儿子**" else "运全走克子星之干（庚辛之属）——**接收不到儿子的信号，生不出来**") +
+                                        "；**若有贴克则不看大运**（功能废——哪怕走帮运也没儿子，吃药也不管事）")
+                            }
                             shiS >= GUAN_WANG && shiS >= biS -> ZN(shiEl, true, false,
                                 "身旺财为子而比劫夺财——**食伤得局完全把比劫化了**（劫不至重、间接解放财；比劫在年上、中间食伤${shiEl.chinese}隔着——不贴克）：**还能有儿子——更可以生儿子**（财得月令之气，帮的时候更旺；**对勘案六十二**：虚透无气之财——只因无比劫克才生、运过即损——**主要就是看季节：得气帮得起，无气帮不起**）（案六十补笔）")
                             caiS > 0.0 && shiS > 0.0 -> ZN(caiEl, false, true,

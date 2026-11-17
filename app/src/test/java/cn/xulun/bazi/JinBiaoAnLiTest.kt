@@ -1986,6 +1986,24 @@ class JinBiaoAnLiTest {
         assertTrue("壬戌比劫帮身逆局——凶（学习不好）", jb.yuns[0].verdict == JinBiaoVerdict.XIONG)
     }
 
+    // ── 案七十二（＝案廿五盘复看子女）· 壬戌 乙巳 戊戌 壬戌（1982-05-15 戌时，坤）──
+
+    @Test
+    fun `案七十二 坤 壬戌乙巳戊戌壬戌复看子女 明以官杀为子暗仍以财星为子 官虚透无贴克看大运 东方运信号接收生儿子`() {
+        val bazi = chart(1982, 5, 15, 19)
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("身旺财滋弱官（旧锚案廿五）", jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.WOOD)
+
+        // 明暗子星：财被三戌劫——官护财克劫——明以官杀为子暗仍以财星为子；官虚透（乙被巳化）无贴克——看大运
+        val zn2 = jb.ziNv!!
+        assertTrue("明官暗财——东方运信号接收——必有儿", zn2.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("子星＝正官乙木（明）", zn2.ziXing == cn.xulun.bazi.model.TenGod.ZHENG_GUAN && zn2.ziEl == Element.WOOD)
+        assertTrue("判据含明以官杀为子暗仍以财星为子、等投胎、接收信号、贴克不看运",
+            zn2.basis.contains("明以官杀为子，暗仍以财星为子") && zn2.basis.contains("等投胎") &&
+                zn2.basis.contains("接收得到信号") && zn2.basis.contains("若有贴克则不看大运"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
