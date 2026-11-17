@@ -2207,6 +2207,32 @@ class JinBiaoAnLiTest {
         assertTrue("壬寅癸卯寅卯救官支——财富好（吉）", listOf(1, 2).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
     }
 
+    // ── 案八十一 · 庚戌 辛巳 乙未 丙子（1970-05-15 子时，乾）——子女章廿四例·一印双象 ──
+
+    @Test
+    fun `案八十一 乾 庚戌辛巳乙未丙子 财官重克耗泄身弱用印财坏印 一印双象贫而无子 未运穿子蹲牢 戌运活不成`() {
+        val bazi = chart(1970, 5, 15, 0)
+        assertTrue(bazi.fullBazi.startsWith("庚戌 辛巳 乙未 丙子"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "顺行大运起运年与师传年标一致",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬午(1977)", "癸未(1987)", "甲申(1997)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("财官重克耗泄——身弱用印（子水独印）财坏印——清枯", jb.strength == DayStrength.WEAK &&
+            jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.qingZhuo == JinBiaoQingZhuo.QING_KU)
+
+        // 子女：财坏印坏成——一印双象（既当财富也当儿子）——贫而无子（温饱而已发不了财生不了儿）
+        val zn11 = jb.ziNv!!
+        assertTrue("必无儿", zn11.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
+        assertTrue("判据含一印双象、贫而无子、无子五象、未运穿克蹲牢",
+            zn11.basis.contains("一印双象") && zn11.basis.contains("贫而无子") &&
+                zn11.basis.contains("无子五象") && zn11.basis.contains("穿克"))
+
+        // 走戌运基本活不成（夭）——大凶
+        assertTrue("丙戌运走戌——基本活不成（凶）", jb.yuns[4].verdict == JinBiaoVerdict.XIONG)
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
