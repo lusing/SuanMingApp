@@ -2664,6 +2664,53 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎学业同断学历不高（双引擎互证）", wp.level.contains("学历不高"))
     }
 
+    // ── 案九十六 · 壬辰 壬寅 甲寅 庚午（乾，2012-02-23 午时）——强众敌寡·群劫争财不破寡·去官杀之寡用食伤泄秀 ──
+    // 排盘口径：四柱对应 2012-02-23 午时（独立复算甲寅日无误）；材料起运年标 2022 无法复算
+    // （顺数至惊蛰约11天→3年8个月→2015上运），六岁之差不动大运干支顺序——引擎按自排年标。
+
+    @Test
+    fun `案九十六 乾 壬辰壬寅甲寅庚午 建禄身强强众敌寡群劫争财不破寡 去官杀之寡用火泄秀 丙运同性去尽 子女特殊格局另裁有儿子`() {
+        val bazi = chart(2012, 2, 23, 12)
+        assertTrue(bazi.fullBazi.startsWith("壬辰 壬寅 甲寅 庚午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阳年乾造顺行：癸卯2015 甲辰2025 乙巳2035 丙午2045（材料年标2022系来源工具之误）",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸卯(2015)", "甲辰(2025)", "乙巳(2035)", "丙午(2045)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("建禄身强（生助占比95%）", jb.strength == DayStrength.STRONG)
+        assertTrue("强众敌寡：庚寅月不得气地支无根＋群劫争财（财在而不可用不破寡）——去官杀之寡，用神火泄秀",
+            jb.quYongWay == JinBiaoQuYongWay.QU_GUA && jb.yongShenElement == Element.FIRE)
+        assertTrue("取用依据含辰挪月令庚进气反事实、杀反生水转来转去还是木旺、群劫争财、顺逆之机口诀",
+            jb.quYongBasis.contains("进气了，那就不行了") && jb.quYongBasis.contains("转来转去最后还是木旺") &&
+                jb.quYongBasis.contains("群劫争财") && jb.quYongBasis.contains("顺逆之机须理会"))
+        assertTrue("不用之财尽可劫口诀入档", jb.quYongBasis.contains("不用之财尽可劫") && jb.quYongBasis.contains("可用之财不可劫"))
+
+        // 子女：特殊格局另裁——泄秀泄得好有儿子（不用之财尽可劫随便劫）；从旺无食神不这样论
+        val zn96 = jb.ziNv!!
+        assertTrue("必有儿（泄＝生育能力＋走好运）",
+            zn96.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER && zn96.ziEl == Element.FIRE &&
+                zn96.basis.contains("泄秀泄得好就有儿子") && zn96.basis.contains("从旺没有食神") &&
+                zn96.basis.contains("给憋住了"))
+
+        // 运：癸卯凶（水激之——北方水运把食神憋住）；乙巳丙午丁未吉（帮用神火成格）；丙午丙干同性克庚去尽（丙比丁好）；西方金运凶（帮七杀越不行）
+        assertTrue("癸卯凶（印水激身克用）", jb.yuns[0].verdict == JinBiaoVerdict.XIONG &&
+            jb.yuns[0].items.any { it.action.contains("不可用水激之") && it.action.contains("憋住") })
+        assertTrue("丙午运吉且丙干同性克庚去尽——伤官伤尽始为奇、丙运要比丁运好",
+            jb.yuns[3].verdict == JinBiaoVerdict.JI &&
+                jb.yuns[3].items.any { it.action.contains("把官杀去尽") && it.action.contains("丙运要比丁运好") })
+        assertTrue("乙巳丁未南方火地成格好运", jb.yuns[2].verdict == JinBiaoVerdict.JI && jb.yuns[4].verdict == JinBiaoVerdict.JI)
+        assertTrue("戊申己酉庚戌西方金运凶——官星得地一世无成（大运越是帮七杀的越不行）",
+            listOf(5, 6, 7).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+
+        // 双引擎对照（双引擎铁律）：老引擎建禄格用庚七杀配壬印（杀印相生成格）——
+        // 两壬的角色分歧（金镖门忌〔激旺克用〕vs 老引擎相神）；学业老引擎高学历
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎建禄格用庚七杀配壬印", old.geJuName.contains("建禄格") && old.yongShen?.stem?.chinese == "庚")
+        val wp = WenPingCalculator.analyze(bazi, daYun)
+        assertTrue("老引擎学业高学历（硕博之才）——金镖门学历档不适用（用神非印）留对照", wp.level.contains("高学历"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

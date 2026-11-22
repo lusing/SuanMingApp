@@ -1033,15 +1033,25 @@ object JinBiaoCalculator {
                 // 第五讲·去寡（案七/案八定则）：三条件差一点都不对，必须全部满足——
                 // ①日主强旺；②官杀真无根气（地支藏干全无官杀——天干再透两见亦寡）且财不生官（财无透干无本气根）；③有食伤。
                 // 案八之诫：官杀地支藏干有字（丑中癸）或财透干来生（庚）——条件②破，即非去寡，转用官。
+                // 案九十六放宽：财虽在（有根）而**群劫争财**（比劫党力≥2倍财）——财已用不了（不用之财尽可劫），
+                // 不能滋官破寡——仍寡（对勘案八：庚财透而非群劫——破寡转用官；案廿五：壬壬透而非群劫——仍财滋弱杀）。
                 guanS > 0.0 &&
                     bazi.branches.none { br -> branchHiddenStems.getValue(br).any { it.element == guanEl } } &&
-                    bazi.stems.none { it.element == caiEl } && !hasBenQiRoot(bazi, caiEl) &&
+                    (bazi.stems.none { it.element == caiEl } && !hasBenQiRoot(bazi, caiEl) || biS >= 2.0 * caiS) &&
                     shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.QU_GUA, shiEl,
-                    "推命经第二段·去寡（案七）：看力量首先看地支、地支主宰——日主通根得气身旺；" +
-                        "官杀（党力${format(guanS)}，天干再透两见）地支藏干全无——不载即无根气，无用之官，「不用之官尽可去」；" +
-                        "财无透干无本气根不生官（党力${format(caiS)}）、食伤有力（党力${format(shiS)}）——去官发富贵，用神取食伤（去官之星）；" +
-                        "违背官杀之运好运、坏官越重越好；顺着官杀（生官／官星得地得运）则一世无成",
+                    buildString {
+                        append("推命经第二段·去寡（案七）：看力量首先看地支、地支主宰——日主通根得气身旺；")
+                        append("官杀（党力${format(guanS)}，天干再透两见）地支藏干全无——不载即无根气，无用之官，「不用之官尽可去」；")
+                        append("财无透干无本气根不生官（党力${format(caiS)}）、食伤有力（党力${format(shiS)}）——去官发富贵，用神取食伤（去官之星）；")
+                        append("违背官杀之运好运、坏官越重越好；顺着官杀（生官／官星得地得运）则一世无成")
+                        // 案九十六·强众敌寡（群劫争财臂）：财在而不可用
+                        if (bazi.stems.none { it.element == caiEl } && !hasBenQiRoot(bazi, caiEl)) {
+                            // 财全无——案七型，无注
+                        } else {
+                            append("；**强众敌寡（案九十六）**：${guanEl.chinese}在${monthBranch.chinese}月**不得气**（地支无根——若${EarthlyBranch.CHEN.chinese}挪到月令，${guanEl.chinese}进气了，那就不行了）——强众敌寡成立，这个杀不但克不了日主，反而生${yinEl.chinese}了，转来转去最后还是${biEl.chinese}旺，${biEl.chinese}旺就要${shiEl.chinese}泄——**去官杀之寡**。**财已经用不了了——群劫争财（比劫${format(biS)}对财${format(caiS)}），只能用食伤泄秀**：「不用之财尽可劫，不用之官尽可伤；可用之官不可伤，可用之财不可劫」——这个财被劫没事。**顺逆之机需理会**：强旺到极点了，只能顺着${biEl.chinese}，不能逆着去克${biEl.chinese}——「要与人间开聋聩，顺逆之机须理会」。只要${guanEl.chinese}得根就不好；上来就走西方${guanEl.chinese}运——层次就非常低了（大运越是帮七杀的越不行）；走帮用神${shiEl.chinese}之运就好——成格了，大运不违背就是个有层次的人")
+                        }
+                    },
                 )
                 // 食神制杀格（五理④＋第七讲条件一）：官有本气根之真旺、财不滋官、食伤有力——
                 // 且【日主必须有根气】：食神泄体，无根无气承载不了食神之泄，食神制杀反贫夭负债；得根气则制杀得富贵。
@@ -1395,6 +1405,24 @@ object JinBiaoCalculator {
             val zn: ZN = if (choice.way == JinBiaoQuYongWay.TIAO_HOU) {
                 ZN(yongEl, true, false,
                     "**调候优先（案六十三）**：寒暖特殊气象局**不用分析生克——一切以寒暖为规范**：调候神有根有气、走东南暖运就是好——什么都有什么都顺——**必然有儿子、有孙子——没有缺陷**（辅证：日主坐印足以食伤制杀——食伤偏弱，帮起食伤即好）")
+            } else if (choice.way == JinBiaoQuYongWay.QU_GUA) {
+                // 案九十六·特殊格局（去寡从旺）子女另裁：不能按正常判定树论——
+                // 有食伤（泄＝生育能力）＋走好运（顺势）→不光事业好一般都有儿子；
+                // 一直走克食伤之运把食神憋住→没儿子；从旺无食神不这样论。
+                // 不用之财尽可劫——群劫争财不碍子。
+                val keShiEl96 = Element.entries.first { it.controls == shiEl }
+                val shunCnt96 = daYun?.yuns?.take(5)?.count { y ->
+                    val ge = y.pillar.stem.element
+                    val ze = y.pillar.branch.element
+                    ge == shiEl || ge.generates == shiEl || ze == shiEl || ze.generates == shiEl
+                } ?: 0
+                val biShiCnt96 = daYun?.yuns?.take(5)?.count { y ->
+                    y.pillar.stem.element == keShiEl96 || y.pillar.branch.element == keShiEl96
+                } ?: 0
+                ZN(shiEl, shunCnt96 > biShiCnt96, false,
+                    "**特殊格局（去寡）子女另裁（案九十六）——不按正常判定树论**：这局不用财——**不用之财尽可劫，随便劫**（群劫争财不碍子）；用食伤泄秀——**只要泄秀泄得好就有儿子：身旺发泄发得好＝生育能力强，泄就代表生育能力**。" +
+                        (if (shunCnt96 > biShiCnt96) "**特殊格局走好运不光事业好，一般还都有儿子**（得看他走的运——本案前运顺势〔帮${shiEl.chinese}〕多）" else "**然前运一直走${keShiEl96.chinese}地把食神${shiEl.chinese}憋住了——也是没有儿子的**") +
+                        "。若一直走北方${keShiEl96.chinese}运把食神${shiEl.chinese}给憋住了——那么也是没有儿子的。**从旺没有食神，就不能按这样说**（旺极无食另裁——待师传）。口诀：「**不用之财尽可劫，不用之官尽可伤；可用之官不可伤，可用之财不可劫**」")
             } else if (strength == DayStrength.STRONG) {
                 // 身旺：基准财为子——查比劫夺财（重夺/地支得局不载）→官旺救或食伤得局化劫；无财无官食伤泄秀；食被枭夺找财
                 // 「鲁莽地说就错了」——有财不可遽断有子，必来回检查螳螂捕蝉黄雀在后
@@ -1882,9 +1910,10 @@ object JinBiaoCalculator {
             // 旺极顺泄：满盘比劫旺到极端，食伤顺泄不克——局中印轻则食伤运也是好运；印重则夺食不可行
             if (wangJi && !qiangJi && yinS < YIN_QING) put(shiEl, "旺极顺泄——局中印轻，食伤运也是好运")
             // 第五讲·去寡：食伤＝去官之星，行此好运；印泄官生身——身旺食伤亦旺，行此亦好运（案七）
+            // 案九十六戒：官弱（党力<官旺线）无须印泄——印激已旺之身兼克食伤用神，不入好运
             if (choice.way == JinBiaoQuYongWay.QU_GUA) {
                 put(shiEl, "去官之星到位——违背官杀，好运")
-                put(yinEl, "印泄官生身——身旺食伤亦旺，好运")
+                if (guanS >= GUAN_WANG) put(yinEl, "印泄官生身——身旺食伤亦旺，好运")
             }
             // 五理②用官（案八）：财生官——帮官之运好运
             if (choice.way == JinBiaoQuYongWay.PEI_CAI && !caiZhuBing) put(caiEl, "财生官——帮官之运，好运")
@@ -2016,6 +2045,10 @@ object JinBiaoCalculator {
                     put(Element.WATER, "调候神壬癸水无根——强走水运调候即犯火之旺（一败如灰，甚者死）；反以不调候为美，顺其燥")
                 }
             }
+            // 案九十六·去寡而官弱：印激已旺之身兼克食伤用神——水激之不可（北方水运把食神憋住）
+            if (choice.way == JinBiaoQuYongWay.QU_GUA && guanS < GUAN_WANG && yinEl.controls == shiEl) {
+                put(yinEl, "印${yinEl.chinese}激已旺之身、克${shiEl.chinese}用神——不可用水激之（北方水运把食神${shiEl.chinese}憋住：事业受制且没儿子——案九十六）")
+            }
         }
         // 案三专题先记：八字重地支——运干生运支而干在局无根（党力0）者，干力全化于支（壬水全生寅木，壬寅以寅论）
         val rootlessEls = setOf(caiEl, guanEl, shiEl, yinEl, biEl).filter { partyScore(bazi, it) == 0.0 }.toSet()
@@ -2056,6 +2089,11 @@ object JinBiaoCalculator {
                 else -> null
             },
             xiShenEl = Element.entries.first { it.generates == yongEl },
+            quGuaGan = if (choice.way == JinBiaoQuYongWay.QU_GUA) {
+                bazi.stems.firstOrNull { it != dayMaster && it.element == guanEl }
+            } else {
+                null
+            },
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -2378,6 +2416,7 @@ object JinBiaoCalculator {
         val jia95: Boolean = false,            // 案九十五：过泄配印局——用神库支运＝得根发财／用神透干＝发财／喜神填拱＝变旺好运
         val yongKu: EarthlyBranch? = null,     // 用神之墓库支（火→戌之属——运支临之＝用神得库根）
         val xiShenEl: Element? = null,         // 喜神（生用神之源）——运支填其三合拱局＝喜神变旺
+        val quGuaGan: HeavenlyStem? = null,    // 案九十六：去寡局所去之官杀透干——运干同性克之＝去尽（伤官伤尽始为奇）
     )
 
     /** 阳干羊刃支（甲刃卯、丙戊刃午、庚刃酉、壬刃子；阴干无刃）。 */
@@ -2546,6 +2585,9 @@ object JinBiaoCalculator {
                         trio.all { it == zhi || it in chartBranches } && !trio.all { it in chartBranches } }
                 val note = when {
                     heChong -> "运支${zhi.chinese}合去冲神${ctx.chongShen!!.chinese}——用神绝处逢生，彻底有情（把印绶救起来了）"
+                    // 案九十六·同性之克去官最力（丙阳火克庚阳金）——伤官伤尽始为奇
+                    i == 0 && ctx.quGuaGan != null && ganEl.controls == ctx.quGuaGan!!.element && gan.yang == ctx.quGuaGan!!.yang ->
+                        "运干${gan.chinese}同性克${ctx.quGuaGan!!.chinese}力量最大——**把官杀去尽**（伤官伤尽始为奇）：**丙运要比丁运好**（案九十六）"
                     quRenBing -> "运支${zhi.chinese}冲去${ctx.biEl.chinese}刃之病——大运来药去掉这个病：学习好、财运好（就在好运上）"
                     haiSiQuHuo -> "运支亥冲局中巳（**亥巳逢冲——去火存金**）：官被冲去、${ctx.biEl.chinese}比劫复旺来克${ctx.caiEl.chinese}财——**老破财**（各种各样的事儿来捣乱：今儿挣一百，明儿破八十——虽有亥卯化木亦不作吉论）"
                     yinHaiFanShen -> "运支寅合局中亥（**寅亥化木**——合去坏印之${ctx.caiEl.chinese}财根）＋木生火帮${ctx.yinEl.chinese}印——**翻身**（三十年河东河西：坎离震兑四方各管三十年——北方差三十年，东方翻身农民把歌唱；走木生火运就要翻身了——福报在后面）"
