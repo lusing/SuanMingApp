@@ -175,6 +175,20 @@ object JinBiaoCalculator {
         val monthElAdj: Element = run {
             SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }
                 ?.takeIf { monthBranch in it.first }?.let { return@run it.second }
+            // 案一百零二·三合成局而月支本气为印且透月干＋日主坐禄：透干者立——月令不随局叛向（身旺无疑）
+            // （对勘案廿七：月令印透然日主坐印支非坐禄——仍弱）
+            if (listOf(
+                    setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN),
+                    setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI),
+                    setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU),
+                    setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
+                ).any { it.all { b -> b in bazi.branches } } &&
+                monthBranch.element == Element.entries.first { it.generates == dayEl } &&
+                bazi.monthPillar.stem.element == monthBranch.element &&
+                bazi.dayPillar.branch.element == dayEl
+            ) {
+                return@run monthBranch.element
+            }
             listOf(
                 setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
                 setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
@@ -1100,6 +1114,25 @@ object JinBiaoCalculator {
                 // 第五讲·去寡（案七/案八定则）：三条件差一点都不对，必须全部满足——
                 // ①日主强旺；②官杀真无根气（地支藏干全无官杀——天干再透两见亦寡）且财不生官（财无透干无本气根）；③有食伤。
                 // 案八之诫：官杀地支藏干有字（丑中癸）或财透干来生（庚）——条件②破，即非去寡，转用官。
+                // 案一百零二·枭夺食用财（三选一之筛）：身旺＋官弱不任（被盖头/被局克）＋食伤透而坐支无源被枭夺净
+                // ＋财透有气（生源成局）——只能用财（财轻通门户：不旺但绝对有气可用）。
+                // 对勘案九：壬坐申通源（食伤极有力夺不净）——仍用食泄秀。
+                strength == DayStrength.STRONG && !ruoJi && !wangJi && !qiangJi &&
+                    bazi.stems.anyIndexed { i, s -> i != 2 && s.element == shiEl } &&
+                    bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl && s.element.controls == shiEl } &&
+                    yinS >= YIN_HUAI &&
+                    bazi.stems.anyIndexed { i, s -> i != 2 && s.element == shiEl && branchHiddenStems.getValue(bazi.branches[i]).none { it.element == shiEl || it.element.generates == shiEl } } &&
+                    bazi.stems.anyIndexed { i, s -> i != 2 && s.element == caiEl } &&
+                    bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == caiEl } } &&
+                    (guanS < GUAN_WANG || bazi.stems.anyIndexed { i, s -> i != 2 && s.element == shiEl && bazi.branches[i].element == guanEl }) -> Choice(
+                    JinBiaoQuYongWay.SHI_CAI_YONG_CAI, caiEl,
+                    buildString {
+                        append("身旺三选一之筛·枭夺食用财（案一百零二）：${biEl.chinese}生${monthBranch.chinese}月透${yinEl.chinese}坐禄——**身旺无疑**；身旺要么用食伤要么用官杀或者财（**用神＝行业：做什么利于用神就发财——「男怕选错行，女怕嫁错郎」〔女命拿用神当夫——嫁错郎＝选错用神〕**）。先选官——${guanEl.chinese}官被${shiEl.chinese}盖头${if (sanHeJuEl != null && sanHeJuEl == shiEl) "＋地支${sanHeJuEl.chinese}局力大（子远隔在边上、没有中间力量大，但毕竟也是个局）" else ""}——**官杀不行**；选${shiEl.chinese}？虽旺然${yinEl.chinese}土**老是捣乱——枭神夺食**（食坐${bazi.stems.indices.first { it != 2 && bazi.stems[it].element == shiEl }.let { bazi.branches[it].chinese }}无源夺得净）——**不开心也不能用了**；**只能用${caiEl.chinese}财**：坐${bazi.branches[0].chinese}还可以（${caiEl.chinese}没有那么旺，但**绝对有气，可用的**——地支${shiEl.chinese}局生财，**用财没有问题**〔财轻通门户——财星有情，不在乎旺衰〕）")
+                        append("。**用神无力×一辈子悖运＝没有层次**：本案用神本弱（${monthBranch.chinese}月${caiEl.chinese}退气＋${monthBranch.chinese}多少克${shiEl.chinese}），又走了六十年${caiEl.chinese}休囚之地（一天好运都没有）——**就没有层次了**；用神无力走三十年好运也能攒下钱（会过日子也是小康）；**要是${EarthlyBranch.MAO.chinese}（换${monthBranch.chinese}）用神非常强——走悖运日子也过得不错**；若走东方运财起好作用——**财轻通门户应期：运不违背就有钱，违背（${caiEl.chinese}死囚之地）就不行**")
+                        append("。**子女·用神即儿**：**肯定有儿子**（用神${caiEl.chinese}就是他的儿子——身旺财为子）；然命主走一辈子不利于儿之运——**他儿子也不行**（事业差方方面面都差——用神就是儿则运影响儿子；有的人儿子非用神，那就不影响他儿子）。**宫位因果**：${caiEl.chinese}占年宫克${yinEl.chinese}——爷爷这辈还是可以的；然因果上爷爷做了不正确的事（钱挣了带不走——到命主辈一败而尽）；命主哪月哪天生由其父${yinEl.chinese}（月柱父母宫）决定——父做事不好，老天爷看着，让他产生因果不利子孙。**能留给子孙后代的只有德行**")
+                        append("。**出身细则**：年月有好东西还须**不被劫**——好物（如年上${caiEl.chinese}）若在年月被比劫劫住，给不到日主——**有好东西出身也不好**")
+                    },
+                )
                 // 案九十六放宽：财虽在（有根）而**群劫争财**（比劫党力≥2倍财）——财已用不了（不用之财尽可劫），
                 // 不能滋官破寡——仍寡（对勘案八：庚财透而非群劫——破寡转用官；案廿五：壬壬透而非群劫——仍财滋弱杀）。
                 guanS > 0.0 &&
@@ -1463,436 +1496,7 @@ object JinBiaoCalculator {
 
         // ── 子女判读（第十一讲·子女章判定树：子星按原局喜忌而定，来回检查；子星要昌） ──
         // 四情况铁律：必有儿／必无儿／无儿有女／无儿无女损子——逃不出这个圈。
-        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = if (ruoJi) {
-            // 案七十一（案四盘复看）·从势局子女另裁：特殊格局不按身衰印做儿/身旺财为子正常树断——
-            // 只要走好运（顺势之运）就可以生儿子；此命不需要印（帮身反而不好——最忌帮身）
-            cn.xulun.bazi.model.JinBiaoZiNv(
-                qingKuang = cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER,
-                ziXing = representativeGod(bazi, dayMaster, choice.el),
-                ziEl = choice.el,
-                basis = "**特殊格局（弱极从势）——不按「身衰印做儿／身旺财为子」正常判定树来断**" +
-                    "（辰为震位虚土：气虚而薄〔未戌为六九月实土，辰异于彼〕、寅亥化木木得局——辰自顾不暇不能帮身）：**只要走好运（顺势之运）就可以生儿子**——顺运内应期。" +
-                    "此命**不需要印**：帮身反而不好——**最忌帮身**；走金运金生水水生木（不帮身即好运）——学历事业不错（唯戌运比劫帮身学习不好）；水旺则金木顺流，水不旺则金木争克而平庸",
-            )
-        } else if (wangJi) {
-            null // 专旺之子女另裁——待师传
-        } else {
-            val yinYouLi = bazi.stems.any { it != dayMaster && it.element == yinEl } || hasBenQiRoot(bazi, yinEl)
-            val yinTouZuoBen = bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl }
-            // 案七十·财贴克印（全线优先）：财干贴克印干（丙贴庚之类）——螳螂捕蝉黄雀在后：
-            // 没有生儿子的功能——能不能生儿子人一出生就决定了（大运走水也生不出来）
-            val caiIdxsW = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
-            val yinIdxsW = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
-            // 案七十七戒·隔克不算克：须**所有**印干皆被财干贴克才功能废——一印被克而另一印隔开独存＝功能在
-            val caiTieYin = caiIdxsW.isNotEmpty() && yinIdxsW.isNotEmpty() &&
-                yinIdxsW.all { yi -> caiIdxsW.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
-            data class ZN(val el: Element, val er: Boolean, val nv: Boolean, val text: String)
-            // 案六十三·调候优先：寒暖特殊气象局——一切以寒暖为规范，不用分析生克：
-            // 走东南暖运就是好——什么都有什么都顺——必然有儿子有孙子，没有缺陷
-            val zn: ZN = if (choice.way == JinBiaoQuYongWay.TIAO_HOU) {
-                ZN(yongEl, true, false,
-                    "**调候优先（案六十三）**：寒暖特殊气象局**不用分析生克——一切以寒暖为规范**：调候神有根有气、走东南暖运就是好——什么都有什么都顺——**必然有儿子、有孙子——没有缺陷**（辅证：日主坐印足以食伤制杀——食伤偏弱，帮起食伤即好）")
-            } else if (choice.way == JinBiaoQuYongWay.QU_GUA) {
-                // 案九十六·特殊格局（去寡从旺）子女另裁：不能按正常判定树论——
-                // 有食伤（泄＝生育能力）＋走好运（顺势）→不光事业好一般都有儿子；
-                // 一直走克食伤之运把食神憋住→没儿子；从旺无食神不这样论。
-                // 不用之财尽可劫——群劫争财不碍子。
-                val keShiEl96 = Element.entries.first { it.controls == shiEl }
-                val shunCnt96 = daYun?.yuns?.take(5)?.count { y ->
-                    val ge = y.pillar.stem.element
-                    val ze = y.pillar.branch.element
-                    ge == shiEl || ge.generates == shiEl || ze == shiEl || ze.generates == shiEl
-                } ?: 0
-                val biShiCnt96 = daYun?.yuns?.take(5)?.count { y ->
-                    y.pillar.stem.element == keShiEl96 || y.pillar.branch.element == keShiEl96
-                } ?: 0
-                ZN(shiEl, shunCnt96 > biShiCnt96, false,
-                    "**特殊格局（去寡）子女另裁（案九十六）——不按正常判定树论**：这局不用财——**不用之财尽可劫，随便劫**（群劫争财不碍子）；用食伤泄秀——**只要泄秀泄得好就有儿子：身旺发泄发得好＝生育能力强，泄就代表生育能力**。" +
-                        (if (shunCnt96 > biShiCnt96) "**特殊格局走好运不光事业好，一般还都有儿子**（得看他走的运——本案前运顺势〔帮${shiEl.chinese}〕多）" else "**然前运一直走${keShiEl96.chinese}地把食神${shiEl.chinese}憋住了——也是没有儿子的**") +
-                        "。若一直走北方${keShiEl96.chinese}运把食神${shiEl.chinese}给憋住了——那么也是没有儿子的。**从旺没有食神，就不能按这样说**（旺极无食另裁——待师传）。口诀：「**不用之财尽可劫，不用之官尽可伤；可用之官不可伤，可用之财不可劫**」")
-            } else if (choice.way == JinBiaoQuYongWay.KUN_LUN) {
-                // 案九十七·昆仑顺局子女看运：顺（生源/本势/顺泄）有儿；逆（克局止水/克生源）
-                // 没儿子——有儿子也是被克了或离婚跟对方（特殊格局方方面面都得看大运）
-                val shunEls97 = setOf(kunLunSource!!, kunLunEl!!, kunLunEl!!.generates)
-                val niEls97 = setOf(
-                    Element.entries.first { it.controls == kunLunEl },
-                    kunLunEl.controls,
-                )
-                val shunCnt97 = daYun?.yuns?.take(5)?.count { y ->
-                    y.pillar.stem.element in shunEls97 || y.pillar.branch.element in shunEls97
-                } ?: 0
-                val niCnt97 = daYun?.yuns?.take(5)?.count { y ->
-                    y.pillar.stem.element in niEls97 || y.pillar.branch.element in niEls97
-                } ?: 0
-                ZN(kunLunEl.generates, shunCnt97 > niCnt97, false,
-                    "**昆仑顺局子女看运（案九十七）——特殊格局方方面面都得看大运**：顺者${kunLunSource.chinese}（生源）、${kunLunEl.chinese}（本势）、${kunLunEl.generates.chinese}（顺泄——泄就代表生育能力）；逆者${Element.entries.first { it.controls == kunLunEl }.chinese}（克${kunLunEl.chinese}止${kunLunEl.chinese}——止不住的）与${kunLunEl.controls.chinese}（克生源逆局）。" +
-                        (if (shunCnt97 > niCnt97) "**前运顺多——有儿子**" else "**前运逆多——没儿子**") +
-                        "；**逆着它就没有儿子——有儿子也是被克了、或者离婚儿子跟对方了**（本案前五运顺${shunCnt97}步逆${niCnt97}步）")
-            } else if (strength == DayStrength.STRONG) {
-                // 身旺：基准财为子——查比劫夺财（重夺/地支得局不载）→官旺救或食伤得局化劫；无财无官食伤泄秀；食被枭夺找财
-                // 「鲁莽地说就错了」——有财不可遽断有子，必来回检查螳螂捕蝉黄雀在后
-                val duoCai = biS >= 1.2 * caiS ||
-                    (bazi.branches.count { it.element == biEl } >= 2 && bazi.monthPillar.branch.element == biEl)
-                // 案六十六·贴克无儿：比劫透干贴克财干而其间无食伤通关（地支复冲伐财根）——
-                // 「天干也是贴着财克、地支戌冲辰也砍伐」：纵走三十年财运发财——生不了儿子
-                // （走好运只说明财富事业好，不能说能生儿子——有钱不一定有儿子）
-                val caiIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
-                val biIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == biEl }
-                val shiIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == shiEl }
-                // 财干与（比劫透干或日主）相邻＝贴克；食伤透干居比劫与财之间＝通关隔开（案六五戊隔——不贴克）
-                val keZhuIdxs = biIdxs + 2
-                // 案九十一·劫合化财（财变没了）：财干被劫干合而化神得势（丁壬合化木——化神局）
-                // ——财变没了＋劫通根有力：生不出儿子只能生闺女；财是情缘线——财断克夫（念头论）
-                val caiIdx91 = caiIdxs.firstOrNull { ci ->
-                    val partner = GAN_HE[bazi.stems[ci]]
-                    partner != null && bazi.stems.anyIndexed { j, o -> j != 2 && j != ci && o == partner && o.element == biEl }
-                }
-                val huaShen91 = Element.entries.firstOrNull { el -> el != caiEl && el != biEl && partyScore(bazi, el) >= 6.0 }
-                val jieHeHuaCai = caiIdx91 != null && huaShen91 != null && biS >= FOLLOW_MIN_SCORE
-                val tieKe = !jieHeHuaCai && biIdxs.isNotEmpty() && caiIdxs.isNotEmpty() &&
-                    caiIdxs.any { ci -> keZhuIdxs.any { k -> kotlin.math.abs(ci - k) == 1 } } &&
-                    !caiIdxs.any { ci ->
-                        keZhuIdxs.any { k ->
-                            val lo = minOf(ci, k)
-                            val hi = maxOf(ci, k)
-                            shiIdxs.any { si -> si in (lo + 1) until hi }
-                        }
-                    }
-                when {
-                    caiS > 0.0 && jieHeHuaCai -> ZN(caiEl, false, true,
-                        "身旺财为子而**财干被劫干合化（${bazi.stems[caiIdx91!!].chinese}与劫合化${huaShen91!!.chinese}——化神得势，财变没了）**：劫通根有力（壬通根两亥之属）把财克了——**生不出儿子，只能生闺女**（案九十一）。**财是命中情缘线，男女财星不可断；情线一断财门关，男女皆是半路缘**——财是官杀（夫/六亲星）唯一的念头：**把念头去了就要克夫**（六亲死亡念头论：星弱被克不死——**把六亲星的念头克死了才死**——夫星全靠财生这口气，财被合化变没了＝希望没了；知道这点去离婚没事，90%去了念头要出人命）")
-                    caiS > 0.0 && tieKe -> {
-                        val guanJiu = guanS >= GUAN_WANG ||
-                            bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl }
-                        if (guanJiu) {
-                            ZN(guanEl, true, false, "身旺财为子而**比劫贴克财**——然官杀克劫护财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
-                        } else {
-                            ZN(caiEl, false, false,
-                                "**比劫贴着克财**（天干贴克＋地支冲伐财根——戌冲辰也砍伐）：**生不了儿子**——即使走三十年好运助起财星发了财也一样（**走好运只说明财富事业好，不能说能生儿子——有钱不一定有儿子**；原局贴着克＝功能层面废——运不能救，类比案六十四辰酉贴克）")
-                        }
-                    }
-                    caiS > 0.0 && duoCai -> {
-                        // 比劫夺财（重夺／地支得局——财虽有根而地支不载）——官旺救或食伤得局化劫
-                        when {
-                            // 案七十四·羊刃肆逞档：刃当令带印生＋飞刃透干（羊刃飞到天上叫飞刃）＋贴克财＋无官制刃
-                            // ——功能废：大运走的再好也生不出来（财旺只代表财富还可以——财是精卵气血被刃破坏成分）
-                            bazi.monthPillar.branch == YANG_REN[dayMaster] &&
-                                bazi.stems.indices.count { it != 2 && bazi.stems[it].element == biEl } >= 2 &&
-                                !bazi.stems.any { it.element == guanEl } && !hasBenQiRoot(bazi, guanEl) -> ZN(caiEl, false, false,
-                                "**羊刃肆逞**（刃当令带印生〔带源头的羊刃〕＋飞刃透干〔羊刃飞到天上叫飞刃〕——贴着财克，远重于普通劫）而**无官杀制刃——没有这个功能：大运走的再好，也生不出来儿子**。财旺没错（还有食伤生财——俩人都旺）——**但财旺只代表财富还可以：财就是我的精卵、是我的气血——羊刃给我捣乱、破坏成分，就生不出来**。" +
-                                    "**投胎论：申酉这俩儿子都过来投胎来了，但地支都是劫的——在我这待不住：生的也得流产，或者说童子命、或早年克子——只要他生了，肯定要克子的。没有这个功能，即使生了也得没了**（对勘案七十三：异性小刀轻克——没那么严重；本案羊刃带源飞刃——功能废）")
-                            guanS >= GUAN_WANG || bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl } -> ZN(guanEl, true, false,
-                                run {
-                                    val yinTieShi82 = bazi.stems.indices.any { i -> i != 2 && bazi.stems[i].element == yinEl &&
-                                        bazi.stems.indices.any { j -> j != 2 && bazi.stems[j].element == shiEl && kotlin.math.abs(j - i) == 1 } }
-                                    "身旺财为子（财没露）而**比劫夺财**——官杀克劫解放财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**。**暗克非冲不拔根**（如午亥之克——不是贴身的冲克：若亥换成子才叫拔根，午亥只作丁根弱论）" +
-                                        (if (yinTieShi82) "；食神克官而**印贴克食神护官（把官给解放了）——百分之百有儿子**；再走官地（南方）之运——**直接锁定不可能没儿子（富贵得子）**。**不但生儿子，儿子也有出息**：印看住伤官＝给儿子一护卫（好条件、留遗产、教学习——捣乱儿子的东西全被印克了，儿子得福气）；**印护官主要关系事业**（身旺用官、印看食伤不使犯官——走官地事业发财）" else "；怕食地——食伤制官杀来捣乱（印不透干：无护官之神，食伤旺地损子）") +
-                                        "。**辟谬**：穿一下变女孩、阳男阴女之说——与生男生女无关（案八十二）"
-                                })
-                            // 案七十二·明暗子星＋信号投胎论：官透而虚（甚至被化）然无贴克——儿子在这飘着等投胎：
-                            // 看大运（运帮子星＝接收得到信号就能生；运全克子星＝接收不到、生不出来；
-                            // 贴克则不看运——功能废吃药也不管事）。明以官杀为子，暗仍以财星为子（官为护财而设）
-                            bazi.stems.any { it != dayMaster && it.element == guanEl } && run {
-                                val guanIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == guanEl }
-                                val keGuanEl = Element.entries.first { it.controls == guanEl }
-                                val keIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == keGuanEl }
-                                keIdxs.none { k -> guanIdxs.any { g -> kotlin.math.abs(k - g) == 1 } }
-                            } -> {
-                                val bangYun = daYun?.yuns?.take(5)?.count { y ->
-                                    y.pillar.stem.element == guanEl || y.pillar.branch.element == guanEl ||
-                                        y.pillar.stem.element.generates == guanEl || y.pillar.branch.element.generates == guanEl
-                                } ?: 0
-                                val keYun = daYun?.yuns?.take(5)?.count { y ->
-                                    val keGuanEl2 = Element.entries.first { it.controls == guanEl }
-                                    y.pillar.stem.element == keGuanEl2
-                                } ?: 0
-                                ZN(guanEl, bangYun > keYun, bangYun <= keYun,
-                                    "**明以官杀为子，暗仍以财星为子**（身旺财为子被劫——官护财克劫：官为护财而设，本质仍财——案七十二）；官透而虚（乙被巳化之属）然**无贴克——儿子就在这飘着等投胎：此时才看大运**——" +
-                                        (if (bangYun > keYun) "运帮子星（如东方${guanEl.chinese}旺之运）**接收得到信号——就能生儿子**" else "运全走克子星之干（庚辛之属）——**接收不到儿子的信号，生不出来**") +
-                                        "；**若有贴克则不看大运**（功能废——哪怕走帮运也没儿子，吃药也不管事）")
-                            }
-                            shiS >= GUAN_WANG && shiS >= biS -> ZN(shiEl, true, false,
-                                "身旺财为子而比劫夺财——**食伤得局完全把比劫化了**（劫不至重、间接解放财；比劫在年上、中间食伤${shiEl.chinese}隔着——不贴克）：**还能有儿子——更可以生儿子**（财得月令之气，帮的时候更旺；**对勘案六十二**：虚透无气之财——只因无比劫克才生、运过即损——**主要就是看季节：得气帮得起，无气帮不起**）（案六十补笔）")
-                            // 案七十六·盖头官救档：比劫干同柱盖头坐财支（辛坐卯）而官支在局未被克（巳无水克）
-                            // ——转官为儿：有这个功能可以生儿子（官来的年就生了）
-                            bazi.stems.anyIndexed { i, s -> i != 2 && s.element == biEl && bazi.branches[i].element == caiEl } &&
-                                hasBenQiRoot(bazi, guanEl) &&
-                                partyScore(bazi, Element.entries.first { it.controls == guanEl }) < FOLLOW_MIN_SCORE -> ZN(guanEl, true, false,
-                                "身旺财为子而**比劫盖头贴克财支**（${biEl.chinese}坐${caiEl.chinese}——同柱贴克：没儿子？**不一定——还要看有没有官：转官了**。${guanEl.chinese}官支在局**没有被克**（克${guanEl.chinese}之神无）——**有这个官我就有儿子：有这个功能可以生儿子——官来的年就生了**（案七十六）。**能生儿子不代表能发财**（能生儿的穷人有的是）：没被克只说明有生儿子的功能，但都是泄我的——**财官皆弱顶多小康、衣食无忧（这就算好命）**：化官生印转印身更旺；用神弱而**无克我捣乱者＝无灾无难（没有什么大疾病车祸——这不错了）**")
-                            // 案八十四·拱暗财档：财半合拱局暗存（亥未拱木）——有暗财＝有子（不仅有子还有钱）
-                            // 案八十八·木火两旺转而生土（多生终得一子）：比劫得局夺财而食伤通关有力
-                            // （木生火火生土——财有暗源）——基本上生不出儿子，然一路南方食伤运＋好流年
-                            // ——使劲生碰出来的（生四个才出一个；无这旺火生一百个也生不出来）
-                            caiS > 0.0 && shiS >= 2 * FOLLOW_MIN_SCORE && hasBenQiRoot(bazi, shiEl) &&
-                                biEl.generates == shiEl && shiEl.generates == caiEl &&
-                                // 护案八十四：财已拱局暗存（亥未拱木）者优先走财气通门户档——非多生型
-                                !listOf(
-                                    setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
-                                    setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
-                                    setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
-                                    setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
-                                ).any { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { b -> b in bazi.branches } }
-                            -> ZN(caiEl, true, false,
-                                "身旺财为子而**比劫得局夺财——基本上生不出来儿子，然${biEl.chinese}${shiEl.chinese}两旺转而生${caiEl.chinese}**（比劫生食伤、食伤生财——财有暗源通关）：**多生终得一子**——一路南方${shiEl.chinese}运不停的生，**碰着好流年就生出来儿子了（生四个才出一个——使劲生）**；**若没有这比较旺的${shiEl.chinese}，生一百个也生不出来儿子**。**即使生出来的儿子，儿子也好不了**（后面走克${caiEl.chinese}之运——儿子没好日子）；无${shiEl.chinese}通关之比劫夺财局则无儿只生女（案八十八）")
-                            caiS > 0.0 && shiS > 0.0 -> run {
-                                val gongTrio2 = listOf(
-                                    setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
-                                    setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
-                                    setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
-                                    setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
-                                ).firstOrNull { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { it in bazi.branches } }
-                                if (gongTrio2 != null) {
-                                    val missing2 = gongTrio2.first.first { it !in bazi.branches }
-                                    ZN(caiEl, true, false,
-                                        "身旺财为子而**财拱局暗存**（${gongTrio2.first.filter { it in bazi.branches }.joinToString("") { it.chinese }}拱${caiEl.chinese}——玄机暗里存）：**有暗财的——命主是有子的（不仅有子，他还有钱——财气通门户：财星有情不在乎旺衰）**。**运支${missing2.chinese}填拱——一下就有子了**（且财局兑现发大财——儿子也有出息：往后好运越来越好）。取象：干${caiEl.chinese}之行（衣饰／古玩把件／家具／二手车／工艺品之属——同样八字不一定同行、五行同类）——走差运生意也不差（选对行）、小康；好运发大财（案八十四）")
-                                } else {
-                                    ZN(caiEl, false, true,
-                                        "身旺财为子而**比劫地支得局夺财——财虽有根而地支不载**（终究土得局）；官弱救不动、食伤弱化不动——**没生儿子**；然有食伤生财（财透得气）——**有生育能力，生女儿不生儿**；运注：子星得地之运（如亥水之属）可生儿；若火土局之运生子——必是闺女（火生土旺，财不载）")
-                                }
-                            }
-                            else -> ZN(caiEl, false, false, "身旺财为子而**比劫夺财、官救食化俱无**——**没儿子**")
-                        }
-                    }
-                    caiS > 0.0 -> {
-                        // 案九十·飞刃贴克财支：比劫干同柱盖头坐财支（丙坐申——羊刃飞出来贴着捣乱）
-                        // 而官杀全无（无救）——食伤生财只主财富不管子事：生女儿不生儿（B超说儿子也没用）
-                        if (bazi.stems.anyIndexed { i, s -> i != 2 && s.element == biEl && bazi.branches[i].element == caiEl } &&
-                            !hasBenQiRoot(bazi, guanEl) && bazi.stems.none { it != dayMaster && it.element == guanEl }
-                        ) {
-                            ZN(caiEl, false, true,
-                                "身旺财为子而**比劫羊刃飞出来贴着捣乱**（${biEl.chinese}坐${caiEl.chinese}——同柱盖头贴克财支：时干比劫通根克财）：**生的是女儿——生不出来儿子**（食神生${caiEl.chinese}财也不管事儿——**食伤生财是指财富**，救不了子星）；**再走印比之运（寅亥化木之属）——百分之百生女儿**（即使B超检查说生个儿子也没用——B超也有错的时候——案九十）")
-                        } else if (!caiZai && !hasBenQiRoot(bazi, caiEl)) {
-                            // 案六十二·财虚透而没被比劫克——生育能力在（贫富与子嗣两轨）：走财得根运得儿子
-                            val deGenYuns = daYun?.yuns
-                                ?.filter { yun -> branchHiddenStems.getValue(yun.pillar.branch).any { it.element == caiEl } }
-                                ?.map { it.pillar.fullName } ?: emptyList()
-                            ZN(caiEl, true, false,
-                                "**身旺财为子——财虚透而没被比劫克**：**生育能力在**（**贫富与子嗣两轨**——富人也生儿子，穷人也生儿子：大运帮不起来＝财富不行温饱打工，**不代表穷人就生不了儿子**——只要财没被破坏，大运一帮就有机会生）" +
-                                    "；**走财得根的大运是得儿子的**（如${if (deGenYuns.isNotEmpty()) deGenYuns.joinToString("、") + "之属" else "财藏根支之运"}）" +
-                                    "；**财运过后防损子**——其后克泄财之运损子：死／送人／**离婚判给对方（孩子跟人家也行——反正不在你身边就破解了）**；若离婚儿子还判给你——儿子就要没了（必须的）")
-                        } else {
-                            ZN(caiEl, true, false, "**身旺财为子**（有财即有子；怕劫地——比劫给我克了）")
-                        }
-                    }
-                    guanS >= FOLLOW_MIN_SCORE -> run {
-                        // 案八十·拔根档：官煞为儿而官之本气根支被贴冲拔根（子午冲——两丙之根被拔）——
-                        // 拔根比虚透罪加一等：没儿子生闺女（运支救根只救财富不救生育——子午冲在功能废；
-                        // 年轻走克官之干〔壬癸水〕百分之百生不出来；走生官支〔寅卯〕救起——不好说可生）
-                        val guanGenZhi = bazi.branches.filter { it.element == guanEl }
-                        val baGen = guanGenZhi.any { g ->
-                            val gi = bazi.branches.indexOf(g)
-                            (gi - 1 in bazi.branches.indices && LIU_CHONG[g] == bazi.branches[gi - 1]) ||
-                                (gi + 1 in bazi.branches.indices && LIU_CHONG[g] == bazi.branches[gi + 1])
-                        }
-                        if (baGen) {
-                            ZN(guanEl, false, true,
-                                "身旺无财——**官煞为儿，然${guanEl.chinese}官之本气根被贴冲拔根**（如子午冲——两${guanEl.chinese}之根被拔）：**拔根比虚透罪加一等**（虚透之${guanEl.chinese}〔坐辰申之属〕都比被拔根的强）——官衰弱、${guanEl.chinese}又坐随党之支——**基本上没儿子了**。运之解：年轻走克${guanEl.chinese}之干（壬癸之属）——**百分之百生不出来**；走生${guanEl.chinese}之支（寅卯之属）救起官根——**只说明财富好，解不了贴冲这事——没有生儿子的功能**（除非运支合去冲神）。**命主生闺女，财富还可以**（案八十·对勘案四十八印得局官二代）")
-                        } else {
-                            ZN(guanEl, true, false, "身旺无财——**官煞为儿**（喜官杀克我；怕食地——食伤制官杀捣乱；月上比劫劫住年官替我受克则子归挡者）")
-                        }
-                    }
-                    shiS >= FOLLOW_MIN_SCORE && yinS < YIN_HUAI -> ZN(shiEl, true, false, "身旺无财无官——**食伤泄秀为儿**：泄得好没破坏＝**多子**")
-                    shiS >= FOLLOW_MIN_SCORE -> {
-                        if (caiS > 0.0) ZN(caiEl, true, false, "身旺食伤泄秀而**枭印夺食**——**财坏印解放食伤：仍以财为子，有子**")
-                        else ZN(shiEl, false, false, "身旺食伤泄秀而**枭印夺食又无财救**——**没儿子**（伤官不见财，男孩不见面）")
-                    }
-                    else -> ZN(biEl, false, false, "身旺而财官食俱无——子女另裁（待师传）")
-                }
-            } else {
-                // 身弱：印做儿／比劫为儿——官杀欺衰查印化、财坏印查比劫护、无印比劫扛
-                val keYinS = partyScore(bazi, caiEl) // 财坏印（克印之神）
-                val guQiS = guanS
-                when {
-                    // 案七十·贴克优先（非官旺线）：身衰印做儿而财贴克印——没有生儿子的功能
-                    caiTieYin && yinYouLi && guQiS < FOLLOW_MIN_SCORE -> ZN(yinEl, false, true,
-                        "**身衰印做儿（${yinEl.chinese}是我的儿子）然不变之中也有变化——螳螂捕蝉黄雀在后：${caiEl.chinese}财有力贴身克我（印）——那就生不出来**。**即使大运走帮身之运也是生不出来：这个人没有生儿子的功能——能不能生儿子，人一出生就决定了**（案七十）。因果全息：祖坟西方有变压器之类、父辈做事风格（${caiEl.chinese}老克印）、婆家积德行善——万物全息连着串儿（生女与否看解放之运）")
-                    guQiS >= FOLLOW_MIN_SCORE && yinYouLi -> {
-                        // 官杀欺衰主——除非有印：印为儿；螳螂捕蝉黄雀在后查财坏印；木坚金缺查子星所克过旺
-                        val haoQueS = partyScore(bazi, yinEl.controls) // 子星所克之神过旺——木坚金缺（剩一点气生闺女）
-                        // 案六十七·财贴克印：财干贴克印干——忌神深重贴着我克：运去病也不修复生育程序
-                        val caiIdxs2 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
-                        val yinIdxs2 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
-                        val caiTieKeYin = caiIdxs2.isNotEmpty() && yinIdxs2.isNotEmpty() &&
-                            yinIdxs2.all { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
-                        when {
-                            // 案九十三·拱财坏印未贴克档：财拱局透干引化得局（亥未拱木乙露干）而印当令——
-                            // 财未透干贴克印干（隔不贴克）＝生育功能在：生得出儿子（走官杀运生儿子——印星应期）；
-                            // 然拱财坏用神印——财为妻起最坏的作用：他得离婚；
-                            // 反事实：印边之支若换作两财本气支贴克——不光离婚，儿子也生不出来
-                            gongCaiYinHua && !caiTieKeYin &&
-                                !bazi.branches.anyIndexed { i, br ->
-                                    br.element == yinEl &&
-                                        ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl) ||
-                                            (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl))
-                                } -> ZN(yinEl, true, false,
-                                "**身衰印做儿（案九十三）**：${guanEl.chinese}官杀克身＋${shiEl.chinese}食伤旺泄——日主转弱，${yinEl.chinese}印当令为儿。财虽得局（${gongCaiTrio!!.first.filter { it in bazi.branches }.distinct().joinToString("") { it.chinese }}拱${caiEl.chinese}——拱局透干则实）而坏印，然**财毕竟没有露出来贴着克**（${caiEl.chinese}干隔位不贴印、${yinEl.chinese}印本气支亦未被${caiEl.chinese}本气支贴克）——**生育功能在：生得出儿子**（${monthBranch.chinese}土当令，他可以生出来儿子）。**运注：走${guanEl.chinese}运的时候生儿子**（官杀生${yinEl.chinese}印——印星应期）。**然拱财坏${monthBranch.chinese}印——财为妻而毁用神（妻子起了最坏的作用，妻子让命主很难受）：他得离婚**（克妻两义：一离婚、一丧妻）。**反事实**：${monthBranch.chinese}边之支若换成两${caiEl.chinese}（财本气支贴克印本气支）——**他不光离婚，而且也生不出来儿子**（贴克＝功能废）")
-                            // 案七十三·异性轻克档：印本气根被财支贴克而阴阳异性（酉是小刀寅是树——小刀刻不断树）
-                            // ＋印有官杀贴生（壬坐寅之属）——弱而不废：弱代表穷，不代表生不了儿子（可以生；
-                            // 若同性重克〔大申金贴寅〕则废——生不了）。印弱＝事业层次不行；儿子学习随印运
-                            bazi.branches.anyIndexed { i, br ->
-                                br.element == yinEl &&
-                                    ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl && (bazi.branches[i + 1].ordinal % 2) != (br.ordinal % 2)) ||
-                                        (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl && (bazi.branches[i - 1].ordinal % 2) != (br.ordinal % 2))) &&
-                                    bazi.stems.anyIndexed { j, s -> j != 2 && s.element == guanEl && bazi.branches[j] == br }
-                            } -> ZN(yinEl, true, false,
-                                "**印为儿而印本气根被财支贴克——然异性之克不重（${caiEl.chinese}是小刀、${yinEl.chinese}是树——小刀刻不断树）＋官杀贴生（壬坐寅之属）：印只是弱，没有被彻底克坏——弱代表她穷，不代表她生不了儿子**（**是可以生儿子的**；若是大${caiEl.chinese}〔同性重克〕贴着克——命主就生不了儿子了）。**一切由印星决定**：印弱＝事业层次不行、财富值低（又走克印之运则贫穷）；印星是儿子——**印运即子运：儿子学习随印运**（走克印之运儿子学习差）")
-                            // 案七十七·隔克不算克档：财贴克一印而另一印隔开未被贴克——功能在：能生儿子
-                            caiIdxs2.isNotEmpty() && yinIdxs2.size >= 2 &&
-                                yinIdxs2.any { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } } &&
-                                yinIdxs2.any { yi -> caiIdxs2.none { ci -> kotlin.math.abs(ci - yi) == 1 } } -> ZN(yinEl, true, false,
-                                "**隔克不算克**：${caiEl.chinese}财贴克一印（年干），然**另一印隔开未被贴克——功能在：能生儿子**（虽是异性的克贴着克，也是有影响的——但一印被克一印独存，具备生儿子的功能）。**况且走印运（帮身化杀）——很确定可以生儿子：百分之百有儿子**（对勘案六十七：独印被有力之财贴克＝功能废；本案一印独存＝功能在——案七十七）")
-                            // 案八十三·贴克三态（生儿子态）：财贴克印而①印有劲（印干坐支通源——秋水通源）
-                            // ②异性之克 ③财被局泄化（泄财之神得局——金得局泄土土完了：秋土本虚＋金旺泄土）
-                            // ——即使印被贴身克，命主也生儿子（穷人也生儿子）
-                            caiTieKeYin && run {
-                                val yinIdx = yinIdxs2.firstOrNull { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
-                                yinIdx != null &&
-                                    branchHiddenStems.getValue(bazi.branches[yinIdx]).any { it.element == yinEl } &&
-                                    bazi.stems[yinIdx].yang != bazi.stems[caiIdxs2.first { ci -> kotlin.math.abs(ci - yinIdx) == 1 }].yang &&
-                                    partyScore(bazi, caiEl.generates) >= 6.0 && bazi.monthPillar.branch.element == caiEl.generates &&
-                                    // 财无生源（生财之神党力<1.5——扣除随泄神成局之支：案八三巳随巳酉丑金局不作火源论；
-                                    // 案六七丁有卯源带源头——不入此态）
-                                    run {
-                                        val scEl = Element.entries.first { it.generates == caiEl }
-                                        var sc = partyScore(bazi, scEl)
-                                        // 泄神成局之支随局走——其本气（如金局中之巳火根）不作生财之源论
-                                        val juTrio = listOf(
-                                            setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
-                                            setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
-                                            setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
-                                            setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
-                                        ).firstOrNull { (trio, el) -> el == caiEl.generates && trio.all { it in bazi.branches } }
-                                        if (juTrio != null) {
-                                            sc -= 1.5 * juTrio.first.count { it.element == scEl && it in bazi.branches }
-                                        }
-                                        sc < 1.5
-                                    }
-                            } -> ZN(yinEl, true, false,
-                                "官杀欺衰主有印化（**印为儿**），财虽贴身克印——然**贴克三态（案八十三）**：①**印有劲**（${yinEl.chinese}干坐支通源——秋水通源）②**异性之克**（不重）③**财被局泄化**（泄财之${caiEl.generates.chinese}得局——${caiEl.chinese}土全被化了：秋土本虚＋${caiEl.generates.chinese}旺泄土＋得局——**土完了**）——**即使印被贴身克，命主也生儿子（穷人也生儿子）**。**对勘系谱**：案七三（夏＋异性克印有劲——生儿）↔ 案六七（带源头火旺贴克——生不了）↔ 案七四（大夏飞刃贴克——生不出来）↔ 案八一（贴克多大劲——生不了）——**贴克之废在三件俱反：印无劲／同性重／财带源有力**")
-                            caiTieKeYin -> ZN(yinEl, false, true,
-                                "官杀欺衰主有印化（**印为儿**），然**财贴着我的印来克**（财有力贴着克——螳螂捕蝉黄雀在后；忌神深重贴着我克——他给我捣乱干扰）：**生理上没有生男孩的功能、染色体就不对了**——即使大运解决这个病也一样生不出来儿子（八字程序先天受损，医院拍片也是一样——**解决了病也没有用：运去病不修复生育功能**）；走好运把印解放了——**能生个闺女**；若再走克${yinEl.chinese}之运（如南方火地）——**连闺女都生不出——必无子之命**（八字里男女都是一样看的——案六十七）")
-                            keYinS >= 1.5 * yinS && keYinS > 0 -> run {
-                                // 案八十五·支层贴克（戌大实土贴克子）：干多不如支重地支不载——
-                                // 印本气支被财本气支贴克（大实土力量大）——戌土一克没儿子（官再旺没用印一字定之）
-                                val zhiTieKe = bazi.branches.anyIndexed { i, br ->
-                                    br.element == yinEl &&
-                                        ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl) ||
-                                            (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl))
-                                }
-                                ZN(yinEl, false, false,
-                                    "官杀欺衰主有印化（印为儿），然**财坏印坏成**（螳螂捕蝉黄雀在后）——**没儿子**" +
-                                        (if (zhiTieKe) "。**干多不如支重（案八十五）**：地支不载（比劫透而无根），**${caiEl.chinese}大实土贴身克${yinEl.chinese}本气支**（力大——戌克子之属）——**一克没儿子**；层次**完全指着印星一字定之**（化官生印「官大坐大官」之说不成立——日主没力量，**官再旺没有用**：印被贴克就完了，官杀旺也化不了——**经济困难、还没有儿子**）" else "") +
-                                        "。**一印双象论（案八十一）**：此印**既当财富看、也当他的儿子**——印废则**贫而无子**（双失：走好运温饱解决衣食无忧——**发不了财**也**生不了儿子：原命没有这个功能**）。**无子五象**：贫而无子／**夭而无子**（走克印墓地基本活不成）／富而无子／贵而无子／贱而无子——以局配之；**未运穿克子水（六害）之属——牢狱之应**（蹲大牢——穿害之应期）")
-                            }
-                            // 案九十五·财全藏支不透（无贴克）——丁没事儿：有儿子（喜神被拔只降层次不碍子——
-                            // 先于木坚金缺：食伤反克虽重，印透干立得住即功能在）
-                            guoXieFanRuo && caiIdxs2.isEmpty() -> ZN(yinEl, true, false,
-                                run {
-                                    val yinZhu95 = bazi.stems.indices.firstOrNull { j -> j != 2 && bazi.stems[j].element == yinEl }
-                                    val genZhu95 = yinZhu95?.let { bazi.branches[it] }
-                                    val chong95 = genZhu95?.let { LIU_CHONG[it] }
-                                    "**身衰印做儿（案九十五）**：${shiEl.chinese}多过泄身弱用印，印（${yinEl.chinese}）为儿。**${caiEl.chinese}财全藏地支不透干——没有贴着克印：${yinEl.chinese}没事儿——有儿子**（${genZhu95?.chinese ?: ""}喜神被拔只关乎层次学历，不碍子嗣——富贵子嗣两轨）。**反事实**：${chong95?.chinese ?: ""}换${caiEl.chinese}本气支（亥水之属）、${genZhu95?.chinese ?: ""}换巳火——巳亥逢冲**去火存金（火根转金根）：印根尽废——那就没儿子了**"
-                                })
-                            haoQueS >= 2.0 * yinS && yinS > 0.5 -> ZN(yinEl, false, true, "**官杀欺衰主——除非有印，印为儿**（印星就是我的儿子，虽在年上——有没有儿子取决于他，印好才是真的好）；然**木坚金缺**（子星所克之神党力${format(haoQueS)}压过子星${format(yinS)}——食伤得局反克，金剩一点气；若是酉金被冲彻底毁，连闺女都生不出来）——**没儿子，可生闺女**")
-                            haoQueS >= 2.0 * yinS -> ZN(yinEl, false, false, "官杀欺衰主有印化（印为儿），然子星被所克之旺神拖至**彻底缺绝**——**连闺女都生不出来**（若是酉金还走火运，必然不生育）")
-                            keYinS > 0.0 -> ZN(yinEl, false, true, "官杀欺衰主有印化（印为儿），然**财轻克而未坏成印**——能生个闺女；万一财更轻凑合生出儿子——**必然逆子**（财有多重儿子就有多不孝：轻则没礼貌、中则啃老、重则破大财打骂爹妈）")
-                            else -> ZN(yinEl, true, false, "官杀欺衰主——**除非有印，有印就有子**：印为儿，子星昌（怕财地——局里有财命局隐患、大运有财损子运）")
-                        }
-                    }
-                    guQiS >= FOLLOW_MIN_SCORE -> {
-                        // 官杀欺衰而无印——比劫扛得住才有子；比劫子星被克泄过重——凑合生子必损＋生女儿
-                        val biKeS = partyScore(bazi, Element.entries.first { it.controls == biEl })
-                        val biXieS = partyScore(bazi, biEl.generates)
-                        // 案六十四·贴身深克：比劫子星之本气根被官杀本气支贴身冲（相邻）而官杀党力压过——
-                        // 忌神深重贴身克用神：没儿子只能生女儿（没有这个能力和功能）
-                        val tieChong = bazi.branches.filter { it.element == biEl }.any { bg ->
-                            val idx = bazi.branches.indexOf(bg)
-                            (idx - 1 in bazi.branches.indices && bazi.branches[idx - 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx - 1]) ||
-                                (idx + 1 in bazi.branches.indices && bazi.branches[idx + 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx + 1])
-                        }
-                        // 案八十九·官杀得局废比劫：官杀之支三会/三合成局而比劫之根尽随局（辰在寅卯辰中）
-                        // 或尽虚土（丑）——比劫全废扛不住：没儿子（走火运也生不出来——官杀得局功能废）
-                        val guanDeJu = SAN_HUI_JU.any { (bs, _) -> bs.all { it in bazi.branches } && bazi.monthPillar.branch in bs } ||
-                            listOf(
-                                setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN),
-                                setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI),
-                                setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU),
-                                setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
-                            ).any { trio -> guanS >= 6.0 && trio.all { it in bazi.branches } }
-                        val biGenFei = bazi.branches.filter { it.element == biEl }.all { b ->
-                            b in (SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }?.first ?: emptySet()) ||
-                                b == EarthlyBranch.CHOU || b == EarthlyBranch.CHEN
-                        }
-                        when {
-                            guanDeJu && bazi.branches.any { it.element == biEl } && biGenFei -> ZN(biEl, false, false,
-                                "**官杀得局废比劫（案八十九）**：官杀之支会局（寅卯辰方局之属）——身衰印坐儿而无印，**生得出来儿子吗？不能——没这功能，生不出来儿子**（比劫之根尽随局〔辰在寅卯辰中随木〕或尽虚土〔丑〕——**比劫全废扛不住：走火运也生不出来**——官杀得局功能废）。日主有丑辰两根＋**食伤制杀有一定层次（食神去官杀之混杂——庚合乙之属）——国家单位上班（牙医之属）：有一定层次不代表有钱**——身弱只能用劫而劫废：**挣了钱也存不住——白领层次发不了财**（一路没走火土运一辈子发不了大财小财）；**食神制杀兼泄身——食神主生殖：老搞邪淫天天破财**（官杀混杂老来骚扰——今儿破明儿破——挣多少也没用）")
-                            // 案七十五·虚劫不管事档：比劫本气根尽是辰丑虚土（古训：辰丑之土非彼未戌之实也）
-                            // 而泄神会局得令（大王王炸）——比劫都虚了不管事：必须找印；无印＝没有功能——生闺女
-                            bazi.branches.filter { it.element == biEl }.all { it == EarthlyBranch.CHEN || it == EarthlyBranch.CHOU } &&
-                                bazi.branches.any { it.element == biEl } &&
-                                partyScore(bazi, shiEl) >= 6.0 && bazi.monthPillar.branch.element == shiEl -> ZN(biEl, false, true,
-                                "**比劫都虚了不管事**（比劫本气根尽是${biEl.chinese}之辰丑虚土——古训：**辰丑之土非彼未戌月之实也**）而**泄神${shiEl.chinese}会局得令＝王炸大王**（会局在当令季节＝最大的牌；对勘案七十三夏局＝小王——同样是会局也不一样）——**必须找印；命局没有印，就不能生儿子了：八字没有这个功能——不能生儿子，生的是闺女**（泄体太过、金得局、克泄交加）。**穷人也可以生女儿**（贫富子嗣两轨）；用神只能用劫而劫很弱——**劫财决定财富，劫很弱＝没儿子也富不了**（无格局只能打工：并不是因为制的杀小没钱，而是用神弱了财富值才低；走帮用好运＝有积蓄〔破财少会理财攒钱〕而不发富）")
-                            // 案六十九·身体条件档：月令比劫根被两官支冲＋食伤贴泄＋无印——克泄交加
-                            // 身体不行（气血不足）：八字不具备生儿子功能——再有钱再格局也流产/生不了男孩
-                            bazi.monthPillar.branch.element == biEl &&
-                                bazi.branches.count { it.element == guanEl && LIU_CHONG[it] == bazi.monthPillar.branch } >= 2 &&
-                                hasBenQiRoot(bazi, shiEl) -> ZN(biEl, false, false,
-                                "**克泄交加·身体条件不行**（两${guanEl.chinese}贴身克＋${shiEl.chinese}食伤贴泄＋**无一印生扶**）：**生小孩得看身体条件——再有钱、身体不行气血不足也生不出来**。**八字就不具备生儿子这个功能：再有格局（食神制杀以威出身大富）也要流产、生不了男孩**——走好运也没用、吃再多补品保健品也没用（**没生出来不代表八字没格局**——两轨并行；怀孕流掉之应〔己亥年之类〕）。身衰印坐儿——没有印，就没有儿")
-                            tieChong && guanS >= biS -> ZN(biEl, false, true,
-                                "**官杀欺衰主而无印——比劫子星之根被官杀贴身冲克**（贴冲＋辰酉合化金力大——忌神深重贴身克用神）：**没儿子，只能生女儿**——属于**没有这个能力和功能**（即使走印化杀之运，生的也不是儿子——运化忌只说明财运事业好了，**不能说明有儿子**；看子女跟看财运不一样——富贵贫贱与有没有儿子没有关系）")
-                            biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "**官杀欺衰主，无印、比劫又扛不住**——**没儿子**（官杀无制化攻身——生了儿子也得夭折）")
-                            biKeS >= 0.75 * biS && biXieS >= 1.5 * biS -> ZN(biEl, false, true,
-                                "**官杀欺衰主而无印——比劫扛得住（坐根有气）＝比劫为儿**；然**子星被克泄得太重**（两杀克＋食伤泄＋会局泄根——${biKeS}克${biXieS}泄压过子星${format(biS)}）：大运帮起来（壬子之属）**凑合生出来儿子——终究损子**（运补暂生而生出来没活成之属——**墓中子星要送出**破解）；**比劫有气坐根——生女儿百分之百**（有生育能力；若无会局之泄，走帮身运是可以有儿子的）")
-                            else -> ZN(biEl, true, false, "**官杀欺衰主而无印**——比劫扛得住（够旺）**比劫为儿也有子**（身弱杀日之间比劫卡住挡杀护我＝我有儿子——**即使走差运也有儿子：有这个功能，走到好流年就可以生**；扛不住则无子。**详推反向**：身旺喜杀克我——中间比劫卡住杀克不到我——**反而生不了儿子（此时有侄儿——子归挡者）**；身弱怕杀克我——比劫卡住——**可以生儿子**——案六十八）")
-                        }
-                    }
-                    yinYouLi && keYinS < FOLLOW_MIN_SCORE -> {
-                        if (yinTouZuoBen) ZN(yinEl, true, false, "**身衰印做儿**（印为儿，印星就是我的儿子——印好才是真的好）")
-                        else ZN(yinEl, true, false, "**身衰印做儿**（有印有比劫而无财——印肯定是儿子，印此时不作母亲论；怕财地）")
-                    }
-                    yinYouLi -> {
-                        // 案七十八·隔克不算克（干层）：财干克印干而**隔位非贴**＋印贴身生（丁贴日主）——
-                        // 印弱＝儿子不给力、生得比较衰——不代表生不了儿子（能生；癸没贴着丁克）
-                        val caiIdxs3 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
-                        val yinIdxs3 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
-                        val caiGanGe = caiIdxs3.isNotEmpty() && yinIdxs3.isNotEmpty() &&
-                            caiIdxs3.any { ci -> yinIdxs3.all { yi -> kotlin.math.abs(ci - yi) > 1 } }
-                        when {
-                            caiGanGe && (bazi.monthPillar.stem.element == yinEl || bazi.dayPillar.branch.element == yinEl) -> ZN(yinEl, true, false,
-                                "身衰印做儿而财坏印——**得详推：${caiEl.chinese}财没有贴着${yinEl.chinese}印克（隔位）——印还是贴着生的**：**印弱是弱——儿子不给力、儿子生的比较衰——不代表我生不了儿子**（能生；只是儿子财富值低/${caiEl.chinese}运直接判死刑没有财富值——然三十年河东河西：坎离震兑四方各管三十年，北方差不一定东方差——**寅亥化木翻身在后面**——案七十八）")
-                            biS >= FOLLOW_MIN_SCORE -> ZN(biEl, true, false, "身衰印做儿而**财坏印**——**比劫克财护印：比劫为儿，有子**")
-                            else -> ZN(yinEl, false, false, "身衰印做儿而**财坏印、比劫又无**——**没儿子**")
-                        }
-                    }
-                    else -> {
-                        // 案八十六·比劫为子的真正本质：明以比劫为子，暗仍以财星为子——比劫须真正
-                        // 把日主帮到身旺（方能胜任财）才有儿子；比劫被食伤泄太重（无力）——比劫没法
-                        // 帮你生（帮＝事业有情跟着挣钱；生孩子不能让人家帮生）——没儿子
-                        val biXieS2 = partyScore(bazi, biEl.generates)
-                        when {
-                            biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "身弱无印无比劫——**没儿子**")
-                            biXieS2 >= 2.0 * biS -> ZN(biEl, false, false,
-                                "身弱局里没有印——比劫线，然**比劫为子的真正本质（案八十六）**：**明以比劫为子，暗仍以财星为子——比劫得真正把你帮到身旺了、你才能胜任这个财，才有儿子**。此局比劫被${shiEl.chinese}食伤泄太重（${format(biXieS2)}泄对${format(biS)}——秋天土金两旺比劫没劲）——**比劫没法帮你生儿子**：有比劫帮＝比劫对你有情、有贵人帮——**这说的是事业**（跟着比劫挣钱、财富比劫一子定之——寅卯拱火东南运事业层次提升）；但**生儿子不能让比劫去帮你生——比劫帮代表比劫有儿子，比劫生的儿子不是你的儿子**（挣钱有让人家帮挣的——生孩子不能让人家帮生）→**比劫没帮到身旺——没儿子**（再走湿土泄火运，百分之百生不出）")
-                            else -> ZN(biEl, true, false, "身弱局里没有印（必财旺或官杀旺）——**比劫就是儿子**（抗杀挡杀镇财给我力量）：有比劫才有儿子")
-                        }
-                    }
-                }
-            }
-            // 运注：子星之克神运＝损子／生不出之运
-            val keZiEl = Element.entries.first { it.controls == zn.el }
-            val keZiYuns = daYun?.yuns?.filter { it.pillar.stem.element == keZiEl || it.pillar.branch.element == keZiEl }
-                ?.map { it.pillar.fullName } ?: emptyList()
-            cn.xulun.bazi.model.JinBiaoZiNv(
-                qingKuang = when {
-                    zn.er -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER
-                    zn.nv -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV
-                    else -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER
-                },
-                ziXing = representativeGod(bazi, dayMaster, zn.el),
-                ziEl = zn.el,
-                basis = zn.text + (if (keZiYuns.isNotEmpty()) "；运注：**${keZiEl.chinese}为子星之克神**——行${keZiYuns.joinToString("、")}运克子星（生不出儿子／损子）" else ""),
-            )
-        }
+        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = ziNvOf(bazi, daYun, choice, strength, ruoJi, wangJi, dayMaster, yinEl, biEl, shiEl, caiEl, guanEl, yinS, biS, caiS, guanS, shiS, monthBranch, guoXieFanRuo, kunLunEl, kunLunSource, gongCaiYinHua, gongCaiTrio, yongEl, caiZai)
 
         // ── 学历判读（案九十四·学历章开讲：印为用神之局适用） ──
         // 看学历不能只看初运好坏：①印星原局没被破坏→小时候脑子没毛病、头脑不笨（底子）；
@@ -2858,6 +2462,466 @@ object JinBiaoCalculator {
             )
         } else {
             null
+        }
+    }
+
+    /** 子女判读（第十一讲·子女章＋各案档）——自 analyze 抽出（方法体量上限）。 */
+    private fun ziNvOf(
+        bazi: BaziResult,
+        daYun: DaYunInfo?,
+        choice: Choice,
+        strength: DayStrength,
+        ruoJi: Boolean,
+        wangJi: Boolean,
+        dayMaster: HeavenlyStem,
+        yinEl: Element,
+        biEl: Element,
+        shiEl: Element,
+        caiEl: Element,
+        guanEl: Element,
+        yinS: Double,
+        biS: Double,
+        caiS: Double,
+        guanS: Double,
+        shiS: Double,
+        monthBranch: EarthlyBranch,
+        guoXieFanRuo: Boolean,
+        kunLunEl: Element?,
+        kunLunSource: Element?,
+        gongCaiYinHua: Boolean,
+        gongCaiTrio: Pair<Set<EarthlyBranch>, Element>?,
+        yongEl: Element,
+        caiZai: Boolean,
+    ): cn.xulun.bazi.model.JinBiaoZiNv? {
+        return if (ruoJi) {
+            // 案七十一（案四盘复看）·从势局子女另裁：特殊格局不按身衰印做儿/身旺财为子正常树断——
+            // 只要走好运（顺势之运）就可以生儿子；此命不需要印（帮身反而不好——最忌帮身）
+            cn.xulun.bazi.model.JinBiaoZiNv(
+                qingKuang = cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER,
+                ziXing = representativeGod(bazi, dayMaster, choice.el),
+                ziEl = choice.el,
+                basis = "**特殊格局（弱极从势）——不按「身衰印做儿／身旺财为子」正常判定树来断**" +
+                    "（辰为震位虚土：气虚而薄〔未戌为六九月实土，辰异于彼〕、寅亥化木木得局——辰自顾不暇不能帮身）：**只要走好运（顺势之运）就可以生儿子**——顺运内应期。" +
+                    "此命**不需要印**：帮身反而不好——**最忌帮身**；走金运金生水水生木（不帮身即好运）——学历事业不错（唯戌运比劫帮身学习不好）；水旺则金木顺流，水不旺则金木争克而平庸",
+            )
+        } else if (wangJi) {
+            null // 专旺之子女另裁——待师传
+        } else {
+            val yinYouLi = bazi.stems.any { it != dayMaster && it.element == yinEl } || hasBenQiRoot(bazi, yinEl)
+            val yinTouZuoBen = bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl && bazi.branches[i].element == yinEl }
+            // 案七十·财贴克印（全线优先）：财干贴克印干（丙贴庚之类）——螳螂捕蝉黄雀在后：
+            // 没有生儿子的功能——能不能生儿子人一出生就决定了（大运走水也生不出来）
+            val caiIdxsW = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+            val yinIdxsW = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+            // 案七十七戒·隔克不算克：须**所有**印干皆被财干贴克才功能废——一印被克而另一印隔开独存＝功能在
+            val caiTieYin = caiIdxsW.isNotEmpty() && yinIdxsW.isNotEmpty() &&
+                yinIdxsW.all { yi -> caiIdxsW.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
+            data class ZN(val el: Element, val er: Boolean, val nv: Boolean, val text: String)
+            // 案六十三·调候优先：寒暖特殊气象局——一切以寒暖为规范，不用分析生克：
+            // 走东南暖运就是好——什么都有什么都顺——必然有儿子有孙子，没有缺陷
+            val zn: ZN = if (choice.way == JinBiaoQuYongWay.TIAO_HOU) {
+                ZN(yongEl, true, false,
+                    "**调候优先（案六十三）**：寒暖特殊气象局**不用分析生克——一切以寒暖为规范**：调候神有根有气、走东南暖运就是好——什么都有什么都顺——**必然有儿子、有孙子——没有缺陷**（辅证：日主坐印足以食伤制杀——食伤偏弱，帮起食伤即好）")
+            } else if (choice.way == JinBiaoQuYongWay.QU_GUA) {
+                // 案九十六·特殊格局（去寡从旺）子女另裁：不能按正常判定树论——
+                // 有食伤（泄＝生育能力）＋走好运（顺势）→不光事业好一般都有儿子；
+                // 一直走克食伤之运把食神憋住→没儿子；从旺无食神不这样论。
+                // 不用之财尽可劫——群劫争财不碍子。
+                val keShiEl96 = Element.entries.first { it.controls == shiEl }
+                val shunCnt96 = daYun?.yuns?.take(5)?.count { y ->
+                    val ge = y.pillar.stem.element
+                    val ze = y.pillar.branch.element
+                    ge == shiEl || ge.generates == shiEl || ze == shiEl || ze.generates == shiEl
+                } ?: 0
+                val biShiCnt96 = daYun?.yuns?.take(5)?.count { y ->
+                    y.pillar.stem.element == keShiEl96 || y.pillar.branch.element == keShiEl96
+                } ?: 0
+                ZN(shiEl, shunCnt96 > biShiCnt96, false,
+                    "**特殊格局（去寡）子女另裁（案九十六）——不按正常判定树论**：这局不用财——**不用之财尽可劫，随便劫**（群劫争财不碍子）；用食伤泄秀——**只要泄秀泄得好就有儿子：身旺发泄发得好＝生育能力强，泄就代表生育能力**。" +
+                        (if (shunCnt96 > biShiCnt96) "**特殊格局走好运不光事业好，一般还都有儿子**（得看他走的运——本案前运顺势〔帮${shiEl.chinese}〕多）" else "**然前运一直走${keShiEl96.chinese}地把食神${shiEl.chinese}憋住了——也是没有儿子的**") +
+                        "。若一直走北方${keShiEl96.chinese}运把食神${shiEl.chinese}给憋住了——那么也是没有儿子的。**从旺没有食神，就不能按这样说**（旺极无食另裁——待师传）。口诀：「**不用之财尽可劫，不用之官尽可伤；可用之官不可伤，可用之财不可劫**」")
+            } else if (choice.way == JinBiaoQuYongWay.KUN_LUN) {
+                // 案九十七·昆仑顺局子女看运：顺（生源/本势/顺泄）有儿；逆（克局止水/克生源）
+                // 没儿子——有儿子也是被克了或离婚跟对方（特殊格局方方面面都得看大运）
+                val shunEls97 = setOf(kunLunSource!!, kunLunEl!!, kunLunEl!!.generates)
+                val niEls97 = setOf(
+                    Element.entries.first { it.controls == kunLunEl },
+                    kunLunEl.controls,
+                )
+                val shunCnt97 = daYun?.yuns?.take(5)?.count { y ->
+                    y.pillar.stem.element in shunEls97 || y.pillar.branch.element in shunEls97
+                } ?: 0
+                val niCnt97 = daYun?.yuns?.take(5)?.count { y ->
+                    y.pillar.stem.element in niEls97 || y.pillar.branch.element in niEls97
+                } ?: 0
+                ZN(kunLunEl.generates, shunCnt97 > niCnt97, false,
+                    "**昆仑顺局子女看运（案九十七）——特殊格局方方面面都得看大运**：顺者${kunLunSource.chinese}（生源）、${kunLunEl.chinese}（本势）、${kunLunEl.generates.chinese}（顺泄——泄就代表生育能力）；逆者${Element.entries.first { it.controls == kunLunEl }.chinese}（克${kunLunEl.chinese}止${kunLunEl.chinese}——止不住的）与${kunLunEl.controls.chinese}（克生源逆局）。" +
+                        (if (shunCnt97 > niCnt97) "**前运顺多——有儿子**" else "**前运逆多——没儿子**") +
+                        "；**逆着它就没有儿子——有儿子也是被克了、或者离婚儿子跟对方了**（本案前五运顺${shunCnt97}步逆${niCnt97}步）")
+            } else if (strength == DayStrength.STRONG) {
+                // 身旺：基准财为子——查比劫夺财（重夺/地支得局不载）→官旺救或食伤得局化劫；无财无官食伤泄秀；食被枭夺找财
+                // 「鲁莽地说就错了」——有财不可遽断有子，必来回检查螳螂捕蝉黄雀在后
+                val duoCai = biS >= 1.2 * caiS ||
+                    (bazi.branches.count { it.element == biEl } >= 2 && bazi.monthPillar.branch.element == biEl)
+                // 案六十六·贴克无儿：比劫透干贴克财干而其间无食伤通关（地支复冲伐财根）——
+                // 「天干也是贴着财克、地支戌冲辰也砍伐」：纵走三十年财运发财——生不了儿子
+                // （走好运只说明财富事业好，不能说能生儿子——有钱不一定有儿子）
+                val caiIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+                val biIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == biEl }
+                val shiIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == shiEl }
+                // 财干与（比劫透干或日主）相邻＝贴克；食伤透干居比劫与财之间＝通关隔开（案六五戊隔——不贴克）
+                val keZhuIdxs = biIdxs + 2
+                // 案九十一·劫合化财（财变没了）：财干被劫干合而化神得势（丁壬合化木——化神局）
+                // ——财变没了＋劫通根有力：生不出儿子只能生闺女；财是情缘线——财断克夫（念头论）
+                val caiIdx91 = caiIdxs.firstOrNull { ci ->
+                    val partner = GAN_HE[bazi.stems[ci]]
+                    partner != null && bazi.stems.anyIndexed { j, o -> j != 2 && j != ci && o == partner && o.element == biEl }
+                }
+                val huaShen91 = Element.entries.firstOrNull { el -> el != caiEl && el != biEl && partyScore(bazi, el) >= 6.0 }
+                val jieHeHuaCai = caiIdx91 != null && huaShen91 != null && biS >= FOLLOW_MIN_SCORE
+                val tieKe = !jieHeHuaCai && biIdxs.isNotEmpty() && caiIdxs.isNotEmpty() &&
+                    caiIdxs.any { ci -> keZhuIdxs.any { k -> kotlin.math.abs(ci - k) == 1 } } &&
+                    !caiIdxs.any { ci ->
+                        keZhuIdxs.any { k ->
+                            val lo = minOf(ci, k)
+                            val hi = maxOf(ci, k)
+                            shiIdxs.any { si -> si in (lo + 1) until hi }
+                        }
+                    }
+                when {
+                    caiS > 0.0 && jieHeHuaCai -> ZN(caiEl, false, true,
+                        "身旺财为子而**财干被劫干合化（${bazi.stems[caiIdx91!!].chinese}与劫合化${huaShen91!!.chinese}——化神得势，财变没了）**：劫通根有力（壬通根两亥之属）把财克了——**生不出儿子，只能生闺女**（案九十一）。**财是命中情缘线，男女财星不可断；情线一断财门关，男女皆是半路缘**——财是官杀（夫/六亲星）唯一的念头：**把念头去了就要克夫**（六亲死亡念头论：星弱被克不死——**把六亲星的念头克死了才死**——夫星全靠财生这口气，财被合化变没了＝希望没了；知道这点去离婚没事，90%去了念头要出人命）")
+                    caiS > 0.0 && tieKe -> {
+                        val guanJiu = guanS >= GUAN_WANG ||
+                            bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl }
+                        if (guanJiu) {
+                            ZN(guanEl, true, false, "身旺财为子而**比劫贴克财**——然官杀克劫护财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
+                        } else {
+                            ZN(caiEl, false, false,
+                                "**比劫贴着克财**（天干贴克＋地支冲伐财根——戌冲辰也砍伐）：**生不了儿子**——即使走三十年好运助起财星发了财也一样（**走好运只说明财富事业好，不能说能生儿子——有钱不一定有儿子**；原局贴着克＝功能层面废——运不能救，类比案六十四辰酉贴克）")
+                        }
+                    }
+                    caiS > 0.0 && duoCai -> {
+                        // 比劫夺财（重夺／地支得局——财虽有根而地支不载）——官旺救或食伤得局化劫
+                        when {
+                            // 案七十四·羊刃肆逞档：刃当令带印生＋飞刃透干（羊刃飞到天上叫飞刃）＋贴克财＋无官制刃
+                            // ——功能废：大运走的再好也生不出来（财旺只代表财富还可以——财是精卵气血被刃破坏成分）
+                            bazi.monthPillar.branch == YANG_REN[dayMaster] &&
+                                bazi.stems.indices.count { it != 2 && bazi.stems[it].element == biEl } >= 2 &&
+                                !bazi.stems.any { it.element == guanEl } && !hasBenQiRoot(bazi, guanEl) -> ZN(caiEl, false, false,
+                                "**羊刃肆逞**（刃当令带印生〔带源头的羊刃〕＋飞刃透干〔羊刃飞到天上叫飞刃〕——贴着财克，远重于普通劫）而**无官杀制刃——没有这个功能：大运走的再好，也生不出来儿子**。财旺没错（还有食伤生财——俩人都旺）——**但财旺只代表财富还可以：财就是我的精卵、是我的气血——羊刃给我捣乱、破坏成分，就生不出来**。" +
+                                    "**投胎论：申酉这俩儿子都过来投胎来了，但地支都是劫的——在我这待不住：生的也得流产，或者说童子命、或早年克子——只要他生了，肯定要克子的。没有这个功能，即使生了也得没了**（对勘案七十三：异性小刀轻克——没那么严重；本案羊刃带源飞刃——功能废）")
+                            guanS >= GUAN_WANG || bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl } -> ZN(guanEl, true, false,
+                                run {
+                                    val yinTieShi82 = bazi.stems.indices.any { i -> i != 2 && bazi.stems[i].element == yinEl &&
+                                        bazi.stems.indices.any { j -> j != 2 && bazi.stems[j].element == shiEl && kotlin.math.abs(j - i) == 1 } }
+                                    "身旺财为子（财没露）而**比劫夺财**——官杀克劫解放财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**。**暗克非冲不拔根**（如午亥之克——不是贴身的冲克：若亥换成子才叫拔根，午亥只作丁根弱论）" +
+                                        (if (yinTieShi82) "；食神克官而**印贴克食神护官（把官给解放了）——百分之百有儿子**；再走官地（南方）之运——**直接锁定不可能没儿子（富贵得子）**。**不但生儿子，儿子也有出息**：印看住伤官＝给儿子一护卫（好条件、留遗产、教学习——捣乱儿子的东西全被印克了，儿子得福气）；**印护官主要关系事业**（身旺用官、印看食伤不使犯官——走官地事业发财）" else "；怕食地——食伤制官杀来捣乱（印不透干：无护官之神，食伤旺地损子）") +
+                                        "。**辟谬**：穿一下变女孩、阳男阴女之说——与生男生女无关（案八十二）"
+                                })
+                            // 案七十二·明暗子星＋信号投胎论：官透而虚（甚至被化）然无贴克——儿子在这飘着等投胎：
+                            // 看大运（运帮子星＝接收得到信号就能生；运全克子星＝接收不到、生不出来；
+                            // 贴克则不看运——功能废吃药也不管事）。明以官杀为子，暗仍以财星为子（官为护财而设）
+                            bazi.stems.any { it != dayMaster && it.element == guanEl } && run {
+                                val guanIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == guanEl }
+                                val keGuanEl = Element.entries.first { it.controls == guanEl }
+                                val keIdxs = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == keGuanEl }
+                                keIdxs.none { k -> guanIdxs.any { g -> kotlin.math.abs(k - g) == 1 } }
+                            } -> {
+                                val bangYun = daYun?.yuns?.take(5)?.count { y ->
+                                    y.pillar.stem.element == guanEl || y.pillar.branch.element == guanEl ||
+                                        y.pillar.stem.element.generates == guanEl || y.pillar.branch.element.generates == guanEl
+                                } ?: 0
+                                val keYun = daYun?.yuns?.take(5)?.count { y ->
+                                    val keGuanEl2 = Element.entries.first { it.controls == guanEl }
+                                    y.pillar.stem.element == keGuanEl2
+                                } ?: 0
+                                ZN(guanEl, bangYun > keYun, bangYun <= keYun,
+                                    "**明以官杀为子，暗仍以财星为子**（身旺财为子被劫——官护财克劫：官为护财而设，本质仍财——案七十二）；官透而虚（乙被巳化之属）然**无贴克——儿子就在这飘着等投胎：此时才看大运**——" +
+                                        (if (bangYun > keYun) "运帮子星（如东方${guanEl.chinese}旺之运）**接收得到信号——就能生儿子**" else "运全走克子星之干（庚辛之属）——**接收不到儿子的信号，生不出来**") +
+                                        "；**若有贴克则不看大运**（功能废——哪怕走帮运也没儿子，吃药也不管事）")
+                            }
+                            shiS >= GUAN_WANG && shiS >= biS -> ZN(shiEl, true, false,
+                                "身旺财为子而比劫夺财——**食伤得局完全把比劫化了**（劫不至重、间接解放财；比劫在年上、中间食伤${shiEl.chinese}隔着——不贴克）：**还能有儿子——更可以生儿子**（财得月令之气，帮的时候更旺；**对勘案六十二**：虚透无气之财——只因无比劫克才生、运过即损——**主要就是看季节：得气帮得起，无气帮不起**）（案六十补笔）")
+                            // 案七十六·盖头官救档：比劫干同柱盖头坐财支（辛坐卯）而官支在局未被克（巳无水克）
+                            // ——转官为儿：有这个功能可以生儿子（官来的年就生了）
+                            bazi.stems.anyIndexed { i, s -> i != 2 && s.element == biEl && bazi.branches[i].element == caiEl } &&
+                                hasBenQiRoot(bazi, guanEl) &&
+                                partyScore(bazi, Element.entries.first { it.controls == guanEl }) < FOLLOW_MIN_SCORE -> ZN(guanEl, true, false,
+                                "身旺财为子而**比劫盖头贴克财支**（${biEl.chinese}坐${caiEl.chinese}——同柱贴克：没儿子？**不一定——还要看有没有官：转官了**。${guanEl.chinese}官支在局**没有被克**（克${guanEl.chinese}之神无）——**有这个官我就有儿子：有这个功能可以生儿子——官来的年就生了**（案七十六）。**能生儿子不代表能发财**（能生儿的穷人有的是）：没被克只说明有生儿子的功能，但都是泄我的——**财官皆弱顶多小康、衣食无忧（这就算好命）**：化官生印转印身更旺；用神弱而**无克我捣乱者＝无灾无难（没有什么大疾病车祸——这不错了）**")
+                            // 案八十四·拱暗财档：财半合拱局暗存（亥未拱木）——有暗财＝有子（不仅有子还有钱）
+                            // 案八十八·木火两旺转而生土（多生终得一子）：比劫得局夺财而食伤通关有力
+                            // （木生火火生土——财有暗源）——基本上生不出儿子，然一路南方食伤运＋好流年
+                            // ——使劲生碰出来的（生四个才出一个；无这旺火生一百个也生不出来）
+                            caiS > 0.0 && shiS >= 2 * FOLLOW_MIN_SCORE && hasBenQiRoot(bazi, shiEl) &&
+                                biEl.generates == shiEl && shiEl.generates == caiEl &&
+                                // 护案八十四：财已拱局暗存（亥未拱木）者优先走财气通门户档——非多生型
+                                !listOf(
+                                    setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                                    setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                                    setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                                    setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                                ).any { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { b -> b in bazi.branches } }
+                            -> ZN(caiEl, true, false,
+                                "身旺财为子而**比劫得局夺财——基本上生不出来儿子，然${biEl.chinese}${shiEl.chinese}两旺转而生${caiEl.chinese}**（比劫生食伤、食伤生财——财有暗源通关）：**多生终得一子**——一路南方${shiEl.chinese}运不停的生，**碰着好流年就生出来儿子了（生四个才出一个——使劲生）**；**若没有这比较旺的${shiEl.chinese}，生一百个也生不出来儿子**。**即使生出来的儿子，儿子也好不了**（后面走克${caiEl.chinese}之运——儿子没好日子）；无${shiEl.chinese}通关之比劫夺财局则无儿只生女（案八十八）")
+                            caiS > 0.0 && shiS > 0.0 -> run {
+                                val gongTrio2 = listOf(
+                                    setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                                    setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                                    setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                                    setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                                ).firstOrNull { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { it in bazi.branches } }
+                                if (gongTrio2 != null) {
+                                    val missing2 = gongTrio2.first.first { it !in bazi.branches }
+                                    ZN(caiEl, true, false,
+                                        "身旺财为子而**财拱局暗存**（${gongTrio2.first.filter { it in bazi.branches }.joinToString("") { it.chinese }}拱${caiEl.chinese}——玄机暗里存）：**有暗财的——命主是有子的（不仅有子，他还有钱——财气通门户：财星有情不在乎旺衰）**。**运支${missing2.chinese}填拱——一下就有子了**（且财局兑现发大财——儿子也有出息：往后好运越来越好）。取象：干${caiEl.chinese}之行（衣饰／古玩把件／家具／二手车／工艺品之属——同样八字不一定同行、五行同类）——走差运生意也不差（选对行）、小康；好运发大财（案八十四）")
+                                } else {
+                                    ZN(caiEl, false, true,
+                                        "身旺财为子而**比劫地支得局夺财——财虽有根而地支不载**（终究土得局）；官弱救不动、食伤弱化不动——**没生儿子**；然有食伤生财（财透得气）——**有生育能力，生女儿不生儿**；运注：子星得地之运（如亥水之属）可生儿；若火土局之运生子——必是闺女（火生土旺，财不载）")
+                                }
+                            }
+                            else -> ZN(caiEl, false, false, "身旺财为子而**比劫夺财、官救食化俱无**——**没儿子**")
+                        }
+                    }
+                    caiS > 0.0 -> {
+                        // 案九十·飞刃贴克财支：比劫干同柱盖头坐财支（丙坐申——羊刃飞出来贴着捣乱）
+                        // 而官杀全无（无救）——食伤生财只主财富不管子事：生女儿不生儿（B超说儿子也没用）
+                        if (bazi.stems.anyIndexed { i, s -> i != 2 && s.element == biEl && bazi.branches[i].element == caiEl } &&
+                            !hasBenQiRoot(bazi, guanEl) && bazi.stems.none { it != dayMaster && it.element == guanEl }
+                        ) {
+                            ZN(caiEl, false, true,
+                                "身旺财为子而**比劫羊刃飞出来贴着捣乱**（${biEl.chinese}坐${caiEl.chinese}——同柱盖头贴克财支：时干比劫通根克财）：**生的是女儿——生不出来儿子**（食神生${caiEl.chinese}财也不管事儿——**食伤生财是指财富**，救不了子星）；**再走印比之运（寅亥化木之属）——百分之百生女儿**（即使B超检查说生个儿子也没用——B超也有错的时候——案九十）")
+                        } else if (!caiZai && !hasBenQiRoot(bazi, caiEl)) {
+                            // 案六十二·财虚透而没被比劫克——生育能力在（贫富与子嗣两轨）：走财得根运得儿子
+                            val deGenYuns = daYun?.yuns
+                                ?.filter { yun -> branchHiddenStems.getValue(yun.pillar.branch).any { it.element == caiEl } }
+                                ?.map { it.pillar.fullName } ?: emptyList()
+                            ZN(caiEl, true, false,
+                                "**身旺财为子——财虚透而没被比劫克**：**生育能力在**（**贫富与子嗣两轨**——富人也生儿子，穷人也生儿子：大运帮不起来＝财富不行温饱打工，**不代表穷人就生不了儿子**——只要财没被破坏，大运一帮就有机会生）" +
+                                    "；**走财得根的大运是得儿子的**（如${if (deGenYuns.isNotEmpty()) deGenYuns.joinToString("、") + "之属" else "财藏根支之运"}）" +
+                                    "；**财运过后防损子**——其后克泄财之运损子：死／送人／**离婚判给对方（孩子跟人家也行——反正不在你身边就破解了）**；若离婚儿子还判给你——儿子就要没了（必须的）")
+                        } else {
+                            ZN(caiEl, true, false, "**身旺财为子**（有财即有子；怕劫地——比劫给我克了）")
+                        }
+                    }
+                    guanS >= FOLLOW_MIN_SCORE -> run {
+                        // 案八十·拔根档：官煞为儿而官之本气根支被贴冲拔根（子午冲——两丙之根被拔）——
+                        // 拔根比虚透罪加一等：没儿子生闺女（运支救根只救财富不救生育——子午冲在功能废；
+                        // 年轻走克官之干〔壬癸水〕百分之百生不出来；走生官支〔寅卯〕救起——不好说可生）
+                        val guanGenZhi = bazi.branches.filter { it.element == guanEl }
+                        val baGen = guanGenZhi.any { g ->
+                            val gi = bazi.branches.indexOf(g)
+                            (gi - 1 in bazi.branches.indices && LIU_CHONG[g] == bazi.branches[gi - 1]) ||
+                                (gi + 1 in bazi.branches.indices && LIU_CHONG[g] == bazi.branches[gi + 1])
+                        }
+                        if (baGen) {
+                            ZN(guanEl, false, true,
+                                "身旺无财——**官煞为儿，然${guanEl.chinese}官之本气根被贴冲拔根**（如子午冲——两${guanEl.chinese}之根被拔）：**拔根比虚透罪加一等**（虚透之${guanEl.chinese}〔坐辰申之属〕都比被拔根的强）——官衰弱、${guanEl.chinese}又坐随党之支——**基本上没儿子了**。运之解：年轻走克${guanEl.chinese}之干（壬癸之属）——**百分之百生不出来**；走生${guanEl.chinese}之支（寅卯之属）救起官根——**只说明财富好，解不了贴冲这事——没有生儿子的功能**（除非运支合去冲神）。**命主生闺女，财富还可以**（案八十·对勘案四十八印得局官二代）")
+                        } else {
+                            ZN(guanEl, true, false, "身旺无财——**官煞为儿**（喜官杀克我；怕食地——食伤制官杀捣乱；月上比劫劫住年官替我受克则子归挡者）")
+                        }
+                    }
+                    shiS >= FOLLOW_MIN_SCORE && yinS < YIN_HUAI -> ZN(shiEl, true, false, "身旺无财无官——**食伤泄秀为儿**：泄得好没破坏＝**多子**")
+                    shiS >= FOLLOW_MIN_SCORE -> {
+                        if (caiS > 0.0) ZN(caiEl, true, false, "身旺食伤泄秀而**枭印夺食**——**财坏印解放食伤：仍以财为子，有子**")
+                        else ZN(shiEl, false, false, "身旺食伤泄秀而**枭印夺食又无财救**——**没儿子**（伤官不见财，男孩不见面）")
+                    }
+                    else -> ZN(biEl, false, false, "身旺而财官食俱无——子女另裁（待师传）")
+                }
+            } else {
+                // 身弱：印做儿／比劫为儿——官杀欺衰查印化、财坏印查比劫护、无印比劫扛
+                val keYinS = partyScore(bazi, caiEl) // 财坏印（克印之神）
+                val guQiS = guanS
+                when {
+                    // 案七十·贴克优先（非官旺线）：身衰印做儿而财贴克印——没有生儿子的功能
+                    caiTieYin && yinYouLi && guQiS < FOLLOW_MIN_SCORE -> ZN(yinEl, false, true,
+                        "**身衰印做儿（${yinEl.chinese}是我的儿子）然不变之中也有变化——螳螂捕蝉黄雀在后：${caiEl.chinese}财有力贴身克我（印）——那就生不出来**。**即使大运走帮身之运也是生不出来：这个人没有生儿子的功能——能不能生儿子，人一出生就决定了**（案七十）。因果全息：祖坟西方有变压器之类、父辈做事风格（${caiEl.chinese}老克印）、婆家积德行善——万物全息连着串儿（生女与否看解放之运）")
+                    guQiS >= FOLLOW_MIN_SCORE && yinYouLi -> {
+                        // 官杀欺衰主——除非有印：印为儿；螳螂捕蝉黄雀在后查财坏印；木坚金缺查子星所克过旺
+                        val haoQueS = partyScore(bazi, yinEl.controls) // 子星所克之神过旺——木坚金缺（剩一点气生闺女）
+                        // 案六十七·财贴克印：财干贴克印干——忌神深重贴着我克：运去病也不修复生育程序
+                        val caiIdxs2 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+                        val yinIdxs2 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+                        val caiTieKeYin = caiIdxs2.isNotEmpty() && yinIdxs2.isNotEmpty() &&
+                            yinIdxs2.all { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
+                        when {
+                            // 案九十三·拱财坏印未贴克档：财拱局透干引化得局（亥未拱木乙露干）而印当令——
+                            // 财未透干贴克印干（隔不贴克）＝生育功能在：生得出儿子（走官杀运生儿子——印星应期）；
+                            // 然拱财坏用神印——财为妻起最坏的作用：他得离婚；
+                            // 反事实：印边之支若换作两财本气支贴克——不光离婚，儿子也生不出来
+                            gongCaiYinHua && !caiTieKeYin &&
+                                !bazi.branches.anyIndexed { i, br ->
+                                    br.element == yinEl &&
+                                        ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl) ||
+                                            (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl))
+                                } -> ZN(yinEl, true, false,
+                                "**身衰印做儿（案九十三）**：${guanEl.chinese}官杀克身＋${shiEl.chinese}食伤旺泄——日主转弱，${yinEl.chinese}印当令为儿。财虽得局（${gongCaiTrio!!.first.filter { it in bazi.branches }.distinct().joinToString("") { it.chinese }}拱${caiEl.chinese}——拱局透干则实）而坏印，然**财毕竟没有露出来贴着克**（${caiEl.chinese}干隔位不贴印、${yinEl.chinese}印本气支亦未被${caiEl.chinese}本气支贴克）——**生育功能在：生得出儿子**（${monthBranch.chinese}土当令，他可以生出来儿子）。**运注：走${guanEl.chinese}运的时候生儿子**（官杀生${yinEl.chinese}印——印星应期）。**然拱财坏${monthBranch.chinese}印——财为妻而毁用神（妻子起了最坏的作用，妻子让命主很难受）：他得离婚**（克妻两义：一离婚、一丧妻）。**反事实**：${monthBranch.chinese}边之支若换成两${caiEl.chinese}（财本气支贴克印本气支）——**他不光离婚，而且也生不出来儿子**（贴克＝功能废）")
+                            // 案七十三·异性轻克档：印本气根被财支贴克而阴阳异性（酉是小刀寅是树——小刀刻不断树）
+                            // ＋印有官杀贴生（壬坐寅之属）——弱而不废：弱代表穷，不代表生不了儿子（可以生；
+                            // 若同性重克〔大申金贴寅〕则废——生不了）。印弱＝事业层次不行；儿子学习随印运
+                            bazi.branches.anyIndexed { i, br ->
+                                br.element == yinEl &&
+                                    ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl && (bazi.branches[i + 1].ordinal % 2) != (br.ordinal % 2)) ||
+                                        (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl && (bazi.branches[i - 1].ordinal % 2) != (br.ordinal % 2))) &&
+                                    bazi.stems.anyIndexed { j, s -> j != 2 && s.element == guanEl && bazi.branches[j] == br }
+                            } -> ZN(yinEl, true, false,
+                                "**印为儿而印本气根被财支贴克——然异性之克不重（${caiEl.chinese}是小刀、${yinEl.chinese}是树——小刀刻不断树）＋官杀贴生（壬坐寅之属）：印只是弱，没有被彻底克坏——弱代表她穷，不代表她生不了儿子**（**是可以生儿子的**；若是大${caiEl.chinese}〔同性重克〕贴着克——命主就生不了儿子了）。**一切由印星决定**：印弱＝事业层次不行、财富值低（又走克印之运则贫穷）；印星是儿子——**印运即子运：儿子学习随印运**（走克印之运儿子学习差）")
+                            // 案七十七·隔克不算克档：财贴克一印而另一印隔开未被贴克——功能在：能生儿子
+                            caiIdxs2.isNotEmpty() && yinIdxs2.size >= 2 &&
+                                yinIdxs2.any { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } } &&
+                                yinIdxs2.any { yi -> caiIdxs2.none { ci -> kotlin.math.abs(ci - yi) == 1 } } -> ZN(yinEl, true, false,
+                                "**隔克不算克**：${caiEl.chinese}财贴克一印（年干），然**另一印隔开未被贴克——功能在：能生儿子**（虽是异性的克贴着克，也是有影响的——但一印被克一印独存，具备生儿子的功能）。**况且走印运（帮身化杀）——很确定可以生儿子：百分之百有儿子**（对勘案六十七：独印被有力之财贴克＝功能废；本案一印独存＝功能在——案七十七）")
+                            // 案八十三·贴克三态（生儿子态）：财贴克印而①印有劲（印干坐支通源——秋水通源）
+                            // ②异性之克 ③财被局泄化（泄财之神得局——金得局泄土土完了：秋土本虚＋金旺泄土）
+                            // ——即使印被贴身克，命主也生儿子（穷人也生儿子）
+                            caiTieKeYin && run {
+                                val yinIdx = yinIdxs2.firstOrNull { yi -> caiIdxs2.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
+                                yinIdx != null &&
+                                    branchHiddenStems.getValue(bazi.branches[yinIdx]).any { it.element == yinEl } &&
+                                    bazi.stems[yinIdx].yang != bazi.stems[caiIdxs2.first { ci -> kotlin.math.abs(ci - yinIdx) == 1 }].yang &&
+                                    partyScore(bazi, caiEl.generates) >= 6.0 && bazi.monthPillar.branch.element == caiEl.generates &&
+                                    // 财无生源（生财之神党力<1.5——扣除随泄神成局之支：案八三巳随巳酉丑金局不作火源论；
+                                    // 案六七丁有卯源带源头——不入此态）
+                                    run {
+                                        val scEl = Element.entries.first { it.generates == caiEl }
+                                        var sc = partyScore(bazi, scEl)
+                                        // 泄神成局之支随局走——其本气（如金局中之巳火根）不作生财之源论
+                                        val juTrio = listOf(
+                                            setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
+                                            setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
+                                            setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
+                                            setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU) to Element.FIRE,
+                                        ).firstOrNull { (trio, el) -> el == caiEl.generates && trio.all { it in bazi.branches } }
+                                        if (juTrio != null) {
+                                            sc -= 1.5 * juTrio.first.count { it.element == scEl && it in bazi.branches }
+                                        }
+                                        sc < 1.5
+                                    }
+                            } -> ZN(yinEl, true, false,
+                                "官杀欺衰主有印化（**印为儿**），财虽贴身克印——然**贴克三态（案八十三）**：①**印有劲**（${yinEl.chinese}干坐支通源——秋水通源）②**异性之克**（不重）③**财被局泄化**（泄财之${caiEl.generates.chinese}得局——${caiEl.chinese}土全被化了：秋土本虚＋${caiEl.generates.chinese}旺泄土＋得局——**土完了**）——**即使印被贴身克，命主也生儿子（穷人也生儿子）**。**对勘系谱**：案七三（夏＋异性克印有劲——生儿）↔ 案六七（带源头火旺贴克——生不了）↔ 案七四（大夏飞刃贴克——生不出来）↔ 案八一（贴克多大劲——生不了）——**贴克之废在三件俱反：印无劲／同性重／财带源有力**")
+                            caiTieKeYin -> ZN(yinEl, false, true,
+                                "官杀欺衰主有印化（**印为儿**），然**财贴着我的印来克**（财有力贴着克——螳螂捕蝉黄雀在后；忌神深重贴着我克——他给我捣乱干扰）：**生理上没有生男孩的功能、染色体就不对了**——即使大运解决这个病也一样生不出来儿子（八字程序先天受损，医院拍片也是一样——**解决了病也没有用：运去病不修复生育功能**）；走好运把印解放了——**能生个闺女**；若再走克${yinEl.chinese}之运（如南方火地）——**连闺女都生不出——必无子之命**（八字里男女都是一样看的——案六十七）")
+                            keYinS >= 1.5 * yinS && keYinS > 0 -> run {
+                                // 案八十五·支层贴克（戌大实土贴克子）：干多不如支重地支不载——
+                                // 印本气支被财本气支贴克（大实土力量大）——戌土一克没儿子（官再旺没用印一字定之）
+                                val zhiTieKe = bazi.branches.anyIndexed { i, br ->
+                                    br.element == yinEl &&
+                                        ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl) ||
+                                            (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl))
+                                }
+                                ZN(yinEl, false, false,
+                                    "官杀欺衰主有印化（印为儿），然**财坏印坏成**（螳螂捕蝉黄雀在后）——**没儿子**" +
+                                        (if (zhiTieKe) "。**干多不如支重（案八十五）**：地支不载（比劫透而无根），**${caiEl.chinese}大实土贴身克${yinEl.chinese}本气支**（力大——戌克子之属）——**一克没儿子**；层次**完全指着印星一字定之**（化官生印「官大坐大官」之说不成立——日主没力量，**官再旺没有用**：印被贴克就完了，官杀旺也化不了——**经济困难、还没有儿子**）" else "") +
+                                        "。**一印双象论（案八十一）**：此印**既当财富看、也当他的儿子**——印废则**贫而无子**（双失：走好运温饱解决衣食无忧——**发不了财**也**生不了儿子：原命没有这个功能**）。**无子五象**：贫而无子／**夭而无子**（走克印墓地基本活不成）／富而无子／贵而无子／贱而无子——以局配之；**未运穿克子水（六害）之属——牢狱之应**（蹲大牢——穿害之应期）")
+                            }
+                            // 案九十五·财全藏支不透（无贴克）——丁没事儿：有儿子（喜神被拔只降层次不碍子——
+                            // 先于木坚金缺：食伤反克虽重，印透干立得住即功能在）
+                            guoXieFanRuo && caiIdxs2.isEmpty() -> ZN(yinEl, true, false,
+                                run {
+                                    val yinZhu95 = bazi.stems.indices.firstOrNull { j -> j != 2 && bazi.stems[j].element == yinEl }
+                                    val genZhu95 = yinZhu95?.let { bazi.branches[it] }
+                                    val chong95 = genZhu95?.let { LIU_CHONG[it] }
+                                    "**身衰印做儿（案九十五）**：${shiEl.chinese}多过泄身弱用印，印（${yinEl.chinese}）为儿。**${caiEl.chinese}财全藏地支不透干——没有贴着克印：${yinEl.chinese}没事儿——有儿子**（${genZhu95?.chinese ?: ""}喜神被拔只关乎层次学历，不碍子嗣——富贵子嗣两轨）。**反事实**：${chong95?.chinese ?: ""}换${caiEl.chinese}本气支（亥水之属）、${genZhu95?.chinese ?: ""}换巳火——巳亥逢冲**去火存金（火根转金根）：印根尽废——那就没儿子了**"
+                                })
+                            haoQueS >= 2.0 * yinS && yinS > 0.5 -> ZN(yinEl, false, true, "**官杀欺衰主——除非有印，印为儿**（印星就是我的儿子，虽在年上——有没有儿子取决于他，印好才是真的好）；然**木坚金缺**（子星所克之神党力${format(haoQueS)}压过子星${format(yinS)}——食伤得局反克，金剩一点气；若是酉金被冲彻底毁，连闺女都生不出来）——**没儿子，可生闺女**")
+                            haoQueS >= 2.0 * yinS -> ZN(yinEl, false, false, "官杀欺衰主有印化（印为儿），然子星被所克之旺神拖至**彻底缺绝**——**连闺女都生不出来**（若是酉金还走火运，必然不生育）")
+                            keYinS > 0.0 -> ZN(yinEl, false, true, "官杀欺衰主有印化（印为儿），然**财轻克而未坏成印**——能生个闺女；万一财更轻凑合生出儿子——**必然逆子**（财有多重儿子就有多不孝：轻则没礼貌、中则啃老、重则破大财打骂爹妈）")
+                            else -> ZN(yinEl, true, false, "官杀欺衰主——**除非有印，有印就有子**：印为儿，子星昌（怕财地——局里有财命局隐患、大运有财损子运）")
+                        }
+                    }
+                    guQiS >= FOLLOW_MIN_SCORE -> {
+                        // 官杀欺衰而无印——比劫扛得住才有子；比劫子星被克泄过重——凑合生子必损＋生女儿
+                        val biKeS = partyScore(bazi, Element.entries.first { it.controls == biEl })
+                        val biXieS = partyScore(bazi, biEl.generates)
+                        // 案六十四·贴身深克：比劫子星之本气根被官杀本气支贴身冲（相邻）而官杀党力压过——
+                        // 忌神深重贴身克用神：没儿子只能生女儿（没有这个能力和功能）
+                        val tieChong = bazi.branches.filter { it.element == biEl }.any { bg ->
+                            val idx = bazi.branches.indexOf(bg)
+                            (idx - 1 in bazi.branches.indices && bazi.branches[idx - 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx - 1]) ||
+                                (idx + 1 in bazi.branches.indices && bazi.branches[idx + 1].element == guanEl && LIU_CHONG[bg] == bazi.branches[idx + 1])
+                        }
+                        // 案八十九·官杀得局废比劫：官杀之支三会/三合成局而比劫之根尽随局（辰在寅卯辰中）
+                        // 或尽虚土（丑）——比劫全废扛不住：没儿子（走火运也生不出来——官杀得局功能废）
+                        val guanDeJu = SAN_HUI_JU.any { (bs, _) -> bs.all { it in bazi.branches } && bazi.monthPillar.branch in bs } ||
+                            listOf(
+                                setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN),
+                                setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI),
+                                setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU),
+                                setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
+                            ).any { trio -> guanS >= 6.0 && trio.all { it in bazi.branches } }
+                        val biGenFei = bazi.branches.filter { it.element == biEl }.all { b ->
+                            b in (SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }?.first ?: emptySet()) ||
+                                b == EarthlyBranch.CHOU || b == EarthlyBranch.CHEN
+                        }
+                        when {
+                            guanDeJu && bazi.branches.any { it.element == biEl } && biGenFei -> ZN(biEl, false, false,
+                                "**官杀得局废比劫（案八十九）**：官杀之支会局（寅卯辰方局之属）——身衰印坐儿而无印，**生得出来儿子吗？不能——没这功能，生不出来儿子**（比劫之根尽随局〔辰在寅卯辰中随木〕或尽虚土〔丑〕——**比劫全废扛不住：走火运也生不出来**——官杀得局功能废）。日主有丑辰两根＋**食伤制杀有一定层次（食神去官杀之混杂——庚合乙之属）——国家单位上班（牙医之属）：有一定层次不代表有钱**——身弱只能用劫而劫废：**挣了钱也存不住——白领层次发不了财**（一路没走火土运一辈子发不了大财小财）；**食神制杀兼泄身——食神主生殖：老搞邪淫天天破财**（官杀混杂老来骚扰——今儿破明儿破——挣多少也没用）")
+                            // 案七十五·虚劫不管事档：比劫本气根尽是辰丑虚土（古训：辰丑之土非彼未戌之实也）
+                            // 而泄神会局得令（大王王炸）——比劫都虚了不管事：必须找印；无印＝没有功能——生闺女
+                            bazi.branches.filter { it.element == biEl }.all { it == EarthlyBranch.CHEN || it == EarthlyBranch.CHOU } &&
+                                bazi.branches.any { it.element == biEl } &&
+                                partyScore(bazi, shiEl) >= 6.0 && bazi.monthPillar.branch.element == shiEl -> ZN(biEl, false, true,
+                                "**比劫都虚了不管事**（比劫本气根尽是${biEl.chinese}之辰丑虚土——古训：**辰丑之土非彼未戌月之实也**）而**泄神${shiEl.chinese}会局得令＝王炸大王**（会局在当令季节＝最大的牌；对勘案七十三夏局＝小王——同样是会局也不一样）——**必须找印；命局没有印，就不能生儿子了：八字没有这个功能——不能生儿子，生的是闺女**（泄体太过、金得局、克泄交加）。**穷人也可以生女儿**（贫富子嗣两轨）；用神只能用劫而劫很弱——**劫财决定财富，劫很弱＝没儿子也富不了**（无格局只能打工：并不是因为制的杀小没钱，而是用神弱了财富值才低；走帮用好运＝有积蓄〔破财少会理财攒钱〕而不发富）")
+                            // 案六十九·身体条件档：月令比劫根被两官支冲＋食伤贴泄＋无印——克泄交加
+                            // 身体不行（气血不足）：八字不具备生儿子功能——再有钱再格局也流产/生不了男孩
+                            bazi.monthPillar.branch.element == biEl &&
+                                bazi.branches.count { it.element == guanEl && LIU_CHONG[it] == bazi.monthPillar.branch } >= 2 &&
+                                hasBenQiRoot(bazi, shiEl) -> ZN(biEl, false, false,
+                                "**克泄交加·身体条件不行**（两${guanEl.chinese}贴身克＋${shiEl.chinese}食伤贴泄＋**无一印生扶**）：**生小孩得看身体条件——再有钱、身体不行气血不足也生不出来**。**八字就不具备生儿子这个功能：再有格局（食神制杀以威出身大富）也要流产、生不了男孩**——走好运也没用、吃再多补品保健品也没用（**没生出来不代表八字没格局**——两轨并行；怀孕流掉之应〔己亥年之类〕）。身衰印坐儿——没有印，就没有儿")
+                            tieChong && guanS >= biS -> ZN(biEl, false, true,
+                                "**官杀欺衰主而无印——比劫子星之根被官杀贴身冲克**（贴冲＋辰酉合化金力大——忌神深重贴身克用神）：**没儿子，只能生女儿**——属于**没有这个能力和功能**（即使走印化杀之运，生的也不是儿子——运化忌只说明财运事业好了，**不能说明有儿子**；看子女跟看财运不一样——富贵贫贱与有没有儿子没有关系）")
+                            biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "**官杀欺衰主，无印、比劫又扛不住**——**没儿子**（官杀无制化攻身——生了儿子也得夭折）")
+                            biKeS >= 0.75 * biS && biXieS >= 1.5 * biS -> ZN(biEl, false, true,
+                                "**官杀欺衰主而无印——比劫扛得住（坐根有气）＝比劫为儿**；然**子星被克泄得太重**（两杀克＋食伤泄＋会局泄根——${biKeS}克${biXieS}泄压过子星${format(biS)}）：大运帮起来（壬子之属）**凑合生出来儿子——终究损子**（运补暂生而生出来没活成之属——**墓中子星要送出**破解）；**比劫有气坐根——生女儿百分之百**（有生育能力；若无会局之泄，走帮身运是可以有儿子的）")
+                            else -> ZN(biEl, true, false, "**官杀欺衰主而无印**——比劫扛得住（够旺）**比劫为儿也有子**（身弱杀日之间比劫卡住挡杀护我＝我有儿子——**即使走差运也有儿子：有这个功能，走到好流年就可以生**；扛不住则无子。**详推反向**：身旺喜杀克我——中间比劫卡住杀克不到我——**反而生不了儿子（此时有侄儿——子归挡者）**；身弱怕杀克我——比劫卡住——**可以生儿子**——案六十八）")
+                        }
+                    }
+                    yinYouLi && keYinS < FOLLOW_MIN_SCORE -> {
+                        if (yinTouZuoBen) ZN(yinEl, true, false, "**身衰印做儿**（印为儿，印星就是我的儿子——印好才是真的好）")
+                        else ZN(yinEl, true, false, "**身衰印做儿**（有印有比劫而无财——印肯定是儿子，印此时不作母亲论；怕财地）")
+                    }
+                    yinYouLi -> {
+                        // 案七十八·隔克不算克（干层）：财干克印干而**隔位非贴**＋印贴身生（丁贴日主）——
+                        // 印弱＝儿子不给力、生得比较衰——不代表生不了儿子（能生；癸没贴着丁克）
+                        val caiIdxs3 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+                        val yinIdxs3 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+                        val caiGanGe = caiIdxs3.isNotEmpty() && yinIdxs3.isNotEmpty() &&
+                            caiIdxs3.any { ci -> yinIdxs3.all { yi -> kotlin.math.abs(ci - yi) > 1 } }
+                        when {
+                            caiGanGe && (bazi.monthPillar.stem.element == yinEl || bazi.dayPillar.branch.element == yinEl) -> ZN(yinEl, true, false,
+                                "身衰印做儿而财坏印——**得详推：${caiEl.chinese}财没有贴着${yinEl.chinese}印克（隔位）——印还是贴着生的**：**印弱是弱——儿子不给力、儿子生的比较衰——不代表我生不了儿子**（能生；只是儿子财富值低/${caiEl.chinese}运直接判死刑没有财富值——然三十年河东河西：坎离震兑四方各管三十年，北方差不一定东方差——**寅亥化木翻身在后面**——案七十八）")
+                            biS >= FOLLOW_MIN_SCORE -> ZN(biEl, true, false, "身衰印做儿而**财坏印**——**比劫克财护印：比劫为儿，有子**")
+                            else -> ZN(yinEl, false, false, "身衰印做儿而**财坏印、比劫又无**——**没儿子**")
+                        }
+                    }
+                    else -> {
+                        // 案八十六·比劫为子的真正本质：明以比劫为子，暗仍以财星为子——比劫须真正
+                        // 把日主帮到身旺（方能胜任财）才有儿子；比劫被食伤泄太重（无力）——比劫没法
+                        // 帮你生（帮＝事业有情跟着挣钱；生孩子不能让人家帮生）——没儿子
+                        val biXieS2 = partyScore(bazi, biEl.generates)
+                        when {
+                            biS < FOLLOW_MIN_SCORE -> ZN(biEl, false, false, "身弱无印无比劫——**没儿子**")
+                            biXieS2 >= 2.0 * biS -> ZN(biEl, false, false,
+                                "身弱局里没有印——比劫线，然**比劫为子的真正本质（案八十六）**：**明以比劫为子，暗仍以财星为子——比劫得真正把你帮到身旺了、你才能胜任这个财，才有儿子**。此局比劫被${shiEl.chinese}食伤泄太重（${format(biXieS2)}泄对${format(biS)}——秋天土金两旺比劫没劲）——**比劫没法帮你生儿子**：有比劫帮＝比劫对你有情、有贵人帮——**这说的是事业**（跟着比劫挣钱、财富比劫一子定之——寅卯拱火东南运事业层次提升）；但**生儿子不能让比劫去帮你生——比劫帮代表比劫有儿子，比劫生的儿子不是你的儿子**（挣钱有让人家帮挣的——生孩子不能让人家帮生）→**比劫没帮到身旺——没儿子**（再走湿土泄火运，百分之百生不出）")
+                            else -> ZN(biEl, true, false, "身弱局里没有印（必财旺或官杀旺）——**比劫就是儿子**（抗杀挡杀镇财给我力量）：有比劫才有儿子")
+                        }
+                    }
+                }
+            }
+            // 运注：子星之克神运＝损子／生不出之运
+            val keZiEl = Element.entries.first { it.controls == zn.el }
+            val keZiYuns = daYun?.yuns?.filter { it.pillar.stem.element == keZiEl || it.pillar.branch.element == keZiEl }
+                ?.map { it.pillar.fullName } ?: emptyList()
+            cn.xulun.bazi.model.JinBiaoZiNv(
+                qingKuang = when {
+                    zn.er -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER
+                    zn.nv -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.WU_ER_YOU_NV
+                    else -> cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER
+                },
+                ziXing = representativeGod(bazi, dayMaster, zn.el),
+                ziEl = zn.el,
+                basis = zn.text + (if (keZiYuns.isNotEmpty()) "；运注：**${keZiEl.chinese}为子星之克神**——行${keZiYuns.joinToString("、")}运克子星（生不出儿子／损子）" else ""),
+            )
         }
     }
 

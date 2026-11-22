@@ -2968,4 +2968,29 @@ class JinBiaoAnLiTest {
             }
         }
     }
+
+
+    // ── 案一百零二 · 甲子 戊辰 庚申 壬午（乾，1924-04-11 午时）——枭夺食用财·三选一之筛·用神无力悖运无层次 ──
+    @Test
+    fun `案一百零二 乾 甲子戊辰庚申壬午 透戊坐禄身旺无疑 申子辰局不夺透印 官被盖头食被枭夺只能用财甲 用神无力悖运无层次 用神即儿肯定有儿子`() {
+        val bazi = chart(1924, 4, 11, 12)
+        assertTrue(bazi.fullBazi.startsWith("甲子 戊辰 庚申 壬午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：己巳1932 庚午1942 辛未1952", daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己巳(1932)", "庚午(1942)", "辛未(1952)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("透戊坐禄身旺无疑（三合局不夺透干之印）", jb.strength == DayStrength.STRONG && jb.strengthBasis.contains("属土党"))
+        assertTrue("枭夺食用财——用神甲木财（三选一之筛：官被盖头局克不行、食被枭夺不能用、财轻有气可用）",
+            jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && jb.yongShenElement == Element.WOOD &&
+                jb.quYongBasis.contains("三选一之筛") && jb.quYongBasis.contains("枭神夺食") && jb.quYongBasis.contains("绝对有气，可用的") &&
+                jb.quYongBasis.contains("男怕选错行"))
+        assertTrue("用神无力×悖运＝没有层次＋卯换辰反事实＋财轻通门户运不违背就有钱",
+            jb.quYongBasis.contains("一辈子悖运") && jb.quYongBasis.contains("就没有层次了") && jb.quYongBasis.contains("走悖运日子也过得不错"))
+        assertTrue("用神即儿肯定有儿子＋宫位因果＋德行＋出身好物被劫",
+            jb.quYongBasis.contains("肯定有儿子") && jb.quYongBasis.contains("他儿子也不行") &&
+                jb.quYongBasis.contains("只有德行") && jb.quYongBasis.contains("有好东西出身也不好"))
+        val zn = jb.ziNv!!
+        assertTrue("子女必有儿（身旺财为子）", zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎偏印格用戊配丁败格（分歧：金镖门用财）", old.geJuName.contains("偏印格"))
+    }
 }
