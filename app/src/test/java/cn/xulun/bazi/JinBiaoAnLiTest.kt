@@ -2830,6 +2830,39 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎伤官格佩印（分歧点：金镖门作一制一化有情）", old.geJuName.contains("伤官格"))
     }
 
+    // ── 案一百 · 乙亥 庚辰 甲戌 壬申（乾，1995-04-13 申时）——进退气之辨·合化从杀反助其暴·学历取决于原局 ──
+
+    @Test
+    fun `案一百 乾 乙亥庚辰甲戌壬申 辰月金进气木退气 乙庚合化金反助其暴 辰申隔位不拱水 单壬化不了旺杀 学历财坏印好运也学不好`() {
+        val bazi = chart(1995, 4, 13, 16)
+        assertTrue(bazi.fullBazi.startsWith("乙亥 庚辰 甲戌 壬申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行：己卯1997 戊寅2007 丁丑2017 丙子2027",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己卯(1997)", "戊寅(2007)", "丁丑(2017)", "丙子(2027)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("辰月木退气（旺地之方末月——飞龙在天再上即亢龙有悔）：退气也算通根——辅助非绝对",
+            jb.strengthBasis.contains("退气") && jb.strengthBasis.contains("亢龙有悔") && jb.strengthBasis.contains("辅助"))
+        assertTrue("杀重用印——用神壬水偏印（单化）", jb.quYongWay == JinBiaoQuYongWay.HUA_SHA && jb.yongShenElement == Element.WATER)
+        assertTrue("合化从杀反助其暴：辰月金进气（魁罡之旺）、辰土克亥水（水库仍土水少则克）、戌坎辰中乙——乙无力从庚＝合化金",
+            jb.quYongBasis.contains("反助其暴") && jb.quYongBasis.contains("进气") && jb.quYongBasis.contains("辰土克亥水") &&
+                jb.quYongBasis.contains("戌把辰里乙木坎了") && jb.quYongBasis.contains("从了对方＝合化"))
+        assertTrue("指望一个壬水化不了这么旺的杀＋九九对勘天渊之隔（位置一变力量就变——一切看力量）",
+            jb.quYongBasis.contains("化不了这么旺的杀") && jb.quYongBasis.contains("天渊之隔"))
+
+        // 学历：财坏印型（印根辰被财支戌贴冲）——原局无学习灵感：来了好运学习也不会太好（取决于原局，区别于虚透型）
+        val xl = jb.xueLi!!
+        assertTrue("财坏印——学习取决于原局：好运也学不好；印和食伤不能伤",
+            xl.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.YIN_HUAI && !xl.yinWanHao &&
+                xl.basis.contains("坏印") && xl.basis.contains("学习取决于原局") && xl.basis.contains("印和食伤不能伤"))
+
+        // 双引擎对照（双引擎铁律）：老引擎偏财格用戊财配庚杀（官杀护财·成中有败）——以财为用；
+        // 金镖门以财为病神（财坏印）——财之角色分歧
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎偏财格用戊配庚（分歧点：金镖门以财为病）", old.geJuName.contains("偏财格"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

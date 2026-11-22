@@ -665,8 +665,6 @@ object JinBiaoCalculator {
                 (!hasBenQiRoot(bazi, caiEl) && biS >= 1.5 * caiS)
             )
 
-        data class Choice(val way: JinBiaoQuYongWay, val el: Element, val basis: String)
-
         val choice: Choice = when {
             // 第三讲·弱极从势：命里谁旺即随谁；无明显独大而财官食并存者，必要财运解围
             ruoJi -> {
@@ -972,7 +970,29 @@ object JinBiaoCalculator {
                         if (bazi.branches.contains(EarthlyBranch.CHEN) && bazi.branches.contains(EarthlyBranch.SHEN) &&
                             bazi.branches.indexOf(EarthlyBranch.CHEN) + 1 == bazi.branches.indexOf(EarthlyBranch.SHEN)
                         ) {
-                            append("；拱局辩证：辰贴申必生金——土生金是谁也改变不了的规矩，会局被夺不以局论（杀旺取坐下印为用）；寒木向阳——有火时层次更高，但非必需：没有水命主就被旺杀克死，有水即成格，没火一样当官（调候不用刻意考虑）")
+                            // 案廿七/案一百之辨：辰申拱水三条件——①辰申相邻②壬水透干引化。
+                            // 壬透（案九十九）→辰申拱水（印得拱助）；壬不透（案廿七戊庚甲甲）→会局被夺，
+                            // 辰贴申必生金——土生金是谁也改变不了的规矩，不以局论（杀旺取坐下印为用）。
+                            if (bazi.stems.any { it != dayMaster && it.element == Element.WATER }) {
+                                append("；拱局辩证（案一百）：辰申贴着＋壬水透干引化——**辰申拱水**（供得上水：印得拱助）；若辰申隔位（戌隔之属）——供不了水，**辰土生申金**（土生金助杀）；若壬不透——地支纵拱也拱不动（案廿七会局被夺，辰贴申仍生金）")
+                            } else {
+                                append("；拱局辩证：辰贴申必生金——土生金是谁也改变不了的规矩，会局被夺不以局论（壬不透拱不动——杀旺取坐下印为用）；寒木向阳——有火时层次更高，但非必需：没有水命主就被旺杀克死，有水即成格，没火一样当官（调候不用刻意考虑）")
+                            }
+                        }
+                        // 案一百·比劫贴合杀而比劫无根无力——从杀合化（乙庚化金），反助其暴：
+                        // 辰月杀进气（魁罡之旺）、辰土克亥水（水库仍土——水少则克，财坏印）、
+                        // 乙指亥生而亥被克、戌坎辰中乙——乙无力从庚＝合化金；辰戌土生金金旺——
+                        // 一个壬水化不了这么旺的杀（对勘案九十九：彼印旺得气＋辰申贴拱水；此杀得气＋比劫被化——位置一变天渊之隔）
+                        val biTou100 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == biEl }
+                        if (biTou100.isNotEmpty() && !hasBenQiRoot(bazi, biEl) &&
+                            biTou100.any { i -> GAN_HE[bazi.stems[i]]?.let { p -> bazi.stems.getOrNull(i + 1) == p || bazi.stems.getOrNull(i - 1) == p } == true &&
+                                bazi.stems.any { it != dayMaster && it == GAN_HE.getValue(bazi.stems[i]) && it.element == guanEl } } &&
+                            ((guanEl == Element.METAL && monthBranch == EarthlyBranch.CHEN) ||
+                                (guanEl == Element.FIRE && monthBranch == EarthlyBranch.WEI) ||
+                                (guanEl == Element.WATER && monthBranch == EarthlyBranch.CHOU) ||
+                                (guanEl == Element.WOOD && monthBranch == EarthlyBranch.XU))
+                        ) {
+                            append("；**合化从杀·反助其暴（案一百）**：${monthBranch.chinese}月${guanEl.chinese}杀**进气**得气（庚辰之旺——魁罡之属）；${biEl.chinese}比劫无根无力（生${biEl.chinese}之${yinEl.chinese}被${caiEl.chinese}克〔${if (EarthlyBranch.CHEN in bazi.branches && yinEl == Element.WATER && EarthlyBranch.HAI in bazi.branches) "辰土克亥水——水库仍土，没有那么多水就要克水" else "财星克印"}〕${if (EarthlyBranch.CHEN in bazi.branches && EarthlyBranch.XU in bazi.branches && biEl == Element.WOOD) "、戌把辰里乙木坎了" else ""}）——**从了对方＝合化**（${biEl.chinese}${guanEl.chinese}化${guanEl.chinese}）：**反助其暴**。地支${caiEl.chinese}生${guanEl.chinese}——${guanEl.chinese}旺，**指望一个${yinEl.chinese}就化不了这么旺的杀**（对勘案九十九：彼${yinEl.chinese}印旺得气＋辰申贴拱水，此杀得气＋比劫被化金——**位置一变天渊之隔：位置一变力量就变，用生克看八字就是一切看力量**）")
                         }
                         // 案廿八：印为湿土晦火养金——财贴印本是病，然财生官、官生印，土不受木克＝有情（当官富贵）
                         if (yinEl == Element.EARTH && guanEl == Element.FIRE &&
@@ -1231,6 +1251,9 @@ object JinBiaoCalculator {
                         if (yinS >= YIN_HUAI) {
                             append("；印星两坏（生身助旺＋贴身克用神）——印为格局之病，病去或用神强旺方能好")
                             if (!caiZai) append("；财地支不载（金旺土生金、支全金局）——用财无出息，不如用食伤（秋水通源，壬水有劲）")
+                            // 案一百引·弃印就财（学历章）：印旺为病夺食——上学呆学习不好；
+                            // 财运弃印就财——不念书早出社会就发财（学习也好不了——无学历照样发财）
+                            append("；**弃印就财·学历断（案一百引）**：印非常旺——上学的时候有点呆、大脑不灵活，学习肯定不好；来了财运**弃印就财**——只能说你不念书早点出社会，就发财了（**学习也好不了**——没有学历一样发财、比上大学挣钱多事业好：弃印就财之命社会上常见——塞翁失马焉知非福）")
                         }
                         // 案八十四·财气通门户（玄机暗里存）：枭夺食而找财——财不透而半合拱局暗存
                         // （亥未拱木之属）——财起好作用即有俩钱：财星有情财来找他——不在乎财星旺衰
@@ -1858,82 +1881,7 @@ object JinBiaoCalculator {
         // （火最怕湿土来晦）学历就不高——但学习肯定不错或者好学（走坏运＝平时学习好、考试发挥失常）；
         // ③大运地支不载不碍（甲申乙酉——支不载而天干生火）：只要天干没把印坏了，就可以有学历、
         // 可以上大学——干定学历。
-        val xueLi: cn.xulun.bazi.model.JinBiaoXueLi? = if (!ruoJi && !wangJi && !qiangJi && yongEl == yinEl &&
-            choice.way == JinBiaoQuYongWay.FU_SHEN && daYun != null
-        ) {
-            val yinIdxsX = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
-            val caiIdxsX = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
-            val yinTieKeX = yinIdxsX.isNotEmpty() && caiIdxsX.isNotEmpty() &&
-                yinIdxsX.any { yi -> caiIdxsX.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
-            val yinGenChongX = bazi.branches
-                .filter { br -> branchHiddenStems.getValue(br).any { it.element == yinEl } }
-                .any { br -> LIU_CHONG[br] in bazi.branches }
-            val wanHao = !yinTieKeX && !yinGenChongX
-            val qiuXue = daYun.yuns.take(2).map { y ->
-                val ganEl = y.pillar.stem.element
-                val zhiEl = y.pillar.branch.element
-                val gan = when {
-                    ganEl == yinEl || ganEl.generates == yinEl -> 2
-                    ganEl.controls == yinEl -> -2
-                    // 火最怕湿土来晦（案五十三/九十四）——湿土干（己）晦火印
-                    yinEl == Element.FIRE && y.pillar.stem == HeavenlyStem.JI -> -2
-                    else -> 0
-                }
-                val zhi = when {
-                    zhiEl == yinEl || zhiEl.generates == yinEl -> 1
-                    zhiEl.controls == yinEl -> -1
-                    // 湿土支（辰丑）晦火
-                    yinEl == Element.FIRE && (y.pillar.branch == EarthlyBranch.CHOU || y.pillar.branch == EarthlyBranch.CHEN) -> -1
-                    else -> 0
-                }
-                Triple(y.pillar.fullName, gan, zhi)
-            }
-            val ganBang = qiuXue.any { it.second > 0 }
-            val ganHuai = qiuXue.any { it.second < 0 }
-            val zhiHuai = qiuXue.any { it.third < 0 }
-            val total = qiuXue.sumOf { it.second + it.third }
-            val level = when {
-                !wanHao -> cn.xulun.bazi.model.JinBiaoXueLiLevel.YIN_HUAI
-                ganBang && !ganHuai && total >= 3 -> cn.xulun.bazi.model.JinBiaoXueLiLevel.GAO
-                ganBang -> cn.xulun.bazi.model.JinBiaoXueLiLevel.YOU
-                else -> cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO
-            }
-            cn.xulun.bazi.model.JinBiaoXueLi(
-                yinWanHao = wanHao,
-                level = level,
-                basis = buildString {
-                    if (!wanHao) {
-                        append("**印在原局就坏了（${if (yinTieKeX) "${caiEl.chinese}财贴克${yinEl.chinese}印" else "印根被贴冲"}）——说明他头脑上、思路上是存在问题的：即使走了好运，他学习也不好、考不上好学校、学历不高**。要区分：有的人初运走好运就学习好上好大学；有的人初运走好运他学习也不好——原因就在印坏不坏。**印、食神这两个对于学业非常重要——因为学习是看脑子和思路**（案九十五）")
-                    } else {
-                        append("**印星原局没被破坏——小时候脑子没毛病、头脑肯定不笨**（底子在）；学历高低看求学运（${qiuXue.joinToString("、") { it.first }}）：")
-                        append(
-                            when (level) {
-                                cn.xulun.bazi.model.JinBiaoXueLiLevel.GAO -> "求学运一路生印同印（好运）——**百分之百学历高**"
-                                cn.xulun.bazi.model.JinBiaoXueLiLevel.YOU -> "运干生${yinEl.chinese}同${yinEl.chinese}而地支不载（甲申乙酉之属）——**地支不载不碍：只要天干没把印坏了，就可以有学历、可以上大学**"
-                                cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO ->
-                                    (if (zhiHuai && yinEl == Element.FIRE) "走北方晦${yinEl.chinese}之运（${qiuXue.filter { it.third < 0 || it.second < 0 }.joinToString("、") { it.first }}——**${yinEl.chinese}最怕湿土来晦**：来己土给他晦火了那就不行了）——**学历就不高**"
-                                    else "求学运干不帮${yinEl.chinese}印（${qiuXue.joinToString("、") { it.first }}）——学历不高") +
-                                        "；然原局印没坏——**学习肯定是不错或者好学**（走坏运＝平时学习好、到考试的时候发挥失常）"
-                                else -> ""
-                            }
-                        )
-                        // 案九十五·印之源头（生印之喜神）三态：源头被贴冲拔——虚印完全指着大运；
-                        // 源头旺而根无冲——即使走坏运也能考上大学
-                        val xiEl95 = Element.entries.first { it.generates == yinEl }
-                        val xiGenZhis95 = bazi.branches.filter { br -> br.element == xiEl95 || branchHiddenStems.getValue(br).any { it.element == xiEl95 } }
-                        val xiGenBa = xiGenZhis95.isNotEmpty() && xiGenZhis95.any { br -> LIU_CHONG[br] != null && LIU_CHONG[br] in bazi.branches }
-                        val xiWang = partyScore(bazi, xiEl95) >= GUAN_WANG && !xiGenBa
-                        when {
-                            xiGenBa -> append("。**学习情况全指${yinEl.chinese}印**：源头（${xiEl95.chinese}喜神）被旺${shiEl.chinese}贴冲**直接拔了——虚${yinEl.chinese}就完全指着大运了**：运不帮（晦${yinEl.chinese}）就一样没有学历；**若${xiEl95.chinese}在地支很旺、没被这么旺的${shiEl.chinese}克——${yinEl.chinese}有源头很旺，那么即使走坏运，也能考上大学**（案九十五）。这人脑子没问题、头脑比较灵光、知书达理——印星得用是个好学之人，但运不行，一样没有学历")
-                            xiWang -> append("。印有源头（喜神${xiEl95.chinese}旺而根稳）——**即使走坏运，也能考上大学**（源头在，坏运只是打折——案九十五）")
-                        }
-                        append("。**看学历首先看印星（和食伤）**：印没坏＝脑子没问题——初运坏只是发挥失常，初运好（${yinEl.chinese}印之好运）则学历必高")
-                    }
-                },
-            )
-        } else {
-            null
-        }
+        val xueLi: cn.xulun.bazi.model.JinBiaoXueLi? = xueLiOf(bazi, daYun, choice, strength, ruoJi, wangJi, qiangJi, yongEl, yinEl, caiEl, shiEl, guanEl, yinS)
 
         // ── 运年评断（以用神为中心；从格/专旺的反常识运断由用神立场自动成立） ──
         // 财解围局（第三讲）：行财运亨通；行官/食运稍差但无大碍——中平。
@@ -2290,6 +2238,16 @@ object JinBiaoCalculator {
                         (biEl == Element.WATER && monthBranch == EarthlyBranch.WEI))
                 ) {
                     "；${biEl.chinese}生${monthBranch.chinese}月——绝地之方末月**进气**（最怕之方将过、物极必反）：非无敌，只提供力量气数——根虽被冲暗坎，日主之根气由此赋（案九十九）"
+                } else {
+                    ""
+                }) +
+                (if (strength == DayStrength.WEAK &&
+                    ((biEl == Element.WOOD && monthBranch == EarthlyBranch.CHEN) ||
+                        (biEl == Element.FIRE && monthBranch == EarthlyBranch.WEI) ||
+                        (biEl == Element.METAL && monthBranch == EarthlyBranch.XU) ||
+                        (biEl == Element.WATER && monthBranch == EarthlyBranch.CHOU))
+                ) {
+                    "；${biEl.chinese}生${monthBranch.chinese}月——旺地之方末月**退气**（飞龙在天、再上即亢龙有悔——开始走下坡路）：**退气也算通根**（只是力量没那么旺）——进退气是判断力量的辅助，不是绝对因素（案一百）"
                 } else {
                     ""
                 }) +
@@ -2773,6 +2731,110 @@ object JinBiaoCalculator {
             if (canonical != null && LIU_HE_EL[canonical] == yinEl) return true
         }
         return false
+    }
+
+    /** 取用候选（analyze 与学历判读共用）。 */
+    private data class Choice(val way: JinBiaoQuYongWay, val el: Element, val basis: String)
+
+    /** 学历判读（案九十四~一百·学历章：印为用神之局适用；案一百扩杀印局、财坏印型、弃印就财注）。 */
+    private fun xueLiOf(
+        bazi: BaziResult,
+        daYun: DaYunInfo?,
+        choice: Choice,
+        strength: DayStrength,
+        ruoJi: Boolean,
+        wangJi: Boolean,
+        qiangJi: Boolean,
+        yongEl: Element,
+        yinEl: Element,
+        caiEl: Element,
+        shiEl: Element,
+        guanEl: Element,
+        yinS: Double,
+    ): cn.xulun.bazi.model.JinBiaoXueLi? {
+        return if (!(ruoJi || wangJi || qiangJi) && yongEl == yinEl &&
+            (choice.way == JinBiaoQuYongWay.FU_SHEN || choice.way == JinBiaoQuYongWay.HUA_SHA) && daYun != null
+        ) {
+            val yinIdxsX = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+            val caiIdxsX = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == caiEl }
+            val yinTieKeX = yinIdxsX.isNotEmpty() && caiIdxsX.isNotEmpty() &&
+                yinIdxsX.any { yi -> caiIdxsX.any { ci -> kotlin.math.abs(ci - yi) == 1 } }
+            val yinGenChongX = bazi.branches
+                .filter { br -> branchHiddenStems.getValue(br).any { it.element == yinEl } }
+                .any { br -> LIU_CHONG[br] in bazi.branches }
+            val wanHao = !yinTieKeX && !yinGenChongX
+            val qiuXue = daYun.yuns.take(2).map { y ->
+                val ganEl = y.pillar.stem.element
+                val zhiEl = y.pillar.branch.element
+                val gan = when {
+                    ganEl == yinEl || ganEl.generates == yinEl -> 2
+                    ganEl.controls == yinEl -> -2
+                    // 火最怕湿土来晦（案五十三/九十四）——湿土干（己）晦火印
+                    yinEl == Element.FIRE && y.pillar.stem == HeavenlyStem.JI -> -2
+                    else -> 0
+                }
+                val zhi = when {
+                    zhiEl == yinEl || zhiEl.generates == yinEl -> 1
+                    zhiEl.controls == yinEl -> -1
+                    // 湿土支（辰丑）晦火
+                    yinEl == Element.FIRE && (y.pillar.branch == EarthlyBranch.CHOU || y.pillar.branch == EarthlyBranch.CHEN) -> -1
+                    else -> 0
+                }
+                Triple(y.pillar.fullName, gan, zhi)
+            }
+            val ganBang = qiuXue.any { it.second > 0 }
+            val ganHuai = qiuXue.any { it.second < 0 }
+            val zhiHuai = qiuXue.any { it.third < 0 }
+            val total = qiuXue.sumOf { it.second + it.third }
+            val level = when {
+                !wanHao -> cn.xulun.bazi.model.JinBiaoXueLiLevel.YIN_HUAI
+                ganBang && !ganHuai && total >= 3 -> cn.xulun.bazi.model.JinBiaoXueLiLevel.GAO
+                ganBang -> cn.xulun.bazi.model.JinBiaoXueLiLevel.YOU
+                else -> cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO
+            }
+            cn.xulun.bazi.model.JinBiaoXueLi(
+                yinWanHao = wanHao,
+                level = level,
+                basis = buildString {
+                    if (!wanHao) {
+                        val caiHuaiYin100 = yinGenChongX &&
+                            bazi.branches.filter { br -> branchHiddenStems.getValue(br).any { it.element == yinEl } }
+                                .any { br -> LIU_CHONG[br]?.let { c -> bazi.branches.contains(c) && c.element == caiEl } == true }
+                        if (caiHuaiYin100) {
+                            append("**${caiEl.chinese}坏印（印根被${caiEl.chinese}支贴冲——原局就没有学习的灵感：一个印一个食伤都代表上学时候的学习灵感）——来了好运学习也不会太好：学习取决于原局**（区别于虚透未伤型〔案九十五〕——虚透上学取决于大运）。**印和食伤不能伤**——学习成绩很大一部分由先天悟性决定（努力一样的两个孩子成绩不一样；有人走好运很努力还是学不好——案一百）")
+                        } else {
+                            append("**印在原局就坏了（${if (yinTieKeX) "${caiEl.chinese}财贴克${yinEl.chinese}印" else "印根被贴冲"}）——说明他头脑上、思路上是存在问题的：即使走了好运，他学习也不好、考不上好学校、学历不高**。要区分：有的人初运走好运就学习好上好大学；有的人初运走好运他学习也不好——原因就在印坏不坏。**印、食神这两个对于学业非常重要——因为学习是看脑子和思路**（案九十五）")
+                        }
+                    } else {
+                        append("**印星原局没被破坏——小时候脑子没毛病、头脑肯定不笨**（底子在）；学历高低看求学运（${qiuXue.joinToString("、") { it.first }}）：")
+                        append(
+                            when (level) {
+                                cn.xulun.bazi.model.JinBiaoXueLiLevel.GAO -> "求学运一路生印同印（好运）——**百分之百学历高**"
+                                cn.xulun.bazi.model.JinBiaoXueLiLevel.YOU -> "运干生${yinEl.chinese}同${yinEl.chinese}而地支不载（甲申乙酉之属）——**地支不载不碍：只要天干没把印坏了，就可以有学历、可以上大学**"
+                                cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO ->
+                                    (if (zhiHuai && yinEl == Element.FIRE) "走北方晦${yinEl.chinese}之运（${qiuXue.filter { it.third < 0 || it.second < 0 }.joinToString("、") { it.first }}——**${yinEl.chinese}最怕湿土来晦**：来己土给他晦火了那就不行了）——**学历就不高**"
+                                    else "求学运干不帮${yinEl.chinese}印（${qiuXue.joinToString("、") { it.first }}）——学历不高") +
+                                        "；然原局印没坏——**学习肯定是不错或者好学**（走坏运＝平时学习好、到考试的时候发挥失常）"
+                                else -> ""
+                            }
+                        )
+                        // 案九十五·印之源头（生印之喜神）三态：源头被贴冲拔——虚印完全指着大运；
+                        // 源头旺而根无冲——即使走坏运也能考上大学
+                        val xiEl95 = Element.entries.first { it.generates == yinEl }
+                        val xiGenZhis95 = bazi.branches.filter { br -> br.element == xiEl95 || branchHiddenStems.getValue(br).any { it.element == xiEl95 } }
+                        val xiGenBa = xiGenZhis95.isNotEmpty() && xiGenZhis95.any { br -> LIU_CHONG[br] != null && LIU_CHONG[br] in bazi.branches }
+                        val xiWang = partyScore(bazi, xiEl95) >= GUAN_WANG && !xiGenBa
+                        when {
+                            xiGenBa -> append("。**学习情况全指${yinEl.chinese}印**：源头（${xiEl95.chinese}喜神）被旺${shiEl.chinese}贴冲**直接拔了——虚${yinEl.chinese}就完全指着大运了**：运不帮（晦${yinEl.chinese}）就一样没有学历；**若${xiEl95.chinese}在地支很旺、没被这么旺的${shiEl.chinese}克——${yinEl.chinese}有源头很旺，那么即使走坏运，也能考上大学**（案九十五）。这人脑子没问题、头脑比较灵光、知书达理——印星得用是个好学之人，但运不行，一样没有学历")
+                            xiWang -> append("。印有源头（喜神${xiEl95.chinese}旺而根稳）——**即使走坏运，也能考上大学**（源头在，坏运只是打折——案九十五）")
+                        }
+                        append("。**看学历首先看印星（和食伤）**：印没坏＝脑子没问题——初运坏只是发挥失常，初运好（${yinEl.chinese}印之好运）则学历必高")
+                    }
+                },
+            )
+        } else {
+            null
+        }
     }
 
     private fun verdictOf(items: List<JinBiaoStanceItem>, ctx: YunCtx): JinBiaoVerdict = when {
