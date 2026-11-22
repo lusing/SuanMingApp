@@ -2611,6 +2611,59 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎学业同断学历不高（双引擎互证）", wp.level.contains("学历不高"))
     }
 
+    // ── 案九十五 · 辛亥 辛丑 己酉 丁卯（乾，1972-01-19 卯时）——丑月金多过泄配印（源头拔）·学历章（印坏端＋源头三态） ──
+
+    @Test
+    fun `案九十五 乾 辛亥辛丑己酉丁卯 丑月金多一酉亦过泄配印用丁 卯被酉冲源头拔层次降不如案九十四 学历低脑子灵光 财全藏不透有儿子 戌丁两运发财`() {
+        val bazi = chart(1972, 1, 19, 6)
+        assertTrue(bazi.fullBazi.startsWith("辛亥 辛丑 己酉 丁卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行：庚子1976 己亥1986 戊戌1996 丁酉2006（与材料年标逐年吻合）",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚子(1976)", "己亥(1986)", "戊戌(1996)", "丁酉(2006)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("丑月土本来旺（虚于未戌）然金多（一酉两透党力6）——日主肯定就过泄了→身弱",
+            jb.strength == DayStrength.WEAK && jb.strengthBasis.contains("过泄") && jb.strengthBasis.contains("亦虚于未戌"))
+        assertTrue("必须用丁火——伤官配印（过泄为主不走杀重用印）",
+            jb.quYongWay == JinBiaoQuYongWay.FU_SHEN && jb.yongShenElement == Element.FIRE && jb.yongShenGod.chinese == "偏印")
+        assertTrue("卯被酉贴冲——丑酉半合金力大把卯拔了：源头直接被拔、虚丁完全指着大运",
+            jb.quYongBasis.contains("把卯拔了") || jb.quYongBasis.contains("源头直接被拔") && jb.quYongBasis.contains("完全指着大运"))
+        assertTrue("层次降：火用神木喜神——喜神力量不一样层次差好多（不如案九十四能当官）；戌丁两运还是发了财的",
+            jb.quYongBasis.contains("喜神的力量上不一样") && jb.quYongBasis.contains("戌丁两运还是发了财的"))
+
+        // 子女：财全藏支不透（没贴着克丁）——丁没事儿有儿子；反事实去火存金则没儿
+        val zn95 = jb.ziNv!!
+        assertTrue("身衰印做儿——必有儿（卯被拔只降层次不碍子）",
+            zn95.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER && zn95.ziEl == Element.FIRE &&
+                zn95.basis.contains("没事儿——有儿子") && zn95.basis.contains("去火存金"))
+
+        // 学历：印原局没坏（脑子灵光知书达理好学）＋源头被拔＋己土晦火——学历低没学历
+        val xl = jb.xueLi!!
+        assertTrue("学历不高·脑子没问题好学＋源头拔（虚丁完全指着大运）＋若木旺即使坏运也能考上大学",
+            xl.yinWanHao && xl.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO &&
+                xl.basis.contains("己土给他晦火") && xl.basis.contains("完全指着大运") &&
+                xl.basis.contains("即使走坏运，也能考上大学") && xl.basis.contains("知书达理"))
+
+        // 运：庚子己亥凶（求学晦火）；戌丁两运发财（用神库根／用神透干——分论不作凶）；乙未填亥卯喜神变旺好运
+        assertTrue("庚子己亥凶（北方晦火克印）", jb.yuns[0].verdict == JinBiaoVerdict.XIONG && jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("戊戌运支戌为火用神之库——发财之运（不作凶）",
+            jb.yuns[2].items.any { it.action.contains("用神之库") && it.action.contains("发财之运") } &&
+                jb.yuns[2].verdict == JinBiaoVerdict.GAN_ZHI_FEN)
+        assertTrue("丁酉运干丁用神透干——发财之运（支酉贴冲卯——拔根注在）",
+            jb.yuns[3].items.any { it.action.contains("发财之运") } &&
+                jb.yuns[3].items.any { it.action.contains("支神只以冲为重") })
+        assertTrue("乙未运填亥卯喜神拱局——喜神变旺还是好运（金木交战无碍——卯木不是用神）",
+            jb.yuns[5].verdict == JinBiaoVerdict.JI &&
+                jb.yuns[5].items.any { it.action.contains("喜神变旺") && it.action.contains("不是用神") })
+
+        // 双引擎对照（双引擎铁律）：老引擎同判身弱、学业同断学历不高；建禄格食神生财取用分歧
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎建禄格食神生财（成中有败）", old.geJuName.contains("建禄格") && old.xiangShenRole.contains("食神生财"))
+        val wp = WenPingCalculator.analyze(bazi, daYun)
+        assertTrue("老引擎学业同断学历不高（双引擎互证）", wp.level.contains("学历不高"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
