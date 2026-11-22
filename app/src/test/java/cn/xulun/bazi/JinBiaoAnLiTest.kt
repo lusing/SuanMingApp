@@ -2389,8 +2389,8 @@ class JinBiaoAnLiTest {
         val zn17 = jb.ziNv!!
         assertTrue("必无儿", zn17.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER)
 
-        // 庚戌运戌临寅午戌火局——通关化劫兑现才挣到钱（此前子水运穷困潦倒）
-        assertTrue("庚戌运戌临寅午戌食伤局——才挣到钱", jb.yuns[3].items.any { it.action.contains("寅午戌") && it.action.contains("才挣到钱") })
+        // 庚戌运戌填寅午戌火局——通关化劫兑现才挣到钱（此前子水运穷困潦倒）
+        assertTrue("庚戌运戌临火食伤三合局——才挣到钱", jb.yuns[3].items.any { it.action.contains("食伤三合局") && it.action.contains("才挣到钱") })
         assertTrue("壬子水运克食伤之源——穷困潦倒（凶）", jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
     }
 
@@ -2558,6 +2558,57 @@ class JinBiaoAnLiTest {
         // 己卯运填拱：坏印之财局兑现（不作财气通门户论）——凶
         assertTrue("己卯运卯填亥未拱局——财局兑现坏印成真（克妻之应）",
             jb.yuns[3].verdict == JinBiaoVerdict.XIONG && jb.yuns[3].items.any { it.action.contains("财坏印成真") })
+    }
+
+    // ── 案九十四 · 辛酉 辛丑 己酉 丙寅（乾，1982-01-26 寅时）——比劫当令食伤得局过泄配印·学历章开讲 ──
+    // 排盘口径：师示四柱为准（用户材料日期误书 1982-01-19——该日为壬寅日；己酉日对应 1982-01-26）。
+
+    @Test
+    fun `案九十四 乾 辛酉辛丑己酉丙寅 比劫当令金多过泄配印用丙火 异性克不拔根层次高能当官发大财 学历不高脑子没问题 有儿子`() {
+        val bazi = chart(1982, 1, 26, 4)
+        assertTrue(bazi.fullBazi.startsWith("辛酉 辛丑 己酉 丙寅"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行：庚子1988 己亥1998 戊戌2008 丁酉2018（材料年标1987属进位口径之差）",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚子(1988)", "己亥(1998)", "戊戌(2008)", "丁酉(2018)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("丑月土寒终究是土（虚一点而终是实——异于辰之虚），然金多得局两透——日主肯定就过泄了→身弱",
+            jb.strength == DayStrength.WEAK && jb.strengthBasis.contains("过泄") && jb.strengthBasis.contains("终究是土"))
+        assertTrue("伤官配印（案五十一型）——用神露出来的丙火",
+            jb.quYongWay == JinBiaoQuYongWay.FU_SHEN && jb.yongShenElement == Element.FIRE && jb.yongShenGod.chinese == "正印")
+        assertTrue("取用依据含丑辰之辨、命主一切由丙火决定",
+            jb.quYongBasis.contains("辰才是虚土") && jb.quYongBasis.contains("命主的一切就要由火来决定"))
+        assertTrue("异性之克不至于拔根＋支神只以冲为重＋层次高能当官发大财",
+            jb.quYongBasis.contains("异性之克不至于把火的根拔了") && jb.quYongBasis.contains("支神只以冲为重") &&
+                jb.quYongBasis.contains("能当官发大财"))
+        assertTrue("酉换申（同性贴冲）根拔——反事实：走好木火运帮得起来但只能老百姓里算好的",
+            jb.quYongBasis.contains("换成申") && jb.quYongBasis.contains("老百姓里面算好的"))
+        assertTrue("清命（病水微藏不透、药土制之——贵命）", jb.qingZhuo == JinBiaoQingZhuo.QING)
+
+        // 子女：身衰印做儿——命主有儿子
+        val zn94 = jb.ziNv!!
+        assertTrue("身衰印做儿——必有儿",
+            zn94.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER && zn94.ziEl == Element.FIRE && zn94.basis.contains("印做儿"))
+
+        // 学历：印原局没坏（脑子没问题）；求学走庚子己亥北方晦火——学历不高但学习不错好学
+        val xl = jb.xueLi!!
+        assertTrue("学历不高·脑子没问题好学（火最怕湿土来晦）",
+            xl.yinWanHao && xl.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO &&
+                xl.basis.contains("没毛病") && xl.basis.contains("湿土来晦"))
+
+        // 运：早年北方水地凶；丙申运申贴冲寅——用神之根被拔（支神只以冲为重）；乙未甲午木火运吉
+        assertTrue("庚子己亥凶（北方晦火克印）", jb.yuns[0].verdict == JinBiaoVerdict.XIONG && jb.yuns[1].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("丙申运申贴冲寅——拔根注（帮得起来但成就打折）",
+            jb.yuns[4].items.any { it.action.contains("根被拔") && it.action.contains("支神只以冲为重") })
+        assertTrue("乙未甲午木火运吉——走好木火运把丙火帮起来",
+            jb.yuns[5].verdict == JinBiaoVerdict.JI && jb.yuns[6].verdict == JinBiaoVerdict.JI)
+
+        // 双引擎对照（双引擎铁律）：老引擎身弱同向、学业同断「学历不高」；格局取用分歧（建禄食神生财 vs 配印）
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎同判身弱", old.geJuName.contains("建禄格"))
+        val wp = WenPingCalculator.analyze(bazi, daYun)
+        assertTrue("老引擎学业同断学历不高（双引擎互证）", wp.level.contains("学历不高"))
     }
 
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──

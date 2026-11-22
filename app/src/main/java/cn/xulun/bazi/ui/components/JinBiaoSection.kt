@@ -306,6 +306,21 @@ fun JinBiaoSection(result: JinBiaoResult, modifier: Modifier = Modifier) {
                 )
             }
 
+            // ── 学历判读（案九十四·学历章：印星不坏=脑子没问题；学历看求学运，干定学历） ──
+            result.xueLi?.let { xl ->
+                GoldLabel("学历判读", Modifier.padding(top = 14.dp))
+                Text(
+                    text = "${xl.level.chinese}（印${if (xl.yinWanHao) "完好" else "被破坏"}）\n${xl.basis}",
+                    fontSize = 12.sp,
+                    color = JinBiaoGold,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(JinBiaoInk.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+                        .padding(10.dp),
+                )
+            }
+
             // 校准注记
             Text(
                 text = "注：${result.note}",

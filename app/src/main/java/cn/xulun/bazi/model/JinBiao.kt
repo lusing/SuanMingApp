@@ -183,6 +183,26 @@ data class JinBiaoZiNv(
     val basis: String,
 )
 
+/** 学历高低（案九十四·学历章开讲：印星原局不坏＝脑子没问题；学历高低看求学运——运干生印/同印即有学历，地支不载不碍） */
+enum class JinBiaoXueLiLevel(val chinese: String) {
+    /** 求学运一路帮印（好运）——百分之百学历高 */
+    GAO("学历高"),
+    /** 运干生印/同印（甲申乙酉——地支不载而天干生火）——可以有学历、可以上大学 */
+    YOU("有学历·可上大学"),
+    /** 北方晦火运／运干不帮印——学历不高；然原局印没坏：脑子没问题、学习不错或好学 */
+    BU_GAO("学历不高·脑子没问题好学"),
+    /** 原局印星被破坏——此端框架待师传 */
+    YIN_HUAI("印被破坏·待师传"),
+}
+
+/** 学历判读（案九十四：用神为印之局适用） */
+data class JinBiaoXueLi(
+    /** 印星原局是否完好（没被贴克/根未拔——头脑底子没问题） */
+    val yinWanHao: Boolean,
+    val level: JinBiaoXueLiLevel,
+    val basis: String,
+)
+
 /** 金镖门用神分析总结果 */
 data class JinBiaoResult(
     /** 口径说明（模块页眉展示） */
@@ -229,6 +249,8 @@ data class JinBiaoResult(
     val duanYu: String,
     /** 子女判读（第十一讲；极端格局未判时为 null） */
     val ziNv: JinBiaoZiNv? = null,
+    /** 学历判读（案九十四·学历章；用神非印时为 null） */
+    val xueLi: JinBiaoXueLi? = null,
     /** 校准注记 */
     val note: String,
 )
