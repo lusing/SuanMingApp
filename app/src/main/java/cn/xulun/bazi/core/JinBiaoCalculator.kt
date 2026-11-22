@@ -405,6 +405,19 @@ object JinBiaoCalculator {
             shiTouCnt94 >= 2 && shiS >= GUAN_WANG &&
             (shiDeJu94 && shiS >= yinS + biS || monthBranch == EarthlyBranch.CHOU)
         if (guoXieFanRuo) strength = DayStrength.WEAK
+        // 案一百一十·坐两刃＋飞刃（比劫）透＋财干贴印干相合（丙火虽猛逢辛乃怯——财无根从印而化）
+        // ——身旺泄秀之结构：一刃已够旺，何况两刃又露飞刃
+        val renZhi110 = YANG_REN[dayMaster]
+        val liangRen110 = renZhi110 != null && bazi.dayPillar.branch == renZhi110 &&
+            bazi.branches.count { it == renZhi110 } >= 2 &&
+            bazi.stems.any { it != dayMaster && it.element == biEl } &&
+            bazi.stems.indices.any { i ->
+                i != 2 && bazi.stems[i].element == caiEl &&
+                    bazi.stems.indices.any { j ->
+                        j != 2 && j != i && bazi.stems[j].element == yinEl && kotlin.math.abs(i - j) == 1 &&
+                            GAN_HE[bazi.stems[i]] == bazi.stems[j]
+                    }
+            }
         // 案一百零八·土众身旺、食伤吐秀（秀气流行）的结构判据：日主得局＋食伤透干＋财透护卫
         // ＋官杀不透且无本气根＋印不旺（非案九印为病之局）
         val xiuQi108 = strength == DayStrength.STRONG &&
@@ -1382,6 +1395,11 @@ object JinBiaoCalculator {
                     JinBiaoQuYongWay.SHI_SHENG_CAI, shiEl,
                     buildString {
                         append("正格续理·身旺食生财（案九）：身旺无官杀必泄体得衡——用神取食伤（党力 ${format(shiS)}）泄刚煞之气")
+                        // 案一百一十·坐两刃身旺、财印相合、卯木泄秀——子卯刑没用；走财运好；怕酉冲卯；财为闲神非调候
+                        if (liangRen110) {
+                            val yongGenZhi110 = bazi.branches.firstOrNull { it.element == shiEl }
+                            append("。**坐两刃身旺·${shiEl.chinese}泄秀（案一百一十）**：${shiEl.chinese}当令旺，然**日主坐${renZhi110!!.chinese}刃自旺——何况两刃，又露一个飞刃（${biEl.chinese}）——还配了${yinEl.chinese}源头：日主是身旺的**；${caiEl.chinese}贴${yinEl.chinese}相合——**${caiEl.chinese}虽猛，逢${yinEl.chinese}乃怯**（如乙从庚：被合者极弱从了对方即化）——且${caiEl.chinese}坐${bazi.branches[0].chinese}**临绝**（「绝」非长生表之绝，是坐官上：生克论命不按长生表）无根，合${yinEl.chinese}而化；没有此合日主也身旺。**取用${shiEl.chinese}泄秀；${renZhi110!!.chinese}${yongGenZhi110?.chinese ?: ""}刑有用吗？没用——泄秀就好**。**走财运好**：凡是身旺泄秀的走财运就好（食神继续发泄——儿又生儿）；劫财虽制财，然正因有劫我才身旺、有食伤才喜财运——走财运不必考虑劫（**没有食伤走财运，才叫群劫争财**）。**怕走${yongGenZhi110?.let { LIU_CHONG[it]?.chinese } ?: "冲神"}运冲${yongGenZhi110?.chinese ?: shiEl.chinese}**（冲${shiEl.chinese}）：七八十岁走人就死了；年轻走是差运——这么好的八字只能说是不得志（在当官的单位上班，升职不了）。${caiEl.chinese}是**闲神**——平时不起作用，来了忌神才起作用（闲神立功）；**不是调候**（调候须暖有根，没根不算调候——走火运好是财来了，与调候无关）")
+                        }
                         // 案一百零六·合解冲绝处逢生有情：独食根被印贴冲本夭亡——冲神被六合化木（贪合忘冲＋化神生用）
                         run {
                             val shiGenZhi106 = bazi.branches.filter { it.element == shiEl }
@@ -1868,6 +1886,7 @@ object JinBiaoCalculator {
                 bazi.stems.any { it != dayMaster && it.element == Element.entries.first { e -> e.controls == kunLunEl } },
             zhiShaCai = choice.way == JinBiaoQuYongWay.ZHI_SHA && strength == DayStrength.STRONG,
             xiuQi108 = xiuQi108 && choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI,
+            liangRen110 = liangRen110 && choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI,
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -2225,6 +2244,7 @@ object JinBiaoCalculator {
         val jia98: Boolean = false,            // 案九十八：昆仑顺局而透克神（两土皆病）——运干食伤到＝去病（稍好）；支火土助病＝坏事多
         val zhiShaCai: Boolean = false,        // 案一百零一：食神制杀身旺局——财星到＝食神生财（发财，杀已被制财来即富）
         val xiuQi108: Boolean = false,         // 案一百零八：秀气流行局——运支成食伤三合（酉丑化金）＝层次巅峰
+        val liangRen110: Boolean = false,      // 案一百一十：坐两刃身旺泄秀局——运支冲用神本气根（酉冲卯）＝怕
     )
 
     /** 阳干羊刃支（甲刃卯、丙戊刃午、庚刃酉、壬刃子；阴干无刃）。 */
@@ -2380,6 +2400,9 @@ object JinBiaoCalculator {
                 val shunXieGan = ctx.wangJiFamily && i == 0 && el == ctx.shiEl
                 // 案九十四·运支贴冲用神印之根（申冲寅）：支神只以冲为重——拔根之运
                 val chongYinGenNote = i == 1 && ctx.chongYinGen != null && zhi == LIU_CHONG[ctx.chongYinGen]
+                // 案一百一十·坐两刃泄秀局：运支冲用神之本气根（酉冲卯）——支神只以冲为重：怕
+                val chongYongGen110 = i == 1 && ctx.liangRen110 &&
+                    chartBranches.any { it.element == ctx.shiEl && LIU_CHONG[it] == zhi }
                 // 案九十五·戌丁两运发财（用神得库根／用神透干）＋喜神填拱变旺好运
                 val yongKuYun = i == 1 && ctx.jia95 && ctx.yongKu == zhi
                 val yongTou95 = i == 0 && ctx.jia95 && ganEl == ctx.yongEl
@@ -2416,6 +2439,7 @@ object JinBiaoCalculator {
                     yinHaiFanShen -> "运支寅合局中亥（**寅亥化木**——合去坏印之${ctx.caiEl.chinese}财根）＋木生火帮${ctx.yinEl.chinese}印——**翻身**（三十年河东河西：坎离震兑四方各管三十年——北方差三十年，东方翻身农民把歌唱；走木生火运就要翻身了——福报在后面）"
                     tianGong -> "运支${zhi.chinese}填${ctx.caiEl.chinese}拱局（玄机暗里存——财局兑现）：**财气通门户应期——发大财＋一下就有子**（儿子也有出息——往后好运越来越好）"
                     chongYinGenNote -> "运支${zhi.chinese}贴冲${ctx.chongYinGen!!.chinese}——**用神${ctx.yinEl.chinese}之根被拔（支神只以冲为重，刑与穿兮动不动）**：此人就不行了——纵运干${gan.chinese}为好${ctx.yinEl.chinese}运能帮得起来，只不过成就不如——**只能是在老百姓里面算好的**（案九十四）"
+                    chongYongGen110 -> "运支${zhi.chinese}冲${ctx.shiEl.chinese}——**冲用神${ctx.shiEl.chinese}之本气根：怕走${zhi.chinese}金大运**（支神只以冲为重）：七八十岁走人就死了；年轻走是差运——这么好的八字只能是不得志（在当官的单位上班，升职不了）；若局中有${ctx.caiEl.chinese}闲神坐支，则卫护${ctx.shiEl.chinese}克${zhi.chinese}——闲神立功，一样是好运（案一百一十）"
                     yongKuYun -> "运支${zhi.chinese}为${ctx.yongEl.chinese}用神之库——**用神得库根：发财之运**（案九十五：**戌丁两运还是发了财的**——不一无是处）"
                     yongTou95 -> "运干${gan.chinese}即${ctx.yongEl.chinese}用神透干得力——**发财之运**（案九十五：丁运发财）"
                     xiTianGong95 -> "运支${zhi.chinese}填${ctx.xiShenEl!!.chinese}喜神拱局（亥卯待未之属）——**喜神变旺：还是好运**；金木交战也无碍——**${ctx.xiShenEl.chinese}不是用神**（假如日主完全指望着${ctx.xiShenEl.chinese}、地支都是${ctx.shiEl.chinese}，来${ctx.xiShenEl.chinese}的时候被反克了那就不行——这个命不是这种情况）（案九十五）"
@@ -2441,7 +2465,7 @@ object JinBiaoCalculator {
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
                     favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen || tianGong || tianShiJu || yongKuYun || xiTianGong95 || (ctx.zhiShaCai && el == ctx.caiEl),
                     pingOverride = huaSha != null && huaSha.first == false,
-                    xiongOverride = fanWang || zhiDuo || sanHeCheng || biJianGen || haiSiQuHuo,
+                    xiongOverride = fanWang || zhiDuo || sanHeCheng || biJianGen || haiSiQuHuo || chongYongGen110,
                 )
             }
         }

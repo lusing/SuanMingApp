@@ -3152,4 +3152,33 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎正印格用戊配丁败格（旺衰与金镖门相反：身弱）", old.geJuName.contains("正印格"))
     }
+
+    // ── 案一百一十 · 丙子 辛卯 壬子 癸卯（乾，卯时）——坐两刃身旺·卯木泄秀·闲神 ──
+    // 排盘口径：此四柱在两个丙子年的卯月各有一天（1936-03-31、1996-03-16）——年份待用户/师定；两盘四柱与大运干支序相同，
+    // 故锚点不断言大运起运年。
+    @Test
+    fun `案一百一十 乾 丙子辛卯壬子癸卯 坐两刃又露飞刃身旺 丙辛化水 取用卯木泄秀子卯刑没用 走财运好劫不碍 怕酉金冲卯 财为闲神非调候`() {
+        val bazi = chart(1996, 3, 16, 6)
+        assertTrue(bazi.fullBazi.startsWith("丙子 辛卯 壬子 癸卯"))
+        assertTrue("同四柱亦见于 1936-03-31 卯时", chart(1936, 3, 31, 6).fullBazi.startsWith("丙子 辛卯 壬子 癸卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：壬辰 癸巳 甲午 乙未",
+            daYun.yuns.take(4).map { it.pillar.fullName } == listOf("壬辰", "癸巳", "甲午", "乙未"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺泄秀——用神卯木", jb.strength == DayStrength.STRONG &&
+            jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI && jb.yongShenElement == Element.WOOD)
+        assertTrue("坐两刃又露飞刃身旺；丙火虽猛逢辛乃怯；子卯刑没用；走财运好；没有食伤走财运才叫群劫争财",
+            jb.quYongBasis.contains("坐两刃身旺") && jb.quYongBasis.contains("乃怯") &&
+                jb.quYongBasis.contains("子卯刑有用吗？没用") && jb.quYongBasis.contains("走财运好") &&
+                jb.quYongBasis.contains("群劫争财"))
+        assertTrue("丙为闲神非调候（没根不算调候）；怕走酉金运冲卯",
+            jb.quYongBasis.contains("闲神") && jb.quYongBasis.contains("没根不算调候") && jb.quYongBasis.contains("怕走酉运冲卯"))
+        assertTrue("子女：必有儿（秀气流行）",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        assertTrue("运：巳午财运吉；丁酉运酉冲卯——凶（不再因丁克辛而作去忌神最好）",
+            jb.yuns[1].verdict == JinBiaoVerdict.JI && jb.yuns[2].verdict == JinBiaoVerdict.JI &&
+                jb.yuns[5].verdict == JinBiaoVerdict.XIONG && jb.yuns[5].items.any { it.action.contains("闲神立功") })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎伤官格用乙伤官配丙财成中有败（同向身强）", old.geJuName.contains("伤官格"))
+    }
 }
