@@ -396,11 +396,22 @@ object JinBiaoCalculator {
                 setOf(EarthlyBranch.YIN, EarthlyBranch.WU, EarthlyBranch.XU),
                 setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU),
             ).any { it.all { b -> b in bazi.branches } }
+        // 案一百零八戒：日主得局（本气根≥2——四库全之属）则食伤不强，不翻弱——
+        // 「戊土得局了肯定金弱，没金不行只能用这个金：秀气流行」
+        // （案九十四/九十五日主皆仅月令一根本气；本案四支皆本气根）
         val guoXieFanRuo = strength == DayStrength.STRONG &&
+            bazi.branches.count { it.element == biEl } <= 1 &&
             monthBranch.element == biEl && monthElAdj == biEl &&
             shiTouCnt94 >= 2 && shiS >= GUAN_WANG &&
             (shiDeJu94 && shiS >= yinS + biS || monthBranch == EarthlyBranch.CHOU)
         if (guoXieFanRuo) strength = DayStrength.WEAK
+        // 案一百零八·土众身旺、食伤吐秀（秀气流行）的结构判据：日主得局＋食伤透干＋财透护卫
+        // ＋官杀不透且无本气根＋印不旺（非案九印为病之局）
+        val xiuQi108 = strength == DayStrength.STRONG &&
+            bazi.stems.anyIndexed { i, s -> i != 2 && s.element == shiEl } &&
+            bazi.stems.anyIndexed { i, s -> i != 2 && s.element == caiEl } &&
+            bazi.stems.none { s -> s != dayMaster && s.element == guanEl } && !hasBenQiRoot(bazi, guanEl) &&
+            yinS < YIN_HUAI && bazi.branches.count { it.element == biEl } >= 3
         val wangJi = (strength == DayStrength.STRONG || stemsYinBiOnly) &&
             guanSAdj == 0.0 && caiSAdj == 0.0 && shiSAdj == 0.0
         val caiZai = hasBenQiRoot(bazi, caiEl) || bazi.branches.any { br ->
@@ -1297,6 +1308,15 @@ object JinBiaoCalculator {
                     "印护官格（案八十二）：身旺无争议——食干克官干而**印干贴克食干（印看住食伤、不让他犯官去——把官给解放了）**：身旺是用官的。" +
                         "**印护官主要关系事业**（有伤官犯官、有印看着食伤——走官地〔南方〕事业上肯定发财）；又关系**儿子的学习与将来发展**（印看伤官＝给儿子一护卫：好条件、留遗产、教学习——捣乱儿子的东西全被印克了：**不但生儿子，儿子也有出息——儿子得你的福气**）。伤官被印看住＝有教养之人（官代表国家法律——管住不安分的伤官、遵纪守法看书学习——**给儿子做榜样、给后代积德**——一环扣一环）",
                 )
+                // 案一百零八·土众身旺、食伤吐秀（秀气流行）：日主得局＋食伤透干＋财透护卫＋官杀不透无本气根＋印不旺
+                // ——先于「身旺食伤生财·用财」：没金不行，只能用这个金（财为护卫、润土养金，不为用）
+                xiuQi108 && strength == DayStrength.STRONG && !ruoJi && !wangJi && shiS >= FOLLOW_MIN_SCORE -> Choice(
+                    JinBiaoQuYongWay.SHI_SHENG_CAI, shiEl,
+                    buildString {
+                        append("身旺食伤吐秀（案一百零八）：${biEl.chinese}众${biEl.chinese}旺、${shiEl.chinese}泄秀（党力${format(shiS)}）——用神取${shiEl.chinese}；官杀不透无本气根（藏于冲中——去不去尽都不要紧）。")
+                        append("。**秀气流行**：${biEl.chinese}众${biEl.chinese}旺，有${shiEl.chinese}泄秀就是好命。**不是土重金埋**——身旺我用${shiEl.chinese}泄秀，有${shiEl.chinese}叫**秀气**，就不叫土重金埋（土重金埋说的是金日主生于众土，如戊辰壬戌辛未己丑）；日主${biEl.chinese}得局了${shiEl.chinese}肯定弱，然没${shiEl.chinese}不行，只能用这个${shiEl.chinese}。**最怕${yinEl.chinese}**——没${yinEl.chinese}就是好事；时干${caiEl.chinese}护卫${shiEl.chinese}，而且**${caiEl.chinese}可以润${biEl.chinese}而养${shiEl.chinese}**（细节必记）。地支同气相冲、藏干互战——${shiEl.chinese}克${guanEl.chinese}把官杀去尽了（去不去尽都不要紧，都要用${biEl.chinese}里面的食伤吐秀）。**不喜欢再来比劫运**（身旺不喜欢帮身，${shiEl.chinese}也不喜欢${biEl.chinese}多）；运：**${caiEl.chinese}运不差，只是平运；走${shiEl.chinese}运才发——酉丑化${shiEl.chinese}发，层次达到巅峰**")
+                    },
+                )
                 // 案五十四·身旺食伤喜生财而财有力（财有本气根，或得月令之气——案六十五：戌月秋金有气，
                 // 「即使是寅午戌也是秋天——烧再大的火，我的金也是有气的，像夏天下再大的雨天也是热的」；
                 // 月令季节＞局势，戌换他支金就完了）——用神即财星；
@@ -1580,6 +1600,11 @@ object JinBiaoCalculator {
         // 无争妒（案四：财官相生一体）——走财走官走食伤皆顺皆吉，唯帮身反害。
         val zhengDou = ruoJi && guanS >= FOLLOW_MIN_SCORE && shiS >= FOLLOW_MIN_SCORE
         val zhongPingNote: Map<Element, String> = buildMap {
+            // 案一百零八·秀气流行局：财运不差只是平运（食伤生财不破财）；比劫运不喜欢（身旺不喜帮身）
+            if (xiuQi108 && choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI) {
+                put(caiEl, "${caiEl.chinese}运不差，只是平运——食伤生财不破财（不用之财尽可劫·儿又生儿）")
+                put(biEl, "身旺不喜欢帮身、${shiEl.chinese}也不喜欢${biEl.chinese}多——不喜欢再来比劫运")
+            }
             // 案六十四·官已重（官杀本气支贴冲比劫之根——辰酉化金力大）而再生成官（如土生金）：
             // 助忌——提升不了（提升在帮身化杀／制杀以威之运——事实庚寅年甲午年提升）
             if (choice.way == JinBiaoQuYongWay.HE_LIU &&
@@ -1804,6 +1829,7 @@ object JinBiaoCalculator {
             jia98 = choice.way == JinBiaoQuYongWay.KUN_LUN && kunLunEl == biEl &&
                 bazi.stems.any { it != dayMaster && it.element == Element.entries.first { e -> e.controls == kunLunEl } },
             zhiShaCai = choice.way == JinBiaoQuYongWay.ZHI_SHA && strength == DayStrength.STRONG,
+            xiuQi108 = xiuQi108 && choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI,
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -2160,6 +2186,7 @@ object JinBiaoCalculator {
         val quGuaGan: HeavenlyStem? = null,    // 案九十六：去寡局所去之官杀透干——运干同性克之＝去尽（伤官伤尽始为奇）
         val jia98: Boolean = false,            // 案九十八：昆仑顺局而透克神（两土皆病）——运干食伤到＝去病（稍好）；支火土助病＝坏事多
         val zhiShaCai: Boolean = false,        // 案一百零一：食神制杀身旺局——财星到＝食神生财（发财，杀已被制财来即富）
+        val xiuQi108: Boolean = false,         // 案一百零八：秀气流行局——运支成食伤三合（酉丑化金）＝层次巅峰
     )
 
     /** 阳干羊刃支（甲刃卯、丙戊刃午、庚刃酉、壬刃子；阴干无刃）。 */
@@ -2331,6 +2358,14 @@ object JinBiaoCalculator {
                     // 案一百零一·食神制杀身旺局：财星到＝食神生财——发财（杀已被制，财来即富）
                     ctx.zhiShaCai && el == ctx.caiEl ->
                         "食神生财——**发财之运／应财之年**（杀已被制，财来即富——案一百零一：丙子运庚子年抖音卖体育用品发财千万）"
+                    // 案一百零八·秀气流行局：运支与局支成食伤三合（酉丑化金）——走金运才发，层次巅峰
+                    i == 1 && ctx.xiuQi108 && zhi.element == ctx.shiEl &&
+                        zhi in listOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) &&
+                        chartBranches.any { it in listOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) && it != zhi } ->
+                        "运支${zhi.chinese}与局支会${ctx.shiEl.chinese}局（酉丑化金之属）——**走${ctx.shiEl.chinese}运才发，层次达到巅峰**（案一百零八）"
+                    // 案一百零八·秀气流行最怕火：原局没火是好事——来了坏秀气（不作大凶档，恐掩支上金运之吉）
+                    ctx.xiuQi108 && el == ctx.yinEl ->
+                        "秀气流行最怕${ctx.yinEl.chinese}——原局没${ctx.yinEl.chinese}是好事，来了坏秀气（案一百零八）"
                     // 案九十八·昆仑透克神之病局：运干食伤到＝去病（大运来了食神才能去寡）——
                     // 然支火土助病：来了木也不管事，稍微有点好事、坏事多（总体过得非常差）
                     i == 0 && ctx.jia98 && ganEl == ctx.yongEl.generates ->
@@ -2758,6 +2793,12 @@ object JinBiaoCalculator {
                                     LIU_HE[LIU_CHONG[chongYin106b]!!]?.let { p -> p in bazi.branches && p.element == biEl } == true
                             } -> ZN(shiEl, true, false,
                                 "**合解冲救子（案一百零六）**：印贴冲独食之根——**本来没儿子**；然冲神被六合化${biEl.chinese}（绝处逢生有情）——**又有儿子了**。就是在来回来去的变——就在于你对**生克力量上的掌握、情分方面的掌握**：反映在现实生活中他就有**生儿子的技巧、有巧劲**")
+                            // 案一百零八·秀气流行有儿子：身旺用伤官泄秀——发泄能力强＝生育能力强
+                            // （即使比劫见财也有儿子；用食伤的走财运不破财——不用之财尽可劫）
+                            caiS > 0.0 && choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI && yongEl == shiEl &&
+                                bazi.branches.count { it.element == biEl } >= 3 &&
+                                bazi.stems.any { it != dayMaster && it.element == shiEl } -> ZN(shiEl, true, false,
+                                "**秀气流行有儿子（案一百零八）**：身旺官杀都制没有了、这么旺的财也被比劫克了——**也有儿子**：这局用伤官泄秀，秀气流行——**发泄能力强，生育能力强就有儿子**（即使比劫见财了还有儿子——食伤足够让我泄体）。**用食伤的走财运，即使比劫见财仍不破财**（不用之财尽可劫；食伤继续发泄生财——儿又生儿：走财运不但不破财还发财——**劫财见财必破财是有条件的**）")
                             caiS > 0.0 && shiS > 0.0 -> run {
                                 val gongTrio2 = listOf(
                                     setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,

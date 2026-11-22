@@ -3096,4 +3096,32 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎伤官格伤官佩印成中有败（同向配印线）", old.geJuName.contains("伤官格") && old.xiangShenRole.contains("伤官佩印"))
     }
+
+    // ── 案一百零八 · 辛未 辛丑 戊辰 壬戌（乾，1932-01-08 戌时）——土众身旺食伤吐秀·秀气流行 ──
+    // 排盘口径：引擎在 1932/1992 两个丑月窗口中唯 1932-01-08 合此四柱。
+    @Test
+    fun `案一百零八 乾 辛未辛丑戊辰壬戌 四库全身旺得局不翻弱 用伤官金吐秀非土重金埋 壬护卫金润土养金 水运平金运发酉丑化金 秀气流行有儿子`() {
+        val bazi = chart(1932, 1, 8, 20)
+        assertTrue(bazi.fullBazi.startsWith("辛未 辛丑 戊辰 壬戌"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：庚子1932 己亥1942 戊戌1952 丁酉1962",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚子(1932)", "己亥(1942)", "戊戌(1952)", "丁酉(1962)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("四库全日主得局——身强（丑月过泄翻弱不适用）", jb.strength == DayStrength.STRONG)
+        assertTrue("用伤官金吐秀（非比劫、非财）",
+            jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI && jb.yongShenElement == Element.METAL)
+        assertTrue("秀气流行非土重金埋；最怕火没火是好事；壬护卫金润土养金；官杀冲去尽不要紧；水运平金运发",
+            jb.quYongBasis.contains("秀气流行") && jb.quYongBasis.contains("不是土重金埋") &&
+                jb.quYongBasis.contains("润") && jb.quYongBasis.contains("养") &&
+                jb.quYongBasis.contains("去不去尽都不要紧") && jb.quYongBasis.contains("酉丑化") && jb.quYongBasis.contains("巅峰"))
+        assertTrue("子女：秀气流行有儿子",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER && jb.ziNv!!.basis.contains("发泄能力强") &&
+                jb.ziNv!!.basis.contains("劫财见财必破财是有条件的"))
+        assertTrue("运：水运平（庚子中平）；比劫运不喜（戊戌不作吉）；丁酉支会金局层次巅峰；火运凶（乙未甲午）",
+            jb.yuns[0].verdict == JinBiaoVerdict.PING && jb.yuns[2].verdict == JinBiaoVerdict.PING &&
+                jb.yuns[3].items.any { it.action.contains("层次达到巅峰") } &&
+                jb.yuns[5].verdict == JinBiaoVerdict.XIONG && jb.yuns[6].verdict == JinBiaoVerdict.XIONG)
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎阳刃格用己劫配壬财（对照：金镖门用伤官金）", old.geJuName.contains("阳刃格"))
+    }
 }
