@@ -3070,4 +3070,30 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎偏印格用壬配庚败格（对照）", old.geJuName.contains("偏印格"))
     }
+
+    // ── 案一百零七 · 辛卯 丁酉 戊子 戊午（乾，1831-09-14 午时）——伤官配印而印根被财拔·财神反不真 ──
+    // 排盘口径：辛卯年酉月戊子日唯 1831 有（1891/1951 无）——道光十一年古命。
+    @Test
+    fun `案一百零七 乾 辛卯丁酉戊子戊午 伤官配印用丁 子冲拔午根财坏印 卯官被月令酉劫住 层次小康或不如小康 财神反不真 印透初运干不克学习还不错普通大学`() {
+        val bazi = chart(1831, 9, 14, 12)
+        assertTrue(bazi.fullBazi.startsWith("辛卯 丁酉 戊子 戊午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：丙申1833 乙未1843 甲午1853",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丙申(1833)", "乙未(1843)", "甲午(1853)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("伤官配印——用神丁火正印（午本气根）",
+            jb.quYongWay == JinBiaoQuYongWay.FU_SHEN && jb.yongShenElement == Element.FIRE)
+        assertTrue("子水有金生力量大冲拔午根——财坏印；卯官本可生印然月令酉劫住；层次高不了运再好也只能小康或不如小康",
+            jb.quYongBasis.contains("财坏印拔根") && jb.quYongBasis.contains("把根拔了") &&
+                jb.quYongBasis.contains("劫住了") && jb.quYongBasis.contains("小康"))
+        assertTrue("清浊降档：不再是清·贵命——财神反不真罪加一等（财起坏作用财不找你）",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("财神反不真") &&
+                !jb.duanYu.contains("走什么运都不怕"))
+        val xl = jb.xueLi!!
+        assertTrue("学历：印透干、初运干未走克印之运——学习还不错，考个普通大学；事业层次取决于用神午火之力",
+            !xl.yinWanHao && xl.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.YOU &&
+                xl.basis.contains("学习还不错") && xl.basis.contains("普通的大学") && xl.basis.contains("瘦死的骆驼比马大"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎伤官格伤官佩印成中有败（同向配印线）", old.geJuName.contains("伤官格") && old.xiangShenRole.contains("伤官佩印"))
+    }
 }

@@ -230,6 +230,12 @@ object JinBiaoCalculator {
         val caiS = partyScore(bazi, caiEl)
         val guanS = partyScore(bazi, guanEl)
         val shiS = partyScore(bazi, shiEl)
+        // 案一百零七·印之本气根被财本气支贴冲（子午冲之属）——支神只以冲为重，财坏印拔根
+        val yinGenBaCai = bazi.branches.anyIndexed { i, br ->
+            br.element == yinEl &&
+                ((i + 1 in bazi.branches.indices && bazi.branches[i + 1].element == caiEl) ||
+                    (i - 1 in bazi.branches.indices && bazi.branches[i - 1].element == caiEl))
+        }
         val attackerStrong = caiS >= FOLLOW_MIN_SCORE || guanS >= FOLLOW_MIN_SCORE
 
         // 案卅三·退而求其次标志（须在弱极判定前置）：不是克就是泄（杀旺财微食泄）、无印、
@@ -1071,6 +1077,11 @@ object JinBiaoCalculator {
                         if (shiS >= GUAN_WANG) {
                             append("；**泄体过必须帮身**——比劫虽泄印之气，然帮日主扛食伤之泄（身不倒则印有用武之地）：南方比劫、东方印皆帮身方向，行运不违背即好命（用印显贵多，当官）")
                         }
+                        // 案一百零七·伤官配印而印之本气根被财本气支贴冲拔（冲神得食伤生）：
+                        // 支神只以冲为重——财坏印拔根；官星若被月令劫住则印失官生——层次高不了
+                        if (yinGenBaCai && shiS >= GUAN_WANG) {
+                            append("；**财坏印拔根（案一百零七）**：伤官月${shiEl.chinese}生${caiEl.chinese}、${caiEl.chinese}坏印——日主力量弱用印；**支神只以冲为重**：大${caiEl.chinese}有${shiEl.chinese}生力量还是很大，财坏印了——${yinEl.chinese}就全靠${bazi.branches.first { it.element == yinEl }.chinese}根，${caiEl.chinese}把根拔了，就不行了${if (bazi.branches.any { it.element == guanEl } && LIU_CHONG[bazi.branches.first { it.element == guanEl }] == monthBranch) "。本是伤官配印的格局，${guanEl.chinese}本可生火（印喜欢官杀），但是月令${monthBranch.chinese}把它劫住了" else ""}——**这样层次就高不了了：即使走的运再好，也只能是个小康，或者说不如小康**")
+                        }
                         // 案九十四·比劫当令过泄配印＋异性克不拔根（学历章开讲）：
                         // 丑月土寒终究是土（虚一点而终是实——辰才是虚土）；金多过泄翻身弱、取用露出来的印。
                         // 「支神只以冲为重，刑与穿兮动不动」：印根被异性克不拔——立得住，层次高（能当官发大财）；
@@ -1482,9 +1493,14 @@ object JinBiaoCalculator {
                 setOf(EarthlyBranch.SHEN, EarthlyBranch.ZI, EarthlyBranch.CHEN) to Element.WATER,
                 setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
             ).any { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { it in bazi.branches } }
+        // 案一百零七·伤官配印而印根被财本气支贴冲拔、冲神得食伤之力：用神在地支被坏——
+        // 层次高不了（运再好也只能小康或不如小康）；财星起坏作用＝财神反不真罪加一等
+        val yinGenBaCai107 = choice.way == JinBiaoQuYongWay.FU_SHEN && yongEl == yinEl &&
+            strength == DayStrength.WEAK && yinGenBaCai && shiS >= GUAN_WANG
         val qingZhuo = when {
             // 案九十九·一制一化有情：有情就是有格局（不虑旺衰——制化相得）
             choice.way == JinBiaoQuYongWay.YI_ZHI_YI_HUA -> JinBiaoQingZhuo.QING
+            yinGenBaCai107 -> JinBiaoQingZhuo.BAN_QING
             qingKu -> JinBiaoQingZhuo.QING_KU
             quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO
             yongWuLiHua -> JinBiaoQingZhuo.MAN_ZHUO
@@ -1530,7 +1546,8 @@ object JinBiaoCalculator {
                     else "——病神本气得根、力量太大（≥用神1.5倍）毁坏用神，满盘浊气——差命穷命，走什么运也好不了",
                 )
                 JinBiaoQingZhuo.BAN_QING -> append(
-                    if (bingTongGuanTou) "——病神（透干比劫）有食伤通关（${biEl.chinese}生${shiEl.chinese}生${caiEl.chinese}），原局不夺财、不会有事；然${guanEl.chinese}官全无——**配置不足：起伏就要大**（一会儿天上一会儿地下）——帮用（${shiEl.chinese}${caiEl.chinese}）之运发财显贵、比劫见根之运大祸；配置好的八字（有官护财）人生就一路平坦（案四十九对勘）"
+                    if (yinGenBaCai107) "——**伤官配印而印根被财拔（案一百零七）**：用神${yinEl.chinese}就全靠${bazi.branches.first { it.element == yinEl }.chinese}根，${caiEl.chinese}有${shiEl.chinese}生力量大——把根拔了就不行了${if (bazi.branches.any { it.element == guanEl } && LIU_CHONG[bazi.branches.first { it.element == guanEl }] == monthBranch) "；${guanEl.chinese}官本可生印（印喜官杀），然月令${monthBranch.chinese}把它劫住了" else ""}——**层次高不了：即使走的运再好，也只能是个小康，或者说不如小康**。**财神反不真，罪加一等**：财星起了坏作用，财就不找你——不容易发财；同样用神虚，有的穷、有的一般差，分野在此：用神在地支被坏得严重（而且是相冲）就不行"
+                    else if (bingTongGuanTou) "——病神（透干比劫）有食伤通关（${biEl.chinese}生${shiEl.chinese}生${caiEl.chinese}），原局不夺财、不会有事；然${guanEl.chinese}官全无——**配置不足：起伏就要大**（一会儿天上一会儿地下）——帮用（${shiEl.chinese}${caiEl.chinese}）之运发财显贵、比劫见根之运大祸；配置好的八字（有官护财）人生就一路平坦（案四十九对勘）"
                     else if (shiBanTongGuan) "——**食伤半通关（案八十七·化得没那么好）**：用财局病比劫（${bingEl.chinese}${format(bingS2)}）压用（${yongEl.chinese}${format(yongS2)}），然${shiEl.chinese}食伤有本气根**化解比劫生财（午火化甲木）——财富全凭食伤一字定之**：克${shiEl.chinese}之源的差运（如子水）穷困潦倒；${shiEl.chinese}局成之运（戌填寅午——三合局兑现）**才挣到钱（小康）**——财富稍微还可以（对照案六十理发师：一个理发一个卖衣裳——同层都没儿子）"
                     else "——病在而力未制（药为假药或力不足），半浊半清——普通人之命：多成多败，好两年坏两年（帮用去病之运好、帮病之运差），跟清命不一样",
                 )
@@ -2466,7 +2483,12 @@ object JinBiaoCalculator {
             val ganHuai = qiuXue.any { it.second < 0 }
             val zhiHuai = qiuXue.any { it.third < 0 }
             val total = qiuXue.sumOf { it.second + it.third }
+            // 案一百零七·印透干而支根被冲、初运天干未走克印之运：学习还不错——
+            // 印透只说上学时头脑好；这命没力量考不上清华，只能说考个普通的大学。
+            // （对勘案一百：初运干己戊克印——仍走印坏档）
+            val puTong107 = !wanHao && yinIdxsX.isNotEmpty() && yinGenChongX && qiuXue.all { it.second >= 0 }
             val level = when {
+                puTong107 -> cn.xulun.bazi.model.JinBiaoXueLiLevel.YOU
                 !wanHao -> cn.xulun.bazi.model.JinBiaoXueLiLevel.YIN_HUAI
                 ganBang && !ganHuai && total >= 3 -> cn.xulun.bazi.model.JinBiaoXueLiLevel.GAO
                 ganBang -> cn.xulun.bazi.model.JinBiaoXueLiLevel.YOU
@@ -2476,7 +2498,9 @@ object JinBiaoCalculator {
                 yinWanHao = wanHao,
                 level = level,
                 basis = buildString {
-                    if (!wanHao) {
+                    if (puTong107) {
+                        append("**印透干、初运（${qiuXue.joinToString("、") { it.first }}）天干没有走克${yinEl.chinese}之运——学习还不错**（案一百零七）：印透出来只能说上学的时候头脑好、先天对学习还算灵光——**这命没力量考不上清华，只能说考个普通的大学**。**学习好不代表以后行**（清华毕业也有个别在社会不行）：**事业层次取决于用神${yinEl.chinese}之力**——用神在地支被坏得太严重（而且是相冲），就注定没有太大的成就。三档：大名牌毕业（原局用神知识水平过硬）——就算没有经济头脑、走差运也不差，瘦死的骆驼比马大；学习还不错但不过硬、又没经济头脑、完全指着印的、地支印坏了——不行；上学时学习没脑子而弃印就财者——经济头脑强能发财")
+                    } else if (!wanHao) {
                         val caiHuaiYin100 = yinGenChongX &&
                             bazi.branches.filter { br -> branchHiddenStems.getValue(br).any { it.element == yinEl } }
                                 .any { br -> LIU_CHONG[br]?.let { c -> bazi.branches.contains(c) && c.element == caiEl } == true }
