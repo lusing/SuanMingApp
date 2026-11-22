@@ -425,6 +425,14 @@ object JinBiaoCalculator {
         val kunLunEl = listOfNotNull(
             branchCount.filterKeys { it != biEl }.filterValues { it >= 3 }.maxByOrNull { it.value }?.key,
             sanHeJuEl?.takeIf { it != biEl },
+            // 案九十七·一片金水：水日主而地支全是金水本气支（申酉亥子）且配有金生源（金透或金支）——
+            // 全局一片金水＝得局，昆仑之水（「有源头可顺不可逆——不要见着金生水就叫昆仑：
+            // 全局一片金水才算；若年月是土、仅日时金水——不是」）
+            Element.WATER.takeIf {
+                biEl == Element.WATER &&
+                    bazi.branches.all { b -> b.element == Element.METAL || b.element == Element.WATER } &&
+                    bazi.branches.any { b -> b.element == Element.METAL }
+            },
         ).firstOrNull()
         val kunLunSource = kunLunEl?.let { el -> Element.entries.first { g -> g.generates == el } }
         // 案四十六：官干坐支藏官之余气（壬坐辰藏癸——杀还有点气）——制杀太过之辨在焉
@@ -456,7 +464,8 @@ object JinBiaoCalculator {
             !(kunLunEl == yinEl && bazi.dayPillar.branch.element == yinEl && guanS >= GUAN_WANG) &&
             // 案五十七裁：金局得局而日主有两印贴身相生＋有禄根——**肯定不是从格，是正常的命**：
             // 印比有力可依（身有靠），势虽成不作昆仑——正常分析（身弱用印，财得局坏印）
-            !(kunLunEl != yinEl &&
+            // 案九十七豁免：昆仑局即日主本行（一片金水——金为生源生我即顺势）——印透不破势
+            !(kunLunEl != yinEl && kunLunEl != biEl &&
                 (bazi.monthPillar.stem.element == yinEl || bazi.hourPillar.stem.element == yinEl) &&
                 hasBenQiRoot(bazi, biEl)) &&
             // 案五十八裁：食伤得局（木旺）而印星透干坐本气禄根（庚坐申——有力可依）——
@@ -753,10 +762,19 @@ object JinBiaoCalculator {
                 val keEl = Element.entries.first { it.controls == kunLunEl }
                 Choice(
                     JinBiaoQuYongWay.KUN_LUN, kunLunEl,
-                    "昆仑得局（命三）：地支${kunLunEl.chinese}得局（${branchCount.getValue(kunLunEl)}支）配${kunLunSource!!.chinese}生——昆仑之${kunLunEl.chinese}，只可顺不可逆。" +
-                        "此势不一定指日主——命局${kunLunEl.chinese}地支得局配${kunLunSource.chinese}生，即围绕${kunLunEl.chinese}说事：" +
-                        "顺者${kunLunSource.chinese}（生源）、${kunLunEl.chinese}（本势）、${kunLunEl.generates.chinese}（顺泄）；" +
-                        "逆者${keEl.chinese}（克${kunLunEl.chinese}止${kunLunEl.chinese}）与${kunLunEl.controls.chinese}（克${kunLunSource.chinese}逆金水之局）——顺来逆去贫之意，逆则贫命出灾",
+                    buildString {
+                        append("昆仑得局（命三）：地支${kunLunEl.chinese}得局配${kunLunSource!!.chinese}生——昆仑之${kunLunEl.chinese}，只可顺不可逆。")
+                        append("此势不一定指日主——命局${kunLunEl.chinese}地支得局配${kunLunSource.chinese}生，即围绕${kunLunEl.chinese}说事：")
+                        append("顺者${kunLunSource.chinese}（生源）、${kunLunEl.chinese}（本势）、${kunLunEl.generates.chinese}（顺泄）；")
+                        append("逆者${keEl.chinese}（克${kunLunEl.chinese}止${kunLunEl.chinese}）与${kunLunEl.controls.chinese}（克${kunLunSource.chinese}逆金水之局）——顺来逆去贫之意，逆则贫命出灾")
+                        // 案九十七·一片金水（昆仑即日主本行）
+                        if (kunLunEl == biEl) {
+                            append("。**一片金水才是昆仑之水（案九十七）**：地支四支全是${kunLunSource.chinese}${kunLunEl.chinese}本气——全局一片${kunLunSource.chinese}${kunLunEl.chinese}、配${kunLunSource.chinese}生${kunLunEl.chinese}，得局了才算；**不要见着${kunLunSource.chinese}生${kunLunEl.chinese}就叫昆仑之水**——若年月是土、只是日时${kunLunSource.chinese}${kunLunEl.chinese}，就不是")
+                            append("。**顺逆之机需理会**：${kunLunEl.chinese}旺到极端，只能顺着它、不能逆着它——来${kunLunEl.chinese}来${kunLunEl.generates.chinese}都不算逆（**${kunLunEl.generates.chinese}来根了也不是${kunLunSource.chinese}${kunLunEl.generates.chinese}交战——${kunLunSource.chinese}生${kunLunEl.chinese}${kunLunEl.chinese}生${kunLunEl.generates.chinese}，只能说是泄它，没有逆它；肯定没有来${kunLunSource.chinese}好，但是来了${kunLunEl.generates.chinese}也没事**）；**唯独${keEl.chinese}不可——止不住的**：${keEl.chinese}有两个功能，一者生${kunLunSource.chinese}、一者克我的${kunLunEl.chinese}——旺到极端只论逆不论功（即使稍微给我点好处〔生印〕，但稍微让我不舒服，你就不行——${keEl.chinese}来多少也是生${kunLunSource.chinese}，毕竟${kunLunSource.chinese}在那摆着，但${keEl.chinese}也克我的${kunLunEl.chinese}）")
+                            append("。**特殊格局的层次完全是由大运决定**——要是上来就走${keEl.chinese}运那就完了（层次底下的命）；**主要是看中年：这人的层次是由中年运决定的**；子女亦然——逆着它就没有儿子（有儿子也是被克了、或者离婚儿子跟对方了），**特殊的格局方方面面都得看大运**")
+                            append("。**枭夺食反例（待后续案例）**：若原局全是${kunLunSource.chinese}、就日主是${kunLunEl.chinese}——这时来了${kunLunEl.generates.chinese}，那才叫枭神夺食，就要出事了（本案${kunLunSource.chinese}生${kunLunEl.chinese}有通关，木是泄不是夺）")
+                        }
+                    },
                 )
             }
             // 第八讲续·去杀留官／去官留杀·取清（案四十）：官杀重混杂（党力≥6、通根）——
@@ -1351,7 +1369,8 @@ object JinBiaoCalculator {
                 )
                 JinBiaoQingZhuo.QUAN_ZHUO -> append("——官（${guanEl.chinese}）被${keGuan.chinese}克且财源被断、食（${shiEl.chinese}）被印克无本气根、财（${caiEl.chinese}）被比劫冲克——三者俱废，用神无着落：全浊，一事无成（学什么都不会、干什么都有人捣乱），比普通老百姓还差")
                 JinBiaoQingZhuo.QING -> append(
-                    if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）"
+                    if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）" +
+                        (if (choice.way == JinBiaoQuYongWay.KUN_LUN) "**——然昆仑顺局无病而**层次完全由大运决定**：顺则贵（生源／本势／顺泄）、逆则贫（止水／逆局——来土就完了）；主要看中年运**（案九十七）**" else "")
                     else if (bingHua) "——病神不透干，经${tongGuanEl.chinese}通关转而相生有情（${bingEl.chinese}生${tongGuanEl.chinese}生${yongEl.chinese}），病不为病——此为清（贵命，走什么运都不怕）"
                     else if (bingYiTU) "——病神透干而无本气根、用神坐日支本气根——干支异途（干不克支），病不贴克用神：有格局（坐下印在），行运不违背即好命（用印显贵多，当官）"
                     else if (gongCaiTongMen) "——**财气通门户（玄机暗里存）**：病神（枭印）虽大而**拱财暗存**（药待运填）——**财星有情不在乎旺衰：财来找他**——走差运生意也不差（选对行）小康；运填拱局——**发大财**（有钱人没走好运：好运一发就是大的——幸福的人还有三十年好日子）"
@@ -1423,6 +1442,24 @@ object JinBiaoCalculator {
                     "**特殊格局（去寡）子女另裁（案九十六）——不按正常判定树论**：这局不用财——**不用之财尽可劫，随便劫**（群劫争财不碍子）；用食伤泄秀——**只要泄秀泄得好就有儿子：身旺发泄发得好＝生育能力强，泄就代表生育能力**。" +
                         (if (shunCnt96 > biShiCnt96) "**特殊格局走好运不光事业好，一般还都有儿子**（得看他走的运——本案前运顺势〔帮${shiEl.chinese}〕多）" else "**然前运一直走${keShiEl96.chinese}地把食神${shiEl.chinese}憋住了——也是没有儿子的**") +
                         "。若一直走北方${keShiEl96.chinese}运把食神${shiEl.chinese}给憋住了——那么也是没有儿子的。**从旺没有食神，就不能按这样说**（旺极无食另裁——待师传）。口诀：「**不用之财尽可劫，不用之官尽可伤；可用之官不可伤，可用之财不可劫**」")
+            } else if (choice.way == JinBiaoQuYongWay.KUN_LUN) {
+                // 案九十七·昆仑顺局子女看运：顺（生源/本势/顺泄）有儿；逆（克局止水/克生源）
+                // 没儿子——有儿子也是被克了或离婚跟对方（特殊格局方方面面都得看大运）
+                val shunEls97 = setOf(kunLunSource!!, kunLunEl!!, kunLunEl!!.generates)
+                val niEls97 = setOf(
+                    Element.entries.first { it.controls == kunLunEl },
+                    kunLunEl.controls,
+                )
+                val shunCnt97 = daYun?.yuns?.take(5)?.count { y ->
+                    y.pillar.stem.element in shunEls97 || y.pillar.branch.element in shunEls97
+                } ?: 0
+                val niCnt97 = daYun?.yuns?.take(5)?.count { y ->
+                    y.pillar.stem.element in niEls97 || y.pillar.branch.element in niEls97
+                } ?: 0
+                ZN(kunLunEl.generates, shunCnt97 > niCnt97, false,
+                    "**昆仑顺局子女看运（案九十七）——特殊格局方方面面都得看大运**：顺者${kunLunSource.chinese}（生源）、${kunLunEl.chinese}（本势）、${kunLunEl.generates.chinese}（顺泄——泄就代表生育能力）；逆者${Element.entries.first { it.controls == kunLunEl }.chinese}（克${kunLunEl.chinese}止${kunLunEl.chinese}——止不住的）与${kunLunEl.controls.chinese}（克生源逆局）。" +
+                        (if (shunCnt97 > niCnt97) "**前运顺多——有儿子**" else "**前运逆多——没儿子**") +
+                        "；**逆着它就没有儿子——有儿子也是被克了、或者离婚儿子跟对方了**（本案前五运顺${shunCnt97}步逆${niCnt97}步）")
             } else if (strength == DayStrength.STRONG) {
                 // 身旺：基准财为子——查比劫夺财（重夺/地支得局不载）→官旺救或食伤得局化劫；无财无官食伤泄秀；食被枭夺找财
                 // 「鲁莽地说就错了」——有财不可遽断有子，必来回检查螳螂捕蝉黄雀在后
@@ -1928,7 +1965,8 @@ object JinBiaoCalculator {
             if (choice.way == JinBiaoQuYongWay.KUN_LUN) {
                 put(kunLunSource!!, "${kunLunSource.chinese}生${kunLunEl!!.chinese}——顺其势，好运")
                 put(kunLunEl, "本势得局——顺其势，好运")
-                put(kunLunEl.generates, "顺泄——${kunLunEl.chinese}生${kunLunEl.generates.chinese}（金生水水生木），好运")
+                put(kunLunEl.generates, "顺泄——${kunLunEl.chinese}生${kunLunEl.generates.chinese}（金生水水生木），好运" +
+                    if (kunLunEl == biEl) "；**${kunLunEl.generates.chinese}来根了也不是${kunLunSource.chinese}${kunLunEl.generates.chinese}交战——只能说是泄它、没有逆它（肯定没有来${kunLunSource.chinese}好，但是来了${kunLunEl.generates.chinese}也没事——案九十七）**" else "")
             }
             // 案五十一·伤官配印局：官生印好运（配印喜见官）；财坏印大忌（用神无护卫——巳印支运财干盖头亦以支论吉）
             if (choice.way == JinBiaoQuYongWay.FU_SHEN && guanS == 0.0 && caiS < FOLLOW_MIN_SCORE) {
@@ -2023,9 +2061,11 @@ object JinBiaoCalculator {
                 put(biEl, "身更旺——发泄受阻，差运")
             }
             // 昆仑得局之逆（命二/命三）：克势者止水（土）、克生源者逆局（火）——顺来逆去贫之意
+            // 案九十七：土虽生金（生源之生）亦不抵克水之逆——旺到极端只论逆不论功（止不住的）
             if (choice.way == JinBiaoQuYongWay.KUN_LUN) {
                 val keEl = Element.entries.first { it.controls == yongEl }
-                put(keEl, "克${yongEl.chinese}止${yongEl.chinese}——土止昆仑之水，触犯强旺之势，凶")
+                put(keEl, "克${yongEl.chinese}止${yongEl.chinese}——土止昆仑之水，触犯强旺之势，凶" +
+                    if (kunLunEl == biEl) "；**${keEl.chinese}虽生${kunLunSource!!.chinese}亦不抵克${yongEl.chinese}之逆——${keEl.chinese}有两个功能（生${kunLunSource.chinese}＋克我的${yongEl.chinese}），旺到极端只论逆不论功：稍微让我不舒服就不行（止不住的——案九十七）**" else "")
                 put(yongEl.controls, "克生源逆${yongEl.chinese}局——逆则贫命出灾（刑妻克子贫乏）")
             }
             // 案廿四·财党杀攻身：财滋杀攻身——最忌
@@ -2186,7 +2226,11 @@ object JinBiaoCalculator {
             when (qingZhuo) {
                 JinBiaoQingZhuo.QING_KU -> append("此为清枯之命——用神被坏得太严重、一点救都没有：走好运的时候可能稍微好一点，能得个温饱；走克用神、生忌神之运（如东方木运克土生火）就要一事无成——贫穷清枯。")
                 JinBiaoQingZhuo.QUAN_ZHUO -> append("此为全浊之命——官食财俱各有浊神克之，用神无着落：一事无成（学什么学不会、干什么都有人捣乱），比普通老百姓还差——今天干乙木的事没成，明天干庚金的事，就是这样一种状态。")
-                JinBiaoQingZhuo.QING -> append("此为清命——用神有力、病神无（或已化已制）：贵命，走什么运都不怕，坏运来了也无病。")
+                JinBiaoQingZhuo.QING -> append(
+                    if (choice.way == JinBiaoQuYongWay.KUN_LUN)
+                        "此为昆仑顺局之命——原局无病神，然**特殊格局的层次完全是由大运决定**：顺者生源、本势、顺泄皆好运；逆者止水、逆局——来土就完了（层次底下的命）。**主要是看中年：这人的层次是由中年运决定的**（案九十七）。"
+                    else "此为清命——用神有力、病神无（或已化已制）：贵命，走什么运都不怕，坏运来了也无病。"
+                )
                 JinBiaoQingZhuo.MAN_ZHUO -> append("此为满盘浊气之命——病神之力太大、毁坏用神：差命穷命，走什么运也好不了。")
                 JinBiaoQingZhuo.BAN_QING -> append("此为半浊半清之命——普通人之命：多成多败、好两年坏两年（帮用去病之运好，帮病之运差）。")
             }

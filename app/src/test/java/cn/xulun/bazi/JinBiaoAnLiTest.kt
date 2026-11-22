@@ -2711,6 +2711,49 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎学业高学历（硕博之才）——金镖门学历档不适用（用神非印）留对照", wp.level.contains("高学历"))
     }
 
+    // ── 案九十七 · 癸酉 甲子 癸亥 辛酉（乾，1993-12-08 酉时）——一片金水昆仑之水·顺逆之机·枭夺食之辨（反例待授） ──
+
+    @Test
+    fun `案九十七 乾 癸酉甲子癸亥辛酉 一片金水才是昆仑之水 水木顺土逆止不住 层次由中年运定 子女看顺逆 木来根非金木交战`() {
+        val bazi = chart(1993, 12, 8, 18)
+        assertTrue(bazi.fullBazi.startsWith("癸酉 甲子 癸亥 辛酉"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行当年上运：癸亥1994 壬戌2004 辛酉2014 庚申2024 己未2034",
+            daYun.yuns.take(5).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("癸亥(1994)", "壬戌(2004)", "辛酉(2014)", "庚申(2024)", "己未(2034)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("地支酉子亥酉全是金水本气配辛金生源——一片金水＝昆仑之水（不是枭夺食泄秀线）",
+            jb.quYongWay == JinBiaoQuYongWay.KUN_LUN && jb.yongShenElement == Element.WATER)
+        assertTrue("昆仑判据：不要见着金生水就叫昆仑——全局一片金水才算；年月土仅日时金水不是",
+            jb.quYongBasis.contains("一片金水才是昆仑之水") && jb.quYongBasis.contains("不要见着金生水就叫昆仑"))
+        assertTrue("木来根了也不是金木交战——泄它非逆（没有来金好但来了也没事）；枭夺食反例（全金+水日主）待后续",
+            jb.quYongBasis.contains("不是金木交战") && jb.quYongBasis.contains("枭神夺食"))
+        assertTrue("土两功能只论逆不论功——止不住的；层次完全由大运决定、主要看中年",
+            jb.quYongBasis.contains("止不住的") && jb.quYongBasis.contains("只论逆不论功") &&
+                jb.quYongBasis.contains("完全是由大运决定") && jb.quYongBasis.contains("中年运决定"))
+
+        // 子女：昆仑顺局看运——顺多有儿；逆则没儿子（被克了或离婚跟对方）
+        val zn97 = jb.ziNv!!
+        assertTrue("必有儿（前五运顺4逆2）",
+            zn97.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER && zn97.ziEl == Element.WOOD &&
+                zn97.basis.contains("逆着它就没有儿子") && zn97.basis.contains("离婚儿子跟对方"))
+
+        // 运：水金一路顺吉（壬戌之戌亦随金局）；己未起土火逆凶（土生金亦不抵克水）
+        assertTrue("癸亥壬戌辛酉庚申金水顺——吉", listOf(0, 1, 2, 3).all { jb.yuns[it].verdict == JinBiaoVerdict.JI })
+        assertTrue("己未土止水凶——土虽生金亦不抵克水之逆（两功能只论逆）",
+            jb.yuns[4].verdict == JinBiaoVerdict.XIONG &&
+                jb.yuns[4].items.any { it.action.contains("只论逆不论功") && it.action.contains("止不住的") })
+        assertTrue("戊午丁巳丙辰火土逆——凶", listOf(5, 6, 7).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+
+        // 双引擎对照（双引擎铁律）：老引擎建禄格用甲伤官佩辛印成格高学历——
+        // 金镖门以全局一片金水昆仑顺局论（木是泄不是夺）——枭夺食vs配印vs昆仑三辨
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎建禄格伤官佩印成格（分歧点：金镖门作昆仑顺局）",
+            old.geJuName.contains("建禄格") && old.xiangShenRole.contains("伤官佩印"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test
