@@ -3011,4 +3011,24 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎正印格用壬配辛（分歧：金镖门以印为病用财）", old.geJuName.contains("正印格"))
     }
+
+    // ── 案一百零四 · 庚午 甲申 乙丑 乙酉（坤，1990-08-28 酉时）——藤萝系甲足以食伤制杀·病神取象 ──
+    // 事实：南方运成绩优异名牌研究生毕业、成绩非常好的律师；同性恋充当男性角色。
+    @Test
+    fun `案一百零四 坤 庚午甲申乙丑乙酉 乙木无根甲透藤萝系甲自旺顶羊刃 足以食伤制杀去病 反事实日甲月乙没层次过泄 病神取象排斥男人 晚婚刻舟求剑之诫`() {
+        val bazi = chart(1990, 8, 28, 18)
+        assertTrue(bazi.fullBazi.startsWith("庚午 甲申 乙丑 乙酉"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue("阳年坤造逆行：癸未1997 壬午2007 辛巳2017", daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸未(1997)", "壬午(2007)", "辛巳(2017)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("藤萝系甲——乙木无根甲透直接自旺顶个羊刃可春可秋（甲任何位置皆可；庚卡甲乙中间则差多了；可别藤萝系乙）",
+            jb.strengthBasis.contains("藤萝系甲") && jb.strengthBasis.contains("顶个羊刃") && jb.strengthBasis.contains("可别藤萝系乙") && jb.strengthBasis.contains("全力之藤"))
+        assertTrue("藤萝系甲足以用食伤制杀——庚克甲只是病把病克了就好（克泄交加之诫被藤萝豁免）；反事实日甲月乙没层次过泄——乙木特性",
+            jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.FIRE &&
+                jb.quYongBasis.contains("藤萝系甲足以用食伤制金") && jb.quYongBasis.contains("把病克了就好") && jb.quYongBasis.contains("这是乙木的特性"))
+        assertTrue("病神取象：病=官杀庚=男人——排斥这个杀即排斥男人；婚期变通——最忌男人晚婚、刻舟求剑之诫",
+            jb.quYongBasis.contains("排斥男人") && jb.quYongBasis.contains("最起码是要晚婚的") && jb.quYongBasis.contains("刻舟求剑"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正官格用庚配己成格（对照：金镖门藤萝制杀）", old.geJuName.contains("正官格"))
+    }
 }

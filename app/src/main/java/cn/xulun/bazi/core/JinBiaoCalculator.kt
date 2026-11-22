@@ -211,6 +211,16 @@ object JinBiaoCalculator {
             }
         }
         var strength = if (monthElAdj == biEl || monthElAdj == yinEl) DayStrength.STRONG else DayStrength.WEAK
+        // 案一百零四·藤萝系甲（天干章落地）：乙木无根而甲透（任何位置——年/时皆可）——藤萝系甲
+        // 直接自旺顶个羊刃（可春可秋）；然庚（克甲之神）卡甲乙中间则差多了（单说——位置条件）。
+        // 「可别藤萝系乙」——必须阳木甲，乙比肩不算。
+        val tengLuo = dayMaster == HeavenlyStem.YI && !hasBenQiRoot(bazi, biEl) &&
+            bazi.stems.anyIndexed { i, s -> i != 2 && s == HeavenlyStem.JIA }
+        val jiaIdx104 = bazi.stems.indices.firstOrNull { it != 2 && bazi.stems[it] == HeavenlyStem.JIA }
+        val tengLuoTie = tengLuo && jiaIdx104 != null && kotlin.math.abs(jiaIdx104!! - 2) == 1 &&
+            !(jiaIdx104!! < 2 && bazi.stems.getOrNull(jiaIdx104 + 1)?.element == Element.METAL) &&
+            !(jiaIdx104!! > 2 && bazi.stems.getOrNull(jiaIdx104 - 1)?.element == Element.METAL)
+        if (tengLuo) strength = DayStrength.STRONG
 
         // ── 弱极判定（第三讲两型） ──
         val yinS = partyScore(bazi, yinEl)
@@ -359,7 +369,7 @@ object JinBiaoCalculator {
         // 无根修正（档五十一）：印月身旺基调，然日主无比劫本气根而敌党不弱——仍以身弱论（杀重身轻用印）；
         // 案四十八豁免：坐下即印且印得局压杀（yinS＞guanS——印6.5对杀4.5）——印生身有依，身旺不翻；
         // （案廿七对照：坐下子印而印4.0＜杀6.5——杀压倒印，仍翻弱）
-        if (strength == DayStrength.STRONG && !hasBenQiRoot(bazi, biEl) &&
+        if (strength == DayStrength.STRONG && !tengLuo && !hasBenQiRoot(bazi, biEl) &&
             !(bazi.dayPillar.branch.element == yinEl && yinS > guanS)
         ) {
             val diSAdjT = caiSAdj + guanSAdj + shiSAdj
@@ -1187,11 +1197,14 @@ object JinBiaoCalculator {
                         bazi.stems.indices.any { i -> i != 2 && bazi.stems[i].element == shiEl &&
                             ((i - 1 in bazi.stems.indices && bazi.stems[i - 1].element == yinEl) ||
                                 (i + 1 in bazi.stems.indices && bazi.stems[i + 1].element == yinEl)) }) &&
-                    shiS >= FOLLOW_MIN_SCORE &&
-                    (hasBenQiRoot(bazi, biEl) || (bazi.dayPillar.branch.element == yinEl && yinS > guanS)) -> Choice(
+                    (shiS >= FOLLOW_MIN_SCORE || (tengLuo && shiS > 0.0)) &&
+                    (hasBenQiRoot(bazi, biEl) || tengLuo || (bazi.dayPillar.branch.element == yinEl && yinS > guanS)) -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
                     buildString {
                         append("食神制杀格（案四十八·身旺杀旺可制）：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}。")
+                        if (tengLuo) {
+                            append("。**藤萝系甲足以食伤制杀（案一百零四）**：杀得局官杀旺，按理不能用食伤制官杀——**克泄交加不如用印生身**（克泄交加＝没层次的命——一般人绝对这么看）；然基础知识扎实**知藤萝系甲可春可秋：有个甲木在，乙木就身旺了，秋天也没事——庚克甲只是一个病，乙木藤萝系甲足以用食伤制金，把病克了就好**。**反事实**：要是日主甲木、月干换成乙木——那就是没有层次的命了（比一般人还差——越走午火越穷困潦倒，过泄了）：**这是乙木的特性**。**病神取象（坤造）**：命局的病就是官杀${guanEl.chinese}＝男人——命主要干的事就是**排斥这个杀→排斥男人**（现实中必有这样的事——同性恋而充当男性角色〔制杀者自居阳位〕）。**婚期变通**：结婚应期五大法则没有错，但得根据实际情况——**她反感男人，最起码是要晚婚的**（还用正常婚姻法则去看＝刻舟求剑——得根据原局的道理：**最忌的就是男人**）")
+                        }
                         append("食神制杀条件第一条：日主必须有根气（印得局生身亦是依）——无根无气者承载不了食神之泄（食神制杀反贫夭、负债）；日主得根气，承载得动食神之泄，食神制杀得富贵。")
                         append("格局高低看杀之强弱存续：杀旺可制不贫夭——官贵之格（官二代、处长之子之属）；杀之根被拔克绝（制杀太过——子午冲根之属）则落普通人之列")
                         // 案一百零一·两杀叠透通根＋进气＋两戌实根：地支制杀也好；原局四方有力——好命不怕大运
@@ -1876,6 +1889,11 @@ object JinBiaoCalculator {
                     guoXieFanRuo -> "${biEl.chinese}党本已强；然${shiEl.chinese}多（食伤两透党力${format(shiS)}）——日主肯定就过泄了→身弱（${monthBranch.chinese}月${biEl.chinese}寒终究是${biEl.chinese}，虚一点而终是实、亦虚于未戌——异于${EarthlyBranch.CHEN.chinese}之虚）"
                     ruoZhongBianWang -> "弱基调；然坐贴身印比、月令敌党之支被泄克转衰——弱中变旺（身旺）"
                     else -> strength.chinese
+                }) +
+                (if (tengLuo) {
+                    "；**藤萝系甲（案一百零四·天干章落地）**：乙木无根而甲透——藤萝系甲**直接自旺顶个羊刃（可春可秋——秋天也没事）**；甲木任何位置都可以（年上时上皆算）${if (tengLuoTie) "——本案甲乙相邻（无庚卡中间）：全力之藤" else "——然庚卡甲乙中间则差多了（单说——位置条件）"}；**可别藤萝系乙——没甲木的话就什么都不是了**（必须阳木甲）"
+                } else {
+                    ""
                 }) +
                 (if (strength == DayStrength.WEAK &&
                     ((biEl == Element.WOOD && monthBranch == EarthlyBranch.XU) ||
