@@ -2794,6 +2794,42 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎建禄格用己正官配辛印", old.geJuName.contains("建禄格") && old.yongShen?.stem?.chinese == "己")
     }
 
+    // ── 案九十九 · 丁亥 庚戌 甲辰 壬申（乾，2007-11-06 申时）——一制一化有情格·戌月进气 ──
+    // 排盘口径：材料未附日期——四柱自洽唯一解为 2007-11-06 申时（甲辰日于丁亥年戌月仅此一日）。
+
+    @Test
+    fun `案九十九 乾 丁亥庚戌甲辰壬申 一制一化有情格 丁克庚壬化申离得远就有情 戌月甲木进气 通根身库 有情就是有格局`() {
+        val bazi = chart(2007, 11, 6, 16)
+        assertTrue(bazi.fullBazi.startsWith("丁亥 庚戌 甲辰 壬申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行：己酉2017 戊申2027 丁未2037 丙午2047",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己酉(2017)", "戊申(2027)", "丁未(2037)", "丙午(2047)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱财杀大（土6.5金4）——然戌月木进气（绝地之方末月物极必反）根气由此赋",
+            jb.strength == DayStrength.WEAK && jb.strengthBasis.contains("进气") && jb.strengthBasis.contains("物极必反"))
+        assertTrue("一制一化有情格——丁克庚＋壬化申：用神壬水偏印",
+            jb.quYongWay == JinBiaoQuYongWay.YI_ZHI_YI_HUA && jb.yongShenElement == Element.WATER)
+        assertTrue("离得远就有情（隔位不合绊——丁壬遥隔）；贴着就不行没层次；一个在天上制一个在地下化亦可",
+            jb.quYongBasis.contains("离得远就有情") && jb.quYongBasis.contains("若贴着就不行") &&
+                jb.quYongBasis.contains("一个在地下化"))
+        assertTrue("通根身库＋辰戌冲暗坎木根＋进气赋予根气＋财坏印戌克亥",
+            jb.quYongBasis.contains("通根身库") && jb.quYongBasis.contains("把木根坎了一下") &&
+                jb.quYongBasis.contains("进气赋予") && jb.quYongBasis.contains("戌克亥"))
+        assertTrue("丁弱无妨在于情分；丁制一下总比单壬化旺杀好",
+            jb.quYongBasis.contains("在于情分") && jb.quYongBasis.contains("总比一个水印星去化"))
+        assertTrue("丁壬隔位不合绊（健全度无合绊损伤）", jb.health.damages.none { it.contains("合绊") })
+        assertTrue("清·有情就是有格局（不虑旺衰）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("有情就是有格局"))
+        assertTrue("断语含一制一化有情", jb.duanYu.contains("一制一化有情"))
+
+        // 双引擎对照（双引擎铁律）：老引擎伤官格用丁伤官佩壬印（成中有败）·高学历——
+        // 佩印vs化杀vs一制一化的三重结构（制化两神各就其位）
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎伤官格佩印（分歧点：金镖门作一制一化有情）", old.geJuName.contains("伤官格"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

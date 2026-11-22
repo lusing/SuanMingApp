@@ -902,6 +902,28 @@ object JinBiaoCalculator {
                 // 案五十九戒：印须有力（透干／本气根／半合拱局之势）方可化杀——孤藏之印（戌中辛之类）不算有印，
                 // 身衰无印则比劫扛（用神比劫）——「如果没有印，比劫也能当儿子看」；
                 // 案十三亥未拱木（印局会意待运补成）仍以印化
+                // 案九十九·一制一化有情格（待授清单收束）：身弱杀旺而伤官透干制杀＋印透干化杀——
+                // 一制一化有情即有格局（丁克庚＋壬化申）；**制化两干离得远就有情**（隔位不合绊）；
+                // 若贴着（相邻相合）则两神互绊——没层次。丁弱无妨——在于情分（通根身库即立）。
+                guanS >= GUAN_WANG && strength == DayStrength.WEAK && !ruoJi &&
+                    yinS >= FOLLOW_MIN_SCORE &&
+                    // 案十一戒：官星合日主（甲己合——官向我合有情于我）走通关清命线，非制化结构
+                    bazi.stems.none { s -> s != dayMaster && s.element == guanEl && GAN_HE[s] == dayMaster } &&
+                    bazi.stems.anyIndexed { i, s -> i != 2 && s.element == shiEl } &&
+                    bazi.stems.anyIndexed { i, s -> i != 2 && s.element == yinEl } &&
+                    bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl } &&
+                    run {
+                        val shiIdxs99 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == shiEl }
+                        val yinIdxs99 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+                        // 化神（印干）与制神（食伤干）皆不相邻——离得远就有情（贴着则互绊没层次）
+                        yinIdxs99.all { yi -> shiIdxs99.all { si -> kotlin.math.abs(si - yi) > 1 } }
+                    } -> Choice(
+                    JinBiaoQuYongWay.YI_ZHI_YI_HUA, yinEl,
+                    buildString {
+                        append("一制一化有情格（案九十九）：${biEl.chinese}生${monthBranch.chinese}月财杀力量大（${caiEl.chinese}党力${format(caiS)}、${guanEl.chinese}杀党力${format(guanS)}——还有${caiEl.chinese}坏印〔${if (EarthlyBranch.XU in bazi.branches && yinEl == Element.WATER && EarthlyBranch.HAI in bazi.branches) "戌克亥" else "财星克印"}〕${if (EarthlyBranch.CHEN in bazi.branches && EarthlyBranch.XU in bazi.branches && biEl == Element.WOOD) "，辰戌冲暗地里把木根坎了一下" else ""}），日主${biEl.chinese}弱；然**日主通根身库**＋**${monthBranch.chinese}月${biEl.chinese}进气**（${biEl.chinese}最怕之方将过、物极必反——进气非无敌，只提供力量气数；要不在${monthBranch.chinese}月进气，${if (EarthlyBranch.CHEN in bazi.branches && EarthlyBranch.XU in bazi.branches && biEl == Element.WOOD) "辰戌一冲把根暗地里坎了之后就丝毫没有根气了——日主之气由${monthBranch.chinese}月进气赋予" else "根被冲坎后就没有根气了"}）——有此气数即可**伤官制杀再配上印：${shiEl.chinese}克${guanEl.chinese}、${yinEl.chinese}化杀，这一制一化有情了**")
+                        append("。**离得远就有情**（制化两干隔位——不合绊；或一个在天上制、一个在地下化，都叫一制一化的配合）；**若贴着就不行——就没层次了**。${shiEl.chinese}伤官力量不强也不要紧——**还是一制一化有情，在于情分**（通根身库即立得住；当然旺了更好）；**${shiEl.chinese}在这制一下，总比一个${yinEl.chinese}印星去化这么旺的杀要好**（分担）")
+                    },
+                )
                 // 案九十五戒：过泄为主（食伤力压官杀）——配印档优先，不走杀重用印
                 guanS >= FOLLOW_MIN_SCORE && !(guoXieFanRuo && shiS > guanS) &&
                     (bazi.stems.any { it.element == yinEl } || hasBenQiRoot(bazi, yinEl) ||
@@ -1345,6 +1367,8 @@ object JinBiaoCalculator {
                 setOf(EarthlyBranch.SI, EarthlyBranch.YOU, EarthlyBranch.CHOU) to Element.METAL,
             ).any { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { it in bazi.branches } }
         val qingZhuo = when {
+            // 案九十九·一制一化有情：有情就是有格局（不虑旺衰——制化相得）
+            choice.way == JinBiaoQuYongWay.YI_ZHI_YI_HUA -> JinBiaoQingZhuo.QING
             qingKu -> JinBiaoQingZhuo.QING_KU
             quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO
             yongWuLiHua -> JinBiaoQingZhuo.MAN_ZHUO
@@ -1378,6 +1402,7 @@ object JinBiaoCalculator {
                 JinBiaoQingZhuo.QING -> append(
                     if (bingS2 == 0.0) "——原局无病神，用神有力无扰，此为清（贵命，走什么运都不怕）" +
                         (if (choice.way == JinBiaoQuYongWay.KUN_LUN) "**——然昆仑顺局无病而**层次完全由大运决定**：顺则贵（生源／本势／顺泄）、逆则贫（止水／逆局——来土就完了）；主要看中年运**（案九十七）**" else "")
+                    else if (choice.way == JinBiaoQuYongWay.YI_ZHI_YI_HUA) "——**一制一化有情：有情就是有格局（不虑旺衰——${shiEl.chinese}制${guanEl.chinese}、${yinEl.chinese}化杀相得）**；${shiEl.chinese}弱无妨——在于情分；若制化两干贴着（相合互绊）——就没层次了（案九十九）"
                     else if (bingHua) "——病神不透干，经${tongGuanEl.chinese}通关转而相生有情（${bingEl.chinese}生${tongGuanEl.chinese}生${yongEl.chinese}），病不为病——此为清（贵命，走什么运都不怕）"
                     else if (bingYiTU) "——病神透干而无本气根、用神坐日支本气根——干支异途（干不克支），病不贴克用神：有格局（坐下印在），行运不违背即好命（用印显贵多，当官）"
                     else if (gongCaiTongMen) "——**财气通门户（玄机暗里存）**：病神（枭印）虽大而**拱财暗存**（药待运填）——**财星有情不在乎旺衰：财来找他**——走差运生意也不差（选对行）小康；运填拱局——**发大财**（有钱人没走好运：好运一发就是大的——幸福的人还有三十年好日子）"
@@ -2194,6 +2219,7 @@ object JinBiaoCalculator {
             if (ruoJi) append("此为弱极从势之命，行比劫印地必凶（反常之判，勿以普通身弱喜扶论）。")
             if (ruoJi && !zhengDou) append("随势而走：走财走官走食伤皆顺皆吉（富贵显达、高人一等）；唯走印比帮身运帮之反害，必大凶或贫穷。")
             if (choice.way == JinBiaoQuYongWay.QU_GUA) append("此为去寡之命——不用之官尽可去：违背官杀之运好运（把官杀坏得越严重越好），顺着官杀之运一世无成；日主已旺，不可用水激之。")
+            if (choice.way == JinBiaoQuYongWay.YI_ZHI_YI_HUA) append("此为一制一化有情之命——伤官制杀＋印化杀，一制一化有情即有格局（制化两干离得远；贴着则互绊没层次）；行运助制助化皆吉，制化之神被合绊拔根则破格（案九十九）。")
             if (choice.way == JinBiaoQuYongWay.HE_LIU) {
                 append("此为合留清格之命——有情即格局：留下之官杀清纯为用，有情就要富贵（当官）。")
                 if (gender == cn.xulun.bazi.model.Gender.FEMALE) {
@@ -2256,6 +2282,16 @@ object JinBiaoCalculator {
                     guoXieFanRuo -> "${biEl.chinese}党本已强；然${shiEl.chinese}多（食伤两透党力${format(shiS)}）——日主肯定就过泄了→身弱（${monthBranch.chinese}月${biEl.chinese}寒终究是${biEl.chinese}，虚一点而终是实、亦虚于未戌——异于${EarthlyBranch.CHEN.chinese}之虚）"
                     ruoZhongBianWang -> "弱基调；然坐贴身印比、月令敌党之支被泄克转衰——弱中变旺（身旺）"
                     else -> strength.chinese
+                }) +
+                (if (strength == DayStrength.WEAK &&
+                    ((biEl == Element.WOOD && monthBranch == EarthlyBranch.XU) ||
+                        (biEl == Element.FIRE && monthBranch == EarthlyBranch.CHOU) ||
+                        (biEl == Element.METAL && monthBranch == EarthlyBranch.CHEN) ||
+                        (biEl == Element.WATER && monthBranch == EarthlyBranch.WEI))
+                ) {
+                    "；${biEl.chinese}生${monthBranch.chinese}月——绝地之方末月**进气**（最怕之方将过、物极必反）：非无敌，只提供力量气数——根虽被冲暗坎，日主之根气由此赋（案九十九）"
+                } else {
+                    ""
                 }) +
                 "（八步法参考：${strengthResult.verdict.chinese}，生助占比${pct(aShare)}）",
             ruoJi = ruoJi,
@@ -2419,13 +2455,14 @@ object JinBiaoCalculator {
             val p = LIU_HE[br]!!
             supports += "${br.chinese}${p.chinese}合化${yongEl.chinese}——化局补用神（绝处逢生有情）：用神稍弱被补起来，不至于用不了"
         }
-        // 用神透干被合绊
+        // 用神透干被合绊（案九十九戒：须**贴着**（相邻）才合绊——隔位不合，
+        // 「离得远就有情」：丁壬遥隔＝一制一化之配合，非绊）
         bazi.stems.forEachIndexed { i, st ->
             val hePartner = GAN_HE[st]
             if (i != 2 && st.element == yongEl && hePartner != null &&
-                bazi.stems.anyIndexed { j, o -> j != 2 && j != i && o == hePartner }
+                bazi.stems.anyIndexed { j, o -> j != 2 && j != i && o == hePartner && kotlin.math.abs(j - i) == 1 }
             ) {
-                damages += "${st.chinese}用神透干被${hePartner.chinese}合绊"
+                damages += "${st.chinese}用神透干被${hePartner.chinese}贴身合绊"
             }
         }
 
