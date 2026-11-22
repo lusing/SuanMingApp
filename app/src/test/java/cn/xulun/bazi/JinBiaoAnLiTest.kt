@@ -3049,4 +3049,25 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎正印格用申庚败格（对照）", old.geJuName.contains("正印格"))
     }
+
+    // ── 案一百零六 · 癸巳 癸亥 甲寅 壬申（乾，1893-11-13 申时）——合解冲绝处逢生·有情无情定发财 ──
+    @Test
+    fun `案一百零六 乾 癸巳癸亥甲寅壬申 申被水化不能用巳独食被亥冲本夭亡 寅亥化木绝处逢生无情转有情 反事实子午冲照样夭 发财不在财星旺衰在有情无情 正官配印不如乘马 合解冲救子有儿`() {
+        val bazi = chart(1893, 11, 13, 16)
+        assertTrue(bazi.fullBazi.startsWith("癸巳 癸亥 甲寅 壬申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：壬戌1895 辛酉1905 庚申1915 己未1925", daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬戌(1895)", "辛酉(1905)", "庚申(1915)", "己未(1925)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺食伤泄秀——用神巳火", jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI && jb.yongShenElement == Element.FIRE)
+        assertTrue("合解冲绝处逢生有情：申无力被化、独食被冲本夭亡、寅亥化木转有情、合解冲特殊规则、反事实子午不叫有情照样夭",
+            jb.quYongBasis.contains("绝处逢生") && jb.quYongBasis.contains("夭亡的命") && jb.quYongBasis.contains("转而有情") &&
+                jb.quYongBasis.contains("不叫有情") && jb.quYongBasis.contains("蹲大牢"))
+        assertTrue("发财不在财星旺衰在有情无情＋正官配印不如乘马＋申病不大己未运财开始发",
+            jb.quYongBasis.contains("在有情还是无情两字") && jb.quYongBasis.contains("不如乘马") && jb.quYongBasis.contains("己未运财开始发"))
+        val zn = jb.ziNv!!
+        assertTrue("合解冲救子——必有儿（有生儿子的巧劲）",
+            zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER && zn.basis.contains("又有儿子了") && zn.basis.contains("巧劲"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎偏印格用壬配庚败格（对照）", old.geJuName.contains("偏印格"))
+    }
 }

@@ -1322,6 +1322,18 @@ object JinBiaoCalculator {
                     JinBiaoQuYongWay.SHI_SHENG_CAI, shiEl,
                     buildString {
                         append("正格续理·身旺食生财（案九）：身旺无官杀必泄体得衡——用神取食伤（党力 ${format(shiS)}）泄刚煞之气")
+                        // 案一百零六·合解冲绝处逢生有情：独食根被印贴冲本夭亡——冲神被六合化木（贪合忘冲＋化神生用）
+                        run {
+                            val shiGenZhi106 = bazi.branches.filter { it.element == shiEl }
+                            val chongYin106 = shiGenZhi106.firstOrNull { g -> LIU_CHONG[g] != null && bazi.branches.contains(LIU_CHONG[g]) && LIU_CHONG[g]!!.element == yinEl }
+                            if (chongYin106 != null && bazi.branches.count { it.element == shiEl } == 1) {
+                                val chongShen106 = LIU_CHONG[chongYin106]!!
+                                val hePartner106 = LIU_HE[chongShen106]
+                                if (hePartner106 != null && hePartner106 in bazi.branches && hePartner106.element == biEl) {
+                                    append("。**合解冲·绝处逢生有情（案一百零六）**：${guanEl.chinese}杀克我没错然**无力被${yinEl.chinese}化了**（病不大——走${guanEl.chinese}运也不好，走火土运把这小毛病去了更好）——只能选${shiEl.chinese}泄身；然${chongShen106.chinese}贴冲${chongYin106.chinese}——**身强独一位食伤而根被冲＝夭亡的命**。然**${chongShen106.chinese}${hePartner106.chinese}化${hePartner106.element.chinese}绝处逢生：本来${chongShen106.chinese}${yinEl.chinese}无情冲${chongYin106.chinese}，化${hePartner106.element.chinese}了就转而有情**（**合解冲——八字里特殊的一个情况**：贪合忘冲＋化神生${shiEl.chinese}）。**反事实**：${chongYin106.chinese}换午、${chongShen106.chinese}换子——子水也生寅木然**子午逢冲不叫有情——一样夭亡**（通关只从夭亡减到蹲大牢——仍然解决不了；唯${chongShen106.chinese}${hePartner106.chinese}一下合了才叫有情）。**发财大小不在财星旺衰，在有情还是无情两字**——即使小${shiEl.chinese}很弱，绝处逢生了：**孤注一掷就绝处逢生，这人就有层次**。运走土运把印克了——**弃印就财＝三命通会「正官配印，不如乘马」**（马是财——财起好作用就弃印乘马：**财就是有情那就要发财；官有情了当官；用神弱一样发大财——就因为有情**；己未运财开始发的）")
+                                }
+                            }
+                        }
                         if (yinS >= YIN_HUAI) {
                             append("；印星两坏（生身助旺＋贴身克用神）——印为格局之病，病去或用神强旺方能好")
                             if (!caiZai) append("；财地支不载（金旺土生金、支全金局）——用财无出息，不如用食伤（秋水通源，壬水有劲）")
@@ -2714,6 +2726,14 @@ object JinBiaoCalculator {
                                 ).any { (trio, el) -> el == caiEl && bazi.branches.count { it in trio } >= 2 && !trio.all { b -> b in bazi.branches } }
                             -> ZN(caiEl, true, false,
                                 "身旺财为子而**比劫得局夺财——基本上生不出来儿子，然${biEl.chinese}${shiEl.chinese}两旺转而生${caiEl.chinese}**（比劫生食伤、食伤生财——财有暗源通关）：**多生终得一子**——一路南方${shiEl.chinese}运不停的生，**碰着好流年就生出来儿子了（生四个才出一个——使劲生）**；**若没有这比较旺的${shiEl.chinese}，生一百个也生不出来儿子**。**即使生出来的儿子，儿子也好不了**（后面走克${caiEl.chinese}之运——儿子没好日子）；无${shiEl.chinese}通关之比劫夺财局则无儿只生女（案八十八）")
+                            // 案一百零六·合解冲救子档：食伤独根被印贴冲本没儿——冲神被合化（化神比劫）又有儿子
+                            caiS > 0.0 && run {
+                                val shiGen106b = bazi.branches.filter { it.element == shiEl }
+                                val chongYin106b = shiGen106b.firstOrNull { g -> LIU_CHONG[g] != null && bazi.branches.contains(LIU_CHONG[g]) && LIU_CHONG[g]!!.element == yinEl }
+                                chongYin106b != null && bazi.branches.count { it.element == shiEl } == 1 &&
+                                    LIU_HE[LIU_CHONG[chongYin106b]!!]?.let { p -> p in bazi.branches && p.element == biEl } == true
+                            } -> ZN(shiEl, true, false,
+                                "**合解冲救子（案一百零六）**：印贴冲独食之根——**本来没儿子**；然冲神被六合化${biEl.chinese}（绝处逢生有情）——**又有儿子了**。就是在来回来去的变——就在于你对**生克力量上的掌握、情分方面的掌握**：反映在现实生活中他就有**生儿子的技巧、有巧劲**")
                             caiS > 0.0 && shiS > 0.0 -> run {
                                 val gongTrio2 = listOf(
                                     setOf(EarthlyBranch.HAI, EarthlyBranch.MAO, EarthlyBranch.WEI) to Element.WOOD,
