@@ -2689,6 +2689,16 @@ object JinBiaoCalculator {
                                 hasBenQiRoot(bazi, guanEl) &&
                                 partyScore(bazi, Element.entries.first { it.controls == guanEl }) < FOLLOW_MIN_SCORE -> ZN(guanEl, true, false,
                                 "身旺财为子而**比劫盖头贴克财支**（${biEl.chinese}坐${caiEl.chinese}——同柱贴克：没儿子？**不一定——还要看有没有官：转官了**。${guanEl.chinese}官支在局**没有被克**（克${guanEl.chinese}之神无）——**有这个官我就有儿子：有这个功能可以生儿子——官来的年就生了**（案七十六）。**能生儿子不代表能发财**（能生儿的穷人有的是）：没被克只说明有生儿子的功能，但都是泄我的——**财官皆弱顶多小康、衣食无忧（这就算好命）**：化官生印转印身更旺；用神弱而**无克我捣乱者＝无灾无难（没有什么大疾病车祸——这不错了）**")
+                            // 案一百零五·坏绝档：身旺财为子而财之本气支被比劫贴冲＋生财之食伤根被枭冲拔
+                            // ——官财食之源俱伤：没儿子（网测有儿则儿必出事）；克妻至死或和尚命——终态无妻无子
+                            caiS > 0.0 && run {
+                                val caiGenZhi105 = bazi.branches.filter { it.element == caiEl }
+                                val shiGenZhi105 = bazi.branches.filter { it.element == shiEl }
+                                caiGenZhi105.isNotEmpty() && shiGenZhi105.isNotEmpty() &&
+                                    caiGenZhi105.any { g -> val gi = bazi.branches.indexOf(g); (gi - 1 in bazi.branches.indices && bazi.branches[gi - 1].element == biEl) || (gi + 1 in bazi.branches.indices && bazi.branches[gi + 1].element == biEl) } &&
+                                    shiGenZhi105.any { g -> LIU_CHONG[g] != null && LIU_CHONG[g] in bazi.branches }
+                            } -> ZN(caiEl, false, false,
+                                "**身旺没儿子（案一百零五·坏绝档）**：财为子而**财之本气支被比劫贴冲**（${caiEl.chinese}被${biEl.chinese}贴冲——劫冲财）＋**生财之${shiEl.chinese}食伤之根被枭冲拔**（支神只以冲为重——当令之${yinEl.chinese}冲拔${shiEl.chinese}根：枭夺食之重）——**没儿子**。若网测命主说有儿子——**那他儿子就要出事了：要么没了、要么蹲监狱、要么离异跟着对方走了**（同样的八字俩人发生的不一样，但都是克妻损子之理——有的当和尚、有的没结婚、有的结了克死或离了：**最终状态都得是无妻无子**）。**克妻**：枭神夺食克老丈人妨妻家——然支神只以冲为重，当令大${yinEl.chinese}＋劫冲财支，**克的就不是老丈人这么简单了——要把妻子克死了**（或另一种情况：不结婚——和尚命）。**财运也不好**：${shiEl.chinese}运来${if (EarthlyBranch.YIN in bazi.branches && EarthlyBranch.HAI in bazi.branches) "寅亥化木" else "通关"}能好点，**但原局坏得太绝了——只能温饱**（**好运分层定律**：有的走好运发大财、有的发小财、有的平平常常、有的只能温饱——原是要饭的一次要一个馒头，走好运能要两个：不能代表他就好了）")
                             // 案八十四·拱暗财档：财半合拱局暗存（亥未拱木）——有暗财＝有子（不仅有子还有钱）
                             // 案八十八·木火两旺转而生土（多生终得一子）：比劫得局夺财而食伤通关有力
                             // （木生火火生土——财有暗源）——基本上生不出儿子，然一路南方食伤运＋好流年

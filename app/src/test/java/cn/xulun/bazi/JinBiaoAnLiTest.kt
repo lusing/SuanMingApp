@@ -3031,4 +3031,22 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎正官格用庚配己成格（对照：金镖门藤萝制杀）", old.geJuName.contains("正官格"))
     }
+
+    // ── 案一百零五 · 甲寅 壬申 癸巳 癸亥（乾，1974-08-20 亥时）——坏绝档·冲为重·刑穿正解 ──
+    @Test
+    fun `案一百零五 乾 甲寅壬申癸巳癸亥 寅申巳亥四生两冲三刑 身旺没儿子网测有儿必出事 克妻至死或和尚命终态无妻无子 原局坏绝好运只温饱`() {
+        val bazi = chart(1974, 8, 20, 22)
+        assertTrue(bazi.fullBazi.startsWith("甲寅 壬申 癸巳 癸亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：癸酉1980 甲戌1990 乙亥2000", daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸酉(1980)", "甲戌(1990)", "乙亥(2000)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺无官食伤泄秀——用神甲木伤官坐寅禄", jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI && jb.yongShenElement == Element.WOOD)
+        val zn = jb.ziNv!!
+        assertTrue("身旺没儿子（坏绝档）——财被劫贴冲＋食根被枭冲拔；网测有儿必出事；克妻至死或和尚命终态无妻无子；好运只温饱",
+            zn.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER &&
+                zn.basis.contains("没儿子") && zn.basis.contains("蹲监狱") && zn.basis.contains("无妻无子") &&
+                zn.basis.contains("把妻子克死了") && zn.basis.contains("只能温饱") && zn.basis.contains("两个"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正印格用申庚败格（对照）", old.geJuName.contains("正印格"))
+    }
 }
