@@ -2993,4 +2993,22 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎偏印格用戊配丁败格（分歧：金镖门用财）", old.geJuName.contains("偏印格"))
     }
+
+    // ── 案一百零三 · 丙子 己亥 乙丑 壬午（乾，1996-11-24 午时）——印重为病用财坏印·暖是锦上添花 ──
+    @Test
+    fun `案一百零三 乾 丙子己亥乙丑壬午 亥子丑印得局用财坏印 财通两根有力就是好命 寒木向阳锦上添花局长正科半级 暖非命根子 木运不怕火护卫土实根`() {
+        val bazi = chart(1996, 11, 24, 12)
+        assertTrue(bazi.fullBazi.startsWith("丙子 己亥 乙丑 壬午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：庚子2001 辛丑2011 壬寅2021", daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚子(2001)", "辛丑(2011)", "壬寅(2021)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("印重为病用财坏印（水多木漂——身弱不受生）——用神己土财（丑＋午中己两根）",
+            jb.quYongWay == JinBiaoQuYongWay.HUAI_YIN && jb.yongShenElement == Element.EARTH && jb.quYongBasis.contains("印重为病"))
+        assertTrue("调候让位：暖是锦上添花——有火局长无火正科半级差、暖不是命根子、哪有去暖的",
+            jb.quYongBasis.contains("锦上添花") && jb.quYongBasis.contains("正科") && jb.quYongBasis.contains("不是命局的命根子") && jb.quYongBasis.contains("哪有去暖的"))
+        assertTrue("木运之辨：不怕木运（火护卫土＋实根经克）；丙己至少一个强根——都虚则壬寅就完了",
+            jb.quYongBasis.contains("不怕木运") && jb.quYongBasis.contains("最起码得有一个有强根") && jb.quYongBasis.contains("寅亥化木"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正印格用壬配辛（分歧：金镖门以印为病用财）", old.geJuName.contains("正印格"))
+    }
 }

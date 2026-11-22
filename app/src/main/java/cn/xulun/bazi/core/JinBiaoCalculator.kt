@@ -520,9 +520,14 @@ object JinBiaoCalculator {
         val shuiTou = bazi.stems.filterIndexed { i, _ -> i != 2 }.any { it.element == Element.WATER }
         val hanTiaoYouQi = huoTou && (huoCangGen || (muTieHuo && muZai && !jinJuDuo))
         val zaoTiaoYouQi = shuiTou && shuiCangGen
+        // 案一百零三·调候让位护栏二：印旺得局（≥8）用财而财透且两根（格局自足）——调候降为加分项，
+        // 不走调候档（暖是锦上添花〔局长与正科之差〕，非命根子——命局不依赖暖；不论身强身弱——印重为病）。
+        val geJuZu103 = yinS >= 8.0 &&
+            bazi.stems.any { it != dayMaster && it.element == caiEl } &&
+            bazi.branches.count { br -> br.element == caiEl || branchHiddenStems.getValue(br).any { it.element == caiEl } } >= 2
         val tiaoHouEl: Element? = when {
-            hanJu && hanTiaoYouQi && !bazi.branches.all { it.element == Element.WATER } -> Element.FIRE
-            zaoJu && zaoTiaoYouQi && !bazi.branches.all { it.element == Element.FIRE } -> Element.WATER
+            hanJu && hanTiaoYouQi && !geJuZu103 && !bazi.branches.all { it.element == Element.WATER } -> Element.FIRE
+            zaoJu && zaoTiaoYouQi && !geJuZu103 && !bazi.branches.all { it.element == Element.FIRE } -> Element.WATER
             else -> null
         }
         // 案卅四裁：杀旺食透而日主得禄根（禄支不克泄日主——异于库根之泄身）——禄根型食制优先于调候
@@ -914,6 +919,16 @@ object JinBiaoCalculator {
                 // 案五十九戒：印须有力（透干／本气根／半合拱局之势）方可化杀——孤藏之印（戌中辛之类）不算有印，
                 // 身衰无印则比劫扛（用神比劫）——「如果没有印，比劫也能当儿子看」；
                 // 案十三亥未拱木（印局会意待运补成）仍以印化
+                // 案一百零三·印重为病用财坏印（水多木漂型：身弱不受生——印得局≥8为病，财透两根为药）：
+                // 印旺要用财来坏印——不论身强身弱（寒木向阳之暖只是锦上添花非命根子）
+                geJuZu103 -> Choice(
+                    JinBiaoQuYongWay.HUAI_YIN, caiEl,
+                    buildString {
+                        append("**印重为病·用财坏印（案一百零三）**：${monthBranch.chinese}月${yinEl.chinese}印得局（党力${format(yinS)}——亥子丑北方之属）肯定印旺——自学八格：**印旺要用的配置就是财来坏印**；日主${biEl.chinese}无本气根（不受生——水多木漂之象），${caiEl.chinese}财**通两根有力还是能克${yinEl.chinese}的——只能用财：财星有力就是个好命**。")
+                        append("。**寒木向阳——锦上添花**：${shiEl.chinese}生${caiEl.chinese}（财有源头）兼暖局——**有火当局长、无火（午换戌之属）也当正科：半级之差——不是没有火就不行**；**暖不是命局的命根子**（喜欢暖但不依赖暖——土有力自立；对勘案六三「一切以寒暖为规范」——那是命局全靠调候之局）。**哪有去暖的？没听说过的东西不要自己搞开发——问题的关键点在于用神${caiEl.chinese}**")
+                        append("。**木运之辨（护卫链）**：不怕木运——**火护卫${caiEl.chinese}**（木生火缓解）＋${caiEl.chinese}实两根经克（来木被克一下也不要紧，况且有${shiEl.chinese}生他）；然木运肯定不如火土之运；**若${caiEl.chinese}虚走木运就完了——${shiEl.chinese}${caiEl.chinese}最起码得有一个有强根**（都虚则壬寅运〔天干${yinEl.chinese}克${shiEl.chinese}＋地支寅亥化木〕就完了——没有强根，配合也白搭）；**午火主要还是${caiEl.chinese}土之通根**（火之禄更是财之根——一身二任）")
+                    },
+                )
                 // 案九十九·一制一化有情格（待授清单收束）：身弱杀旺而伤官透干制杀＋印透干化杀——
                 // 一制一化有情即有格局（丁克庚＋壬化申）；**制化两干离得远就有情**（隔位不合绊）；
                 // 若贴着（相邻相合）则两神互绊——没层次。丁弱无妨——在于情分（通根身库即立）。
@@ -1326,8 +1341,15 @@ object JinBiaoCalculator {
                 // （案六十一：壬癸双透虽地支不载，财混杂而得气——喜财坏印，用神财）
                 yinS >= YIN_HUAI && (caiZai || bazi.stems.count { it != dayMaster && it.element == caiEl } >= 2) -> Choice(
                     JinBiaoQuYongWay.HUAI_YIN, caiEl,
-                    "正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用而官食俱不可用——必用财星坏印（财党力 ${format(caiS)}，${if (caiZai) "地支有载" else "双透得气"}）。" +
-                        "身足够旺——**喜财坏印，财好大家都好**（财官就是机会：身板够硬就差机会）；财富值取决于用神财之力（案六十一）",
+                    buildString {
+                        append("正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用而官食俱不可用——必用财星坏印（财党力 ${format(caiS)}，${if (caiZai) "地支有载" else "双透得气"}）。")
+                        append("身足够旺——**喜财坏印，财好大家都好**（财官就是机会：身板够硬就差机会）；财富值取决于用神财之力（案六十一）")
+                        // 案一百零三·印旺得局用财（调候让位为加分项）
+                        if (geJuZu103) {
+                            append("。**印旺得局用财·暖为锦上添花（案一百零三）**：${monthBranch.chinese}月${yinEl.chinese}印得局（${if (sanHuiSanLiuHeNote.isNotEmpty()) "三会" else "会局"}）肯定印旺——印旺要用的配置就是**财来坏印**；无${guanEl.chinese}官可用，${caiEl.chinese}财**通两根有力还是能克${yinEl.chinese}的——只能用财：财星有力就是个好命**。**寒木向阳——锦上添花**：${shiEl.chinese}生${caiEl.chinese}（财有源头）兼暖局——**有火当局长、无火（午换戌）也当正科：半级之差——不是没有火就不行**；**暖不是命局的命根子**（喜欢暖但不依赖暖——命局不依赖暖、土有力自立；对勘案六三「一切以寒暖为规范」——那是命局全靠调候之局）。**哪有去暖的？没听说过的东西不要自己搞开发——问题的关键点在于用神${caiEl.chinese}**")
+                            append("。**木运之辨（护卫链）**：不怕木运——**火护卫${caiEl.chinese}**（木生火缓解）＋${caiEl.chinese}实两根经克（来木被克一下也不要紧，况且有${shiEl.chinese}生他）；然木运肯定不如火土之运；**若${caiEl.chinese}虚（无实根）走木运就完了**——**丙己最起码得有一个有强根**（都虚则壬寅运〔天干${yinEl.chinese}克${shiEl.chinese}＋地支寅亥化木〕就完了——没有强根，他俩配合也白搭）；**午火主要还是${caiEl.chinese}土之通根**（火之禄更是财之根——一身二任）")
+                        }
+                    },
                 )
                 else -> {
                     val best = listOf(
