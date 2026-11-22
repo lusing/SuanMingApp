@@ -2754,6 +2754,46 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("建禄格") && old.xiangShenRole.contains("伤官佩印"))
     }
 
+    // ── 案九十八 · 辛酉 己亥 壬子 戊申（乾，1981-11-30 申时）——昆仑之水透克神（两土皆病）·去寡须食伤·性格断 ──
+
+    @Test
+    fun `案九十八 乾 辛酉己亥壬子戊申 昆仑顺局透土为病 泄克之辨 露一个也不行 无食伤没法去寡运来食神才可 甲乙木运支火土不管事 性格叛逆不服`() {
+        val bazi = chart(1981, 11, 30, 16)
+        assertTrue(bazi.fullBazi.startsWith("辛酉 己亥 壬子 戊申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阴年乾造逆行：戊戌1989 丁酉1999 丙申2009 乙未2019 甲午2029",
+            daYun.yuns.take(5).map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("戊戌(1989)", "丁酉(1999)", "丙申(2009)", "乙未(2019)", "甲午(2029)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("地支申酉亥子一片金水——昆仑之水顺局（承案九十七判据）",
+            jb.quYongWay == JinBiaoQuYongWay.KUN_LUN && jb.yongShenElement == Element.WATER)
+        assertTrue("透克神＝病：上个透木是泄的、这个透土是克的——从本质上看就混不了；两土都是病去了才能好",
+            jb.quYongBasis.contains("昆仑透克神＝病") && jb.quYongBasis.contains("一个是泄") &&
+                jb.quYongBasis.contains("一个是克") && jb.quYongBasis.contains("才能好得了"))
+        assertTrue("露一个也不行不管露几个；土虚力不大然随时是隐患（火土运帮起来力量就大）",
+            jb.quYongBasis.contains("露一个也不行") && jb.quYongBasis.contains("随时都是个隐患"))
+        assertTrue("去寡之辨：没有食神（都是印）没法去寡——大运来了食神才能去寡（时柱透食神甲申之属就好了）",
+            jb.quYongBasis.contains("没法去寡") && jb.quYongBasis.contains("大运来了食神才能去寡"))
+        assertTrue("甲子乙亥水木运去病有层次；实走甲乙木而支南方火——来了木也不管事总体过得非常差",
+            jb.quYongBasis.contains("来了木也不管事") && jb.quYongBasis.contains("总体肯定是过得非常差"))
+        assertTrue("性格断：叛逆经常不服、越不服越不行——做人的方式决定成就",
+            jb.quYongBasis.contains("叛逆") && jb.quYongBasis.contains("越不服输越不行"))
+
+        // 运：乙未甲午干食伤到（去病——稍好）然支火土助病——凶（坏事多总体差）
+        assertTrue("乙未甲午凶（干去病支助病——来了木也不管事）",
+            jb.yuns[3].verdict == JinBiaoVerdict.XIONG && jb.yuns[4].verdict == JinBiaoVerdict.XIONG &&
+                jb.yuns[3].items.any { it.action.contains("大运来了食神才能去寡") } &&
+                jb.yuns[4].items.any { it.action.contains("来了木也不管事") })
+        assertTrue("戊戌早年土止水凶", jb.yuns[0].verdict == JinBiaoVerdict.XIONG)
+
+        // 双引擎对照（双引擎铁律）：老引擎建禄格用己正官配辛印（印护官·成中有败）——以官为用；
+        // 金镖门以官为逆神（两土皆病）——昆仑顺局内之官杀角色分歧
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎建禄格用己正官配辛印", old.geJuName.contains("建禄格") && old.yongShen?.stem?.chinese == "己")
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

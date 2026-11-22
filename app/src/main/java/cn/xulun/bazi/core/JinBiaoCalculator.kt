@@ -773,6 +773,13 @@ object JinBiaoCalculator {
                             append("。**顺逆之机需理会**：${kunLunEl.chinese}旺到极端，只能顺着它、不能逆着它——来${kunLunEl.chinese}来${kunLunEl.generates.chinese}都不算逆（**${kunLunEl.generates.chinese}来根了也不是${kunLunSource.chinese}${kunLunEl.generates.chinese}交战——${kunLunSource.chinese}生${kunLunEl.chinese}${kunLunEl.chinese}生${kunLunEl.generates.chinese}，只能说是泄它，没有逆它；肯定没有来${kunLunSource.chinese}好，但是来了${kunLunEl.generates.chinese}也没事**）；**唯独${keEl.chinese}不可——止不住的**：${keEl.chinese}有两个功能，一者生${kunLunSource.chinese}、一者克我的${kunLunEl.chinese}——旺到极端只论逆不论功（即使稍微给我点好处〔生印〕，但稍微让我不舒服，你就不行——${keEl.chinese}来多少也是生${kunLunSource.chinese}，毕竟${kunLunSource.chinese}在那摆着，但${keEl.chinese}也克我的${kunLunEl.chinese}）")
                             append("。**特殊格局的层次完全是由大运决定**——要是上来就走${keEl.chinese}运那就完了（层次底下的命）；**主要是看中年：这人的层次是由中年运决定的**；子女亦然——逆着它就没有儿子（有儿子也是被克了、或者离婚儿子跟对方了），**特殊的格局方方面面都得看大运**")
                             append("。**枭夺食反例（待后续案例）**：若原局全是${kunLunSource.chinese}、就日主是${kunLunEl.chinese}——这时来了${kunLunEl.generates.chinese}，那才叫枭神夺食，就要出事了（本案${kunLunSource.chinese}生${kunLunEl.chinese}有通关，木是泄不是夺）")
+                            // 案九十八·昆仑顺局而透克神（上个透木＝泄〔顺〕，这个透土＝克〔逆〕）
+                            val keTou98 = bazi.stems.filter { it != dayMaster && it.element == keEl }
+                            if (keTou98.isNotEmpty()) {
+                                append("。**昆仑透克神＝病（案九十八）**：上个（案九十七）透的是${kunLunEl.generates.chinese}——**泄的**；这个透${keEl.chinese}——**克的**：**从本质上看就混不了（一个是泄〔顺〕、一个是克〔逆〕）**。${keTou98.joinToString("") { it.chinese }}两${keEl.chinese}都是病——**把${keEl.chinese}去了，才能好得了**；走帮${keEl.chinese}的运就不行。**露一个也不行，不管露几个**（${keEl.chinese}在这摆着一定是两个作用——生${kunLunSource.chinese}、克${kunLunEl.chinese}：不能说生${kunLunSource.chinese}了就不克${kunLunEl.chinese}，也不能说克${kunLunEl.chinese}了就不生${kunLunSource.chinese}）；${keEl.chinese}虚原局克${kunLunEl.chinese}之力不大——然**随时都是个隐患：大运走火${keEl.chinese}把${keEl.chinese}帮起来，力量就大了**")
+                                append("。**去寡之辨**：此命没有食神（都是印）——去寡三条件之一「有食伤」不备，**没法去寡**；只能说**大运来了食神才能去寡**（若透${kunLunEl.generates.chinese}食神于时柱〔甲申之属〕——那就好了）。若走甲子乙亥水木之运——去了病，**肯定是个有层次的人**；然此命没走上好运：虽后有${kunLunEl.generates.chinese}木运而**地支都是南方火（火旺${keEl.chinese}相）——来了木也不管事**，只是稍微有点好事、还是坏事多，**总体肯定是过得非常差的**——这个${kunLunEl.chinese}不能逆着它")
+                                append("。**性格断**：不能克${kunLunEl.chinese}，却露两${keEl.chinese}——此人**叛逆、经常不服（不服${kunLunEl.chinese}的气势）**；实际也有一个拼搏的劲（不服输）——**但有的人不服输管用、有的人越不服输越不行**：做人的方式决定能不能取得成就（需把做事的方式、性格改变一下）；上个命走戌运时也是不服——那个时候人的性格就改变了、做事方式也跟着改变了")
+                            }
                         }
                     },
                 )
@@ -2134,6 +2141,8 @@ object JinBiaoCalculator {
             } else {
                 null
             },
+            jia98 = choice.way == JinBiaoQuYongWay.KUN_LUN && kunLunEl == biEl &&
+                bazi.stems.any { it != dayMaster && it.element == Element.entries.first { e -> e.controls == kunLunEl } },
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -2166,7 +2175,7 @@ object JinBiaoCalculator {
                 // 案三十豁免：日主藏干通根≥3处＝有根气，食神制杀成格（贫穷断仅限无根气强制）
                 bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == biEl } } < 3 ->
                 "五理之五·二者如替换：身弱不用印化杀、原局反以食伤强制动杀（食${format(shiS)}官${format(guanS)}而印仅${format(yinS)}）——克泄交加、弃日主于不顾，定是贫穷汉。"
-            !ruoJi && !wangJi && strength == DayStrength.STRONG &&
+            !ruoJi && !wangJi && strength == DayStrength.STRONG && !kunLun &&
                 guanS >= FOLLOW_MIN_SCORE && yinS >= FOLLOW_MIN_SCORE && shiS < 1.0 ->
                 "五理之五·二者如替换：身强反赖印化杀（官${format(guanS)}印${format(yinS)}而食伤仅${format(shiS)}）——身愈强官愈弱，定是贫穷汉。"
             else -> null
@@ -2461,6 +2470,7 @@ object JinBiaoCalculator {
         val yongKu: EarthlyBranch? = null,     // 用神之墓库支（火→戌之属——运支临之＝用神得库根）
         val xiShenEl: Element? = null,         // 喜神（生用神之源）——运支填其三合拱局＝喜神变旺
         val quGuaGan: HeavenlyStem? = null,    // 案九十六：去寡局所去之官杀透干——运干同性克之＝去尽（伤官伤尽始为奇）
+        val jia98: Boolean = false,            // 案九十八：昆仑顺局而透克神（两土皆病）——运干食伤到＝去病（稍好）；支火土助病＝坏事多
     )
 
     /** 阳干羊刃支（甲刃卯、丙戊刃午、庚刃酉、壬刃子；阴干无刃）。 */
@@ -2629,6 +2639,10 @@ object JinBiaoCalculator {
                         trio.all { it == zhi || it in chartBranches } && !trio.all { it in chartBranches } }
                 val note = when {
                     heChong -> "运支${zhi.chinese}合去冲神${ctx.chongShen!!.chinese}——用神绝处逢生，彻底有情（把印绶救起来了）"
+                    // 案九十八·昆仑透克神之病局：运干食伤到＝去病（大运来了食神才能去寡）——
+                    // 然支火土助病：来了木也不管事，稍微有点好事、坏事多（总体过得非常差）
+                    i == 0 && ctx.jia98 && ganEl == ctx.yongEl.generates ->
+                        "运干${gan.chinese}食伤到——克去透干之${Element.entries.first { it.controls == ctx.yongEl }.chinese}病（**大运来了食神才能去寡**）：稍微有点好事；然地支火土把病帮起来——**来了木也不管事，还是坏事多（总体过得非常差——案九十八）**"
                     // 案九十六·同性之克去官最力（丙阳火克庚阳金）——伤官伤尽始为奇
                     i == 0 && ctx.quGuaGan != null && ganEl.controls == ctx.quGuaGan!!.element && gan.yang == ctx.quGuaGan!!.yang ->
                         "运干${gan.chinese}同性克${ctx.quGuaGan!!.chinese}力量最大——**把官杀去尽**（伤官伤尽始为奇）：**丙运要比丁运好**（案九十六）"
