@@ -3124,4 +3124,32 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎阳刃格用己劫配壬财（对照：金镖门用伤官金）", old.geJuName.contains("阳刃格"))
     }
+
+    // ── 案一百零九 · 戊辰 壬戌 辛未 己丑（乾，1868-10-12 丑时）——土重金埋·印过旺用财破印而财根被冲伐尽 ──
+    // 排盘口径：三个戊辰年（1868/1928/1988）的戌月中唯 1868-10-12 为辛未日——同治七年古命。
+    @Test
+    fun `案一百零九 乾 戊辰壬戌辛未己丑 印旺身旺土重金埋 壬水泄秀被印克回 印过旺用财破印 藏财之支被贴冲砍伐尽财都没了 直断克妻无子 辟冲开财库必发刻舟求剑`() {
+        val bazi = chart(1868, 10, 12, 2)
+        assertTrue(bazi.fullBazi.startsWith("戊辰 壬戌 辛未 己丑"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：癸亥1877 甲子1887 乙丑1897",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("癸亥(1877)", "甲子(1887)", "乙丑(1897)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("地支印旺肯定身旺——土重金埋", jb.strength == DayStrength.STRONG)
+        assertTrue("壬水泄秀被印克回不能用——印过旺用财破印，用神木（不再取壬水）",
+            jb.quYongWay == JinBiaoQuYongWay.HUAI_YIN && jb.yongShenElement == Element.WOOD)
+        assertTrue("财藏辰未、两组贴冲藏金暗相坎伐——财都没了就完了；直断克妻无子；辟冲开财库必发——刻舟求剑",
+            jb.quYongBasis.contains("土重金埋") && jb.quYongBasis.contains("克回去了") && jb.quYongBasis.contains("用") &&
+                jb.quYongBasis.contains("财都没了，就完了") && jb.quYongBasis.contains("刻舟求剑") &&
+                jb.quYongBasis.contains("财官临库喜刑冲") && jb.quYongBasis.contains("两个馒头"))
+        assertTrue("清浊：清枯（用神无着）——不是半浊半清",
+            jb.qingZhuo == JinBiaoQingZhuo.QING_KU && jb.qingZhuoBasis.contains("冲开财库必发"))
+        assertTrue("子女：必无儿",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER && jb.ziNv!!.basis.contains("克妻，无子"))
+        assertTrue("运：原局坏绝——水木好运也只是多要一个馒头（中平）；己巳庚午凶",
+            listOf(0, 1, 2, 3, 4).all { jb.yuns[it].verdict == JinBiaoVerdict.PING } &&
+                listOf(6, 7).all { jb.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正印格用戊配丁败格（旺衰与金镖门相反：身弱）", old.geJuName.contains("正印格"))
+    }
 }

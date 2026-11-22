@@ -412,6 +412,22 @@ object JinBiaoCalculator {
             bazi.stems.anyIndexed { i, s -> i != 2 && s.element == caiEl } &&
             bazi.stems.none { s -> s != dayMaster && s.element == guanEl } && !hasBenQiRoot(bazi, guanEl) &&
             yinS < YIN_HUAI && bazi.branches.count { it.element == biEl } >= 3
+        // 案一百零九·土重金埋（结构）：印得局（≥8）、食伤透而被印干贴克（泄秀被克回）、财不透仅藏支
+        // ——印过旺用财破印；藏财之支尽被贴冲且冲神藏干克财（藏金暗相坎伐）＝财根气被砍没
+        val shiIdx109 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == shiEl }
+        val yinIdx109 = bazi.stems.indices.filter { it != 2 && bazi.stems[it].element == yinEl }
+        val maJin109 = yinS >= 8.0 && shiIdx109.isNotEmpty() &&
+            shiIdx109.any { si -> yinIdx109.any { yi -> kotlin.math.abs(si - yi) == 1 } } &&
+            bazi.stems.none { it != dayMaster && it.element == caiEl } &&
+            bazi.branches.any { br -> branchHiddenStems.getValue(br).any { it.element == caiEl } }
+        val caiGen109 = bazi.branches.filter { br -> branchHiddenStems.getValue(br).any { it.element == caiEl } }
+        val caiGenBa109 = caiGen109.isNotEmpty() && caiGen109.all { g ->
+            val gi = bazi.branches.indexOf(g)
+            listOf(gi - 1, gi + 1).any { k ->
+                k in bazi.branches.indices && LIU_CHONG[g] == bazi.branches[k] &&
+                    branchHiddenStems.getValue(bazi.branches[k]).any { it.element.controls == caiEl }
+            }
+        }
         val wangJi = (strength == DayStrength.STRONG || stemsYinBiOnly) &&
             guanSAdj == 0.0 && caiSAdj == 0.0 && shiSAdj == 0.0
         val caiZai = hasBenQiRoot(bazi, caiEl) || bazi.branches.any { br ->
@@ -1349,6 +1365,19 @@ object JinBiaoCalculator {
                         }
                     },
                 )
+                // 案一百零九·土重金埋：地支印旺肯定身旺——食伤泄秀被印克回；八格「印过旺用财破印」
+                // 然藏财之支被贴冲、冲神藏干克财（藏金暗相坎伐）——财都没了就完了：直断克妻无子
+                // 先于「身旺食伤泄秀」（壬水泄秀被印克回——不能用）
+                maJin109 && strength == DayStrength.STRONG && !ruoJi && !wangJi -> Choice(
+                    JinBiaoQuYongWay.HUAI_YIN, caiEl,
+                    buildString {
+                        val keShiYin109 = yinIdx109.firstOrNull { yi -> shiIdx109.any { si -> kotlin.math.abs(si - yi) == 1 } }
+                        append("土重金埋·印过旺用财破印（案一百零九）：地支印旺（党力${format(yinS)}）肯定身旺——**土重金埋了**；用食伤${shiEl.chinese}泄秀${if (keShiYin109 != null) "又被印${bazi.stems[keShiYin109].chinese}克回去了" else "又被印克回去了"}——不能用；八格：**印过旺的用${caiEl.chinese}来破印**——${caiEl.chinese}藏于${caiGen109.joinToString("、") { it.chinese }}。")
+                        if (caiGenBa109) {
+                            append("然地支${caiGen109.joinToString("、") { "${it.chinese}${LIU_CHONG[it]?.chinese ?: ""}冲" }}，**藏${Element.entries.first { it.controls == caiEl }.chinese}暗相坎伐，财都没了，就完了**——直断：**克妻，无子**。**辟「冲开财库必发」**：有人说丑冲未开财库、戌冲辰也开财库必发——肯定不对：我用财，就指望财星这一点点根气，被砍伐冲没了还能行吗？**「财官临库喜刑冲」不可以这么用——这叫刻舟求剑，刻舟求剑的人断不对事**。**一切都得根据原局的喜忌来分析**：地支的作用关系把财的根气坎没了、破坏了——走好运管用吗？要饭的要一个馒头，走好运要上两个馒头，不能说就发财了；考试倒数第一，顶多考到倒数第五，不能说学习就好了。命比运重也不能刻舟求剑——得根据实际情况来说事")
+                        }
+                    },
+                )
                 shiS >= FOLLOW_MIN_SCORE -> Choice(
                     JinBiaoQuYongWay.SHI_SHENG_CAI, shiEl,
                     buildString {
@@ -1521,6 +1550,8 @@ object JinBiaoCalculator {
             // 案九十九·一制一化有情：有情就是有格局（不虑旺衰——制化相得）
             choice.way == JinBiaoQuYongWay.YI_ZHI_YI_HUA -> JinBiaoQingZhuo.QING
             yinGenBaCai107 -> JinBiaoQingZhuo.BAN_QING
+            // 案一百零九·土重金埋：印过旺用财破印而藏财之根被贴冲砍伐尽——用神无着（财都没了就完了）
+            maJin109 && caiGenBa109 && choice.way == JinBiaoQuYongWay.HUAI_YIN -> JinBiaoQingZhuo.QING_KU
             qingKu -> JinBiaoQingZhuo.QING_KU
             quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO
             yongWuLiHua -> JinBiaoQingZhuo.MAN_ZHUO
@@ -1546,7 +1577,9 @@ object JinBiaoCalculator {
             if (jianBing != null) append("；$jianBing")
             when (qingZhuo) {
                 JinBiaoQingZhuo.QING_KU -> append(
-                    if (choice.way == JinBiaoQuYongWay.FU_SHEN)
+                    if (maJin109 && caiGenBa109 && choice.way == JinBiaoQuYongWay.HUAI_YIN)
+                        "——印过旺用${caiEl.chinese}破印，然${caiEl.chinese}仅藏于${caiGen109.joinToString("、") { it.chinese }}、根气被两组贴冲砍伐殆尽（藏干互战暗相坎伐）——用神无着：**财都没了，就完了**（直断克妻无子——原局上人基本就完了）；**辟「冲开财库必发」**：「财官临库喜刑冲」不可以这么用——刻舟求剑；原局坏绝，好运也只是多要一个馒头（案一百零九）"
+                    else if (choice.way == JinBiaoQuYongWay.FU_SHEN)
                         "——用神${yongEl.chinese}（印）被得局之${caiEl.chinese}财坏（财有多旺他就有多穷——食伤生财＝给忌神添粮）：病大难救——**清枯之命**：印运把印补起来还能温饱，食伤生财之运身无分文、负债"
                     else "——用神${yongEl.chinese}（印）虽可取（帮身扛杀），然生印之${guanEl.chinese}过旺蒸之（火炎土焦，燥土难以生金——生金有点难，但也只能用土）、又被${keYinEl.chinese}克（党力${format(partyScore(bazi, keYinEl))}有根）——病太大，一点救都没有：**清枯之命**，走好运只得温饱，走克用生忌之运一事无成（贫穷清枯）".replace("**", ""),
                 )
@@ -1604,6 +1637,11 @@ object JinBiaoCalculator {
             if (xiuQi108 && choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI) {
                 put(caiEl, "${caiEl.chinese}运不差，只是平运——食伤生财不破财（不用之财尽可劫·儿又生儿）")
                 put(biEl, "身旺不喜欢帮身、${shiEl.chinese}也不喜欢${biEl.chinese}多——不喜欢再来比劫运")
+            }
+            // 案一百零九·土重金埋：原局财根被冲伐尽——好运（财、生财之食伤）也只是多要一个馒头，作中平
+            if (maJin109 && choice.way == JinBiaoQuYongWay.HUAI_YIN) {
+                put(caiEl, "原局${caiEl.chinese}之根气被冲伐尽——走好运也只是要饭的多要一个馒头，不能说就发财了（案一百零九）")
+                put(shiEl, "生${caiEl.chinese}帮用——原局坏绝，好运只多一个馒头（案一百零九）")
             }
             // 案六十四·官已重（官杀本气支贴冲比劫之根——辰酉化金力大）而再生成官（如土生金）：
             // 助忌——提升不了（提升在帮身化杀／制杀以威之运——事实庚寅年甲午年提升）
@@ -2826,6 +2864,22 @@ object JinBiaoCalculator {
                         ) {
                             ZN(caiEl, false, true,
                                 "身旺财为子而**比劫羊刃飞出来贴着捣乱**（${biEl.chinese}坐${caiEl.chinese}——同柱盖头贴克财支：时干比劫通根克财）：**生的是女儿——生不出来儿子**（食神生${caiEl.chinese}财也不管事儿——**食伤生财是指财富**，救不了子星）；**再走印比之运（寅亥化木之属）——百分之百生女儿**（即使B超检查说生个儿子也没用——B超也有错的时候——案九十）")
+                        } else if (choice.way == JinBiaoQuYongWay.HUAI_YIN && strength == DayStrength.STRONG && yinS >= 8.0 &&
+                            bazi.stems.none { it != dayMaster && it.element == caiEl } && run {
+                                // 案一百零九·藏财之支尽被贴冲且冲神藏干克财（藏金暗相坎伐）——财根气被砍没
+                                val gens = bazi.branches.filter { br -> branchHiddenStems.getValue(br).any { it.element == caiEl } }
+                                gens.isNotEmpty() && gens.all { g ->
+                                    val gi = bazi.branches.indexOf(g)
+                                    listOf(gi - 1, gi + 1).any { k ->
+                                        k in bazi.branches.indices && LIU_CHONG[g] == bazi.branches[k] &&
+                                            branchHiddenStems.getValue(bazi.branches[k]).any { it.element.controls == caiEl }
+                                    }
+                                }
+                            }
+                        ) {
+                            // 案一百零九·土重金埋：印过旺用财破印而财根被冲伐尽——直断克妻无子
+                            ZN(caiEl, false, false,
+                                "**克妻，无子（案一百零九·土重金埋）**：地支印旺肯定身旺——土重金埋；食伤泄秀又被印克回去；印过旺用${caiEl.chinese}破印——${caiEl.chinese}只藏于地支，然两组贴冲藏干互战（藏${Element.entries.first { it.controls == caiEl }.chinese}暗相坎伐）**财都没了，就完了**。**辟「冲开财库必发」**：用${caiEl.chinese}就指望${caiEl.chinese}星这一点点根气，被砍伐冲没了还能行吗——「财官临库喜刑冲」不可以这么用（**刻舟求剑**）；一切都得根据原局喜忌：原局把${caiEl.chinese}的根气坎没了，走好运也只是要饭的多要一个馒头")
                         } else if (!caiZai && !hasBenQiRoot(bazi, caiEl)) {
                             // 案六十二·财虚透而没被比劫克——生育能力在（贫富与子嗣两轨）：走财得根运得儿子
                             val deGenYuns = daYun?.yuns
