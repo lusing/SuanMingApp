@@ -2863,6 +2863,39 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎偏财格用戊配庚（分歧点：金镖门以财为病）", old.geJuName.contains("偏财格"))
     }
 
+    // ── 案一百零一 · 甲戌 甲戌 戊寅 庚申（乾，1994-10-19 申时）——食神制杀·原局四方有力·好命不怕大运 ──
+    // 事实：2020 庚子年（丙子运）抖音卖体育用品发财千万；现为老师，父教授亦教体育。
+
+    @Test
+    fun `案一百零一 乾 甲戌甲戌戊寅庚申 两甲叠透通根进气 杀旺贴身两戌实土足以食制 地支制杀也好 原局四方有力走什么运都没事 庚子年发财千万`() {
+        val bazi = chart(1994, 10, 19, 16)
+        assertTrue(bazi.fullBazi.startsWith("甲戌 甲戌 戊寅 庚申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue(
+            "阳年乾造顺行：乙亥2001 丙子2011 丁丑2021 戊寅2031",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("乙亥(2001)", "丙子(2011)", "丁丑(2021)", "戊寅(2031)"),
+        )
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("食神制杀格——用神庚金食神（坐申禄）", jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA && jb.yongShenElement == Element.METAL)
+        assertTrue("原局四方有力注：甲坐戌月进气相当于坐一个辰、两戌实土足以食制（不属于身弱）、地支制杀也好、艮坤怕冲宜静让位于杀旺必制",
+            jb.quYongBasis.contains("相当于坐一个辰") && jb.quYongBasis.contains("足以食神制杀") &&
+                jb.quYongBasis.contains("地支制杀也好") && jb.quYongBasis.contains("若在艮坤，怕冲宜静"))
+        assertTrue("好命不怕大运：走什么运都没事（水化金有两戌生着、木旺金也有力——天生富贵命；若没有两戌杀旺走木运就不行）",
+            jb.quYongBasis.contains("走什么运都没事") && jb.quYongBasis.contains("天生的富贵命") &&
+                jb.quYongBasis.contains("再走木运就不行了"))
+        assertTrue("庚子年发财千万应期＋庚金经络寅申瑜伽体育取象",
+            jb.quYongBasis.contains("庚子年发大财") && jb.quYongBasis.contains("抖音卖体育用品") &&
+                jb.quYongBasis.contains("经络"))
+
+        // 运：财星到＝食神生财发财（子水/壬干★吉覆写——杀已被制财来即富）
+        assertTrue("丙子运子水财星——食神生财发财★", jb.yuns[1].items.any { it.action.contains("食神生财") && it.action.contains("发财千万") })
+
+        // 双引擎对照（双引擎铁律）：老引擎建禄格用甲七杀配庚食神（食神制杀·成中有败）——双引擎同向食制线，分歧仅在成败判定
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎建禄格食神制杀（同向——金镖门清·贵命 vs 老引擎成中有败）",
+            old.geJuName.contains("建禄格") && old.xiangShenRole.contains("食神制杀"))
+    }
+
     // ── 双引擎铁律：带有事实的案例同时走老引擎 ──
 
     @Test

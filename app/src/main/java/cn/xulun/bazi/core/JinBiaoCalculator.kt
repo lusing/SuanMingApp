@@ -1142,9 +1142,22 @@ object JinBiaoCalculator {
                     shiS >= FOLLOW_MIN_SCORE &&
                     (hasBenQiRoot(bazi, biEl) || (bazi.dayPillar.branch.element == yinEl && yinS > guanS)) -> Choice(
                     JinBiaoQuYongWay.ZHI_SHA, shiEl,
-                    "食神制杀格（案四十八·身旺杀旺可制）：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}。" +
-                        "食神制杀条件第一条：日主必须有根气（印得局生身亦是依）——无根无气者承载不了食神之泄（食神制杀反贫夭、负债）；日主得根气，承载得动食神之泄，食神制杀得富贵。" +
-                        "格局高低看杀之强弱存续：杀旺可制不贫夭——官贵之格（官二代、处长之子之属）；杀之根被拔克绝（制杀太过——子午冲根之属）则落普通人之列",
+                    buildString {
+                        append("食神制杀格（案四十八·身旺杀旺可制）：官党力 ${format(guanS)} 旺（有本气根）、财不滋官（财党力${format(caiS)}）——必用食伤制杀制官（官不一定不可以制）；食伤党力 ${format(shiS)}。")
+                        append("食神制杀条件第一条：日主必须有根气（印得局生身亦是依）——无根无气者承载不了食神之泄（食神制杀反贫夭、负债）；日主得根气，承载得动食神之泄，食神制杀得富贵。")
+                        append("格局高低看杀之强弱存续：杀旺可制不贫夭——官贵之格（官二代、处长之子之属）；杀之根被拔克绝（制杀太过——子午冲根之属）则落普通人之列")
+                        // 案一百零一·两杀叠透通根＋进气＋两戌实根：地支制杀也好；原局四方有力——好命不怕大运
+                        val benQiGen101 = bazi.branches.count { it.element == biEl }
+                        if (benQiGen101 >= 2 && hasBenQiRoot(bazi, shiEl) &&
+                            ((guanEl == Element.WOOD && monthBranch == EarthlyBranch.XU) ||
+                                (guanEl == Element.FIRE && monthBranch == EarthlyBranch.CHOU) ||
+                                (guanEl == Element.METAL && monthBranch == EarthlyBranch.CHEN) ||
+                                (guanEl == Element.WATER && monthBranch == EarthlyBranch.WEI)) &&
+                            LIU_CHONG[bazi.dayPillar.branch]?.let { it in bazi.branches && it.element == shiEl } == true
+                        ) {
+                            append("。**食神制杀·原局四方有力（案一百零一）**：${guanEl.chinese}杀叠透通根${if (bazi.branches.any { it.element == guanEl }) "寅" else ""}——有力；**${guanEl.chinese}坐${monthBranch.chinese}月进气——更有力量，怎么说也相当于坐一个辰**（进气之力≈余气库之根）；杀旺贴身克我，然**日主通根${benQiGen101}个${biEl.chinese}实土——足以食神制杀（这不属于身弱——两个实的土）**：这人就有层次了。**地支制杀也好**（${LIU_CHONG[bazi.dayPillar.branch]!!.chinese}贴冲${bazi.dayPillar.branch.chinese}＝食冲杀之根——地支制杀成立；口诀「**若在艮坤，怕冲宜静**」——戊坐寅／申不喜冲战，**然杀旺必须要制杀：口诀让位于生克力量**）。**原局四方有力——好命就不怕大运，走什么运都没事**：走水运化了${shiEl.chinese}金——有${biEl.chinese}生着也有劲；走寅卯${guanEl.chinese}旺——金也是有力的：**天生的富贵命**（若没有两${biEl.chinese}实根——完全是杀旺，再走木运就不行了；原局非常有力，走什么都没问题）。**应期入档：子水运庚子年发大财**（食神透干＋财星到位——抖音卖体育用品发财千万）。**取象：${shiEl.chinese}金是经络——${shiEl.chinese}${guanEl.chinese}与寅申之间的关系＝瑜伽／健身／体育之属**（做瑜伽健身教练的多有寅申冲——如木生火之服装理发）")
+                        }
+                    },
                 )
                 // 第十讲·伤官喜官（案四十九）：身旺伤官生财、财被比劫夺、官克比劫救财——用神转官，
                 // 伤官格可以见官（非祸百端而喜官）——破「金水伤官喜见官、土金伤官忌见官」之市面口诀，一切以喜用定。
@@ -1569,7 +1582,13 @@ object JinBiaoCalculator {
                                 "**羊刃肆逞**（刃当令带印生〔带源头的羊刃〕＋飞刃透干〔羊刃飞到天上叫飞刃〕——贴着财克，远重于普通劫）而**无官杀制刃——没有这个功能：大运走的再好，也生不出来儿子**。财旺没错（还有食伤生财——俩人都旺）——**但财旺只代表财富还可以：财就是我的精卵、是我的气血——羊刃给我捣乱、破坏成分，就生不出来**。" +
                                     "**投胎论：申酉这俩儿子都过来投胎来了，但地支都是劫的——在我这待不住：生的也得流产，或者说童子命、或早年克子——只要他生了，肯定要克子的。没有这个功能，即使生了也得没了**（对勘案七十三：异性小刀轻克——没那么严重；本案羊刃带源飞刃——功能废）")
                             guanS >= GUAN_WANG || bazi.stems.anyIndexed { i, s -> i != 2 && s.element == guanEl && bazi.branches[i].element == guanEl } -> ZN(guanEl, true, false,
-                                "身旺财为子（财没露）而**比劫夺财**——官杀克劫解放财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**。**暗克非冲不拔根**（如午亥之克——不是贴身的冲克：若亥换成子才叫拔根，午亥只作丁根弱论）；食神克官而**印贴克食神护官（把官给解放了）——百分之百有儿子**；再走官地（南方）之运——**直接锁定不可能没儿子（富贵得子）**。**不但生儿子，儿子也有出息**：印看住伤官＝给儿子一护卫（好条件、留遗产、教学习——捣乱儿子的东西全被印克了，儿子得福气）；**印护官主要关系事业**（身旺用官、印看食伤不使犯官——走官地事业发财）。**辟谬**：穿一下变女孩、阳男阴女之说——与生男生女无关（案八十二）")
+                                run {
+                                    val yinTieShi82 = bazi.stems.indices.any { i -> i != 2 && bazi.stems[i].element == yinEl &&
+                                        bazi.stems.indices.any { j -> j != 2 && bazi.stems[j].element == shiEl && kotlin.math.abs(j - i) == 1 } }
+                                    "身旺财为子（财没露）而**比劫夺财**——官杀克劫解放财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**。**暗克非冲不拔根**（如午亥之克——不是贴身的冲克：若亥换成子才叫拔根，午亥只作丁根弱论）" +
+                                        (if (yinTieShi82) "；食神克官而**印贴克食神护官（把官给解放了）——百分之百有儿子**；再走官地（南方）之运——**直接锁定不可能没儿子（富贵得子）**。**不但生儿子，儿子也有出息**：印看住伤官＝给儿子一护卫（好条件、留遗产、教学习——捣乱儿子的东西全被印克了，儿子得福气）；**印护官主要关系事业**（身旺用官、印看食伤不使犯官——走官地事业发财）" else "；怕食地——食伤制官杀来捣乱（印不透干：无护官之神，食伤旺地损子）") +
+                                        "。**辟谬**：穿一下变女孩、阳男阴女之说——与生男生女无关（案八十二）"
+                                })
                             // 案七十二·明暗子星＋信号投胎论：官透而虚（甚至被化）然无贴克——儿子在这飘着等投胎：
                             // 看大运（运帮子星＝接收得到信号就能生；运全克子星＝接收不到、生不出来；
                             // 贴克则不看运——功能废吃药也不管事）。明以官杀为子，暗仍以财星为子（官为护财而设）
@@ -2116,6 +2135,7 @@ object JinBiaoCalculator {
             },
             jia98 = choice.way == JinBiaoQuYongWay.KUN_LUN && kunLunEl == biEl &&
                 bazi.stems.any { it != dayMaster && it.element == Element.entries.first { e -> e.controls == kunLunEl } },
+            zhiShaCai = choice.way == JinBiaoQuYongWay.ZHI_SHA && strength == DayStrength.STRONG,
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -2466,6 +2486,7 @@ object JinBiaoCalculator {
         val xiShenEl: Element? = null,         // 喜神（生用神之源）——运支填其三合拱局＝喜神变旺
         val quGuaGan: HeavenlyStem? = null,    // 案九十六：去寡局所去之官杀透干——运干同性克之＝去尽（伤官伤尽始为奇）
         val jia98: Boolean = false,            // 案九十八：昆仑顺局而透克神（两土皆病）——运干食伤到＝去病（稍好）；支火土助病＝坏事多
+        val zhiShaCai: Boolean = false,        // 案一百零一：食神制杀身旺局——财星到＝食神生财（发财，杀已被制财来即富）
     )
 
     /** 阳干羊刃支（甲刃卯、丙戊刃午、庚刃酉、壬刃子；阴干无刃）。 */
@@ -2634,6 +2655,9 @@ object JinBiaoCalculator {
                         trio.all { it == zhi || it in chartBranches } && !trio.all { it in chartBranches } }
                 val note = when {
                     heChong -> "运支${zhi.chinese}合去冲神${ctx.chongShen!!.chinese}——用神绝处逢生，彻底有情（把印绶救起来了）"
+                    // 案一百零一·食神制杀身旺局：财星到＝食神生财——发财（杀已被制，财来即富）
+                    ctx.zhiShaCai && el == ctx.caiEl ->
+                        "食神生财——**发财之运／应财之年**（杀已被制，财来即富——案一百零一：丙子运庚子年抖音卖体育用品发财千万）"
                     // 案九十八·昆仑透克神之病局：运干食伤到＝去病（大运来了食神才能去寡）——
                     // 然支火土助病：来了木也不管事，稍微有点好事、坏事多（总体过得非常差）
                     i == 0 && ctx.jia98 && ganEl == ctx.yongEl.generates ->
@@ -2669,7 +2693,7 @@ object JinBiaoCalculator {
                     element = el,
                     stance = stance,
                     action = act + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
-                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen || tianGong || tianShiJu || yongKuYun || xiTianGong95,
+                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen || tianGong || tianShiJu || yongKuYun || xiTianGong95 || (ctx.zhiShaCai && el == ctx.caiEl),
                     pingOverride = huaSha != null && huaSha.first == false,
                     xiongOverride = fanWang || zhiDuo || sanHeCheng || biJianGen || haiSiQuHuo,
                 )
