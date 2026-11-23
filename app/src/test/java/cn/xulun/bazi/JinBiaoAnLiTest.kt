@@ -3386,4 +3386,48 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎正财格成中有败（相神戊逢癸合）——用辛财（同向用财）",
             old.geJuName.contains("正财格") && old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_CAI)
     }
+
+    // ── 案一百一十七 · 辛卯 辛卯 辛卯 辛卯（乾，卯时）——干多不如支重·财旺不载·四辛不能从财 ──
+    // 排盘口径：此四柱在两个辛卯年的卯月各有一天（1831-03-21、1891-03-06）——年份待用户/师定；不断言起运年。
+    @Test
+    fun `案一百一十七 乾 四辛卯 干多不如支重辛金地支不载承载不了这么旺的财 四辛不能从财 身弱无印仍取比劫然用神无力 好运仅温饱 晚婚克妻离婚 不能有儿子运补暂生运过损子 去掉两辛则从财好命`() {
+        val bazi = chart(1891, 3, 6, 6)
+        assertTrue(bazi.fullBazi.startsWith("辛卯 辛卯 辛卯 辛卯"))
+        assertTrue("同四柱亦见于 1831-03-21 卯时", chart(1831, 3, 21, 6).fullBazi.startsWith("辛卯 辛卯 辛卯 辛卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：庚寅 己丑 戊子 丁亥",
+            daYun.yuns.take(4).map { it.pillar.fullName } == listOf("庚寅", "己丑", "戊子", "丁亥"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱不从财（四辛——比劫透干多）；身弱无印仍取比劫——然用神无根无力",
+            jb.strength == DayStrength.WEAK && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE &&
+                jb.yongShenElement == Element.METAL && jb.health.level == JinBiaoHealth.WU_QI &&
+                jb.strengthBasis.contains("干多不如支重"))
+        assertTrue("取用依据：地支不载、承载不了、晚婚、克妻离婚、不能有儿子、走好运仅温饱、不能从财、反事实去两辛则从财、对比力量",
+            jb.quYongBasis.contains("地支不载") && jb.quYongBasis.contains("承载不了这么旺的") &&
+                jb.quYongBasis.contains("晚婚") && jb.quYongBasis.contains("克妻离婚") &&
+                jb.quYongBasis.contains("不能有儿子") && jb.quYongBasis.contains("也就是个温饱") &&
+                jb.quYongBasis.contains("不能从财") && jb.quYongBasis.contains("去掉两个") &&
+                jb.quYongBasis.contains("以不变应万遍") && jb.quYongBasis.contains("用神无力"))
+        assertTrue("清浊：清枯（走好运也仅温饱——档位为落地映射）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING_KU && jb.qingZhuoBasis.contains("走好运也仅温饱"))
+        assertTrue("子女：必无儿——纵印运生子，运过子没或离婚子跟对方",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER &&
+                jb.ziNv!!.basis.contains("不能有儿子") && jb.ziNv!!.basis.contains("好运过去儿子也得没了"))
+        assertTrue("运：己丑好运亦仅温饱（中平）；丁亥凶",
+            jb.yuns[1].verdict == JinBiaoVerdict.PING && jb.yuns[3].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("断语直断", jb.duanYu.contains("晚婚、克妻离婚") && jb.duanYu.contains("走好运也仅温饱"))
+        // 反事实（师）：去掉两个辛——从财好命（合成盘校验）
+        val two = BaziResult(
+            yearPillar = Pillar(HeavenlyStem.GUI, EarthlyBranch.MAO),
+            monthPillar = Pillar(HeavenlyStem.XIN, EarthlyBranch.MAO),
+            dayPillar = Pillar(HeavenlyStem.XIN, EarthlyBranch.MAO),
+            hourPillar = Pillar(HeavenlyStem.GUI, EarthlyBranch.MAO),
+            birthDateTime = LocalDateTime.of(1891, 3, 6, 6, 0),
+        )
+        val jt = JinBiaoCalculator.analyze(two, null, Gender.MALE)
+        assertTrue("反事实：日主外只剩一个比劫——弱极微浮从财",
+            jt.ruoJi && jt.quYongWay == JinBiaoQuYongWay.SUI_CAI && jt.yongShenElement == Element.WOOD)
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎偏财格身弱败格（比劫夺财）——同向", old.geJuName.contains("偏财格") && old.chengBai.chinese.contains("败格"))
+    }
 }
