@@ -3181,4 +3181,38 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎伤官格用乙伤官配丙财成中有败（同向身强）", old.geJuName.contains("伤官格"))
     }
+
+    // ── 案一百一十一 · 辛未 乙未 庚辰 丁亥（乾，亥时）——印旺身旺用官·财生出官·螳螂捕蝉黄雀在后 ──
+    // 排盘口径：此四柱在两个辛未年的未月各有一天（1991-07-09、1931-07-24）——年份待用户/师定；两盘四柱与大运干支序相同，
+    // 故锚点不断言大运起运年。
+    @Test
+    fun `案一百一十一 乾 辛未乙未庚辰丁亥 印旺身旺不因拱财引化翻弱 用官不用食伤丁亥自合不碍官 劫贴克财就财论无子 财生出官有儿子生得费劲 事业还好当官`() {
+        val bazi = chart(1991, 7, 9, 22)
+        assertTrue(bazi.fullBazi.startsWith("辛未 乙未 庚辰 丁亥"))
+        assertTrue("同四柱亦见于 1931-07-24 亥时", chart(1931, 7, 24, 22).fullBazi.startsWith("辛未 乙未 庚辰 丁亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：甲午 癸巳 壬辰 辛卯",
+            daYun.yuns.take(4).map { it.pillar.fullName } == listOf("甲午", "癸巳", "壬辰", "辛卯"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("印旺身旺——坐下辰印贴身生，不因亥未拱财引化翻弱（案九十三档让位）",
+            jb.strength == DayStrength.STRONG && jb.strengthBasis.contains("印旺身旺") && jb.strengthBasis.contains("亦不翻弱"))
+        assertTrue("用官（财官）——不是用印、不是用财、不用食伤",
+            jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.FIRE)
+        assertTrue("就财论没儿子；螳螂捕蝉黄雀在后——财生出官；用神是官不是用财；克不尽；挨着层次更高；这局不用食伤；官坐其上不碍官；当官",
+            jb.quYongBasis.contains("就财论是没儿子的") && jb.quYongBasis.contains("螳螂捕蝉黄雀在后") &&
+                jb.quYongBasis.contains("用神是官、不是用财") && jb.quYongBasis.contains("不是说克一下就没了") &&
+                jb.quYongBasis.contains("挨着层次更高") && jb.quYongBasis.contains("这局不用食伤") &&
+                jb.quYongBasis.contains("不碍官") && jb.quYongBasis.contains("当官"))
+        assertTrue("丁亥自合不碍官：亥被土克着没力量、跟木一伙且润土养木",
+            jb.health.supports.any { it.contains("自合") && it.contains("克着没力量") && it.contains("不碍") })
+        assertTrue("子女：必有儿——子星官（财生出官），生得费劲",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER &&
+                jb.ziNv!!.ziXing == cn.xulun.bazi.model.TenGod.ZHENG_GUAN &&
+                jb.ziNv!!.basis.contains("财生出官来了") && jb.ziNv!!.basis.contains("生儿子挺费劲"))
+        assertTrue("运：辛卯运卯填拱——用官局作财旺生官（不作案八十四财气通门户论）",
+            jb.yuns[3].items.any { it.action.contains("财旺生官") } &&
+                jb.yuns[3].items.none { it.action.contains("财气通门户应期") })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正官格财生官成格（与师断同向）", old.geJuName.contains("正官格") && old.xiangShenRole.contains("财生官"))
+    }
 }
