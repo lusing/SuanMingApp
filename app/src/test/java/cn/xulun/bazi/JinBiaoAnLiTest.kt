@@ -3352,4 +3352,38 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎建禄格身强成格——用辛财（同向用财）",
             old.geJuName.contains("建禄格") && old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_CAI)
     }
+
+    // ── 案一百一十六 · 戊辰 辛酉 丙午 癸巳（乾，巳时）——羊刃自旺承载食伤生财·旺者冲衰衰者拔·牢狱首条 ──
+    // 排盘口径：此四柱唯 1868-09-17 巳时（清同治七年——与案一百零九同为戊辰年；另 2048-10-03 同柱尚未出生）。
+    @Test
+    fun `案一百一十六 乾 戊辰辛酉丙午癸巳 自坐羊刃配巳禄身旺承载食伤生财 癸露巳上为病无木生身 子运癸得根克巳子午冲拔午旺者冲衰衰者拔蹲大牢 干头甲生我被金克关系不大 丑运巳酉丑化金湿土晦火不好 木火运大财 地支有寅来子都没事`() {
+        val bazi = chart(1868, 9, 17, 10)
+        assertTrue(bazi.fullBazi.startsWith("戊辰 辛酉 丙午 癸巳"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：壬戌1875 癸亥1885 甲子1895 乙丑1905",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬戌(1875)", "癸亥(1885)", "甲子(1895)", "乙丑(1905)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺——羊刃自旺（自坐午刃、又配巳禄），用财承载食伤生财",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI &&
+                jb.yongShenElement == Element.METAL && jb.strengthBasis.contains("羊刃自旺"))
+        assertTrue("癸露巳上为病；无木生身——身旺亦怕财党官杀；旺者冲衰衰者拔；官杀拔根——蹲大牢；湿土晦火；地支有寅来子都没事",
+            jb.quYongBasis.contains("就是个隐患是个病") && jb.quYongBasis.contains("稍微还是有点偏弱") &&
+                jb.quYongBasis.contains("旺者冲衰衰者拔") && jb.quYongBasis.contains("蹲大牢") &&
+                jb.quYongBasis.contains("湿土晦火") && jb.quYongBasis.contains("来子都没事"))
+        assertTrue("运：甲子——凶（子：癸得根克巳、子午冲拔午——牢狱；甲：生我被金克、关系大在午被拔）",
+            jb.yuns[2].verdict == JinBiaoVerdict.XIONG &&
+                jb.yuns[2].items[1].action.contains("午被拔了没根就完了") && jb.yuns[2].items[1].action.contains("蹲大牢") &&
+                jb.yuns[2].items[0].action.contains("关系大在午被拔"))
+        assertTrue("运：乙丑——凶（巳酉丑化金而丑泄／穿午——湿土晦火）；不再作去刃病吉论",
+            jb.yuns[3].verdict == JinBiaoVerdict.XIONG &&
+                jb.yuns[3].items[1].action.contains("巳酉丑化金") && jb.yuns[3].items[1].action.contains("湿土晦火") &&
+                jb.yuns[3].items.none { it.action.contains("去掉这个病") })
+        assertTrue("运：丙寅、丁卯——吉（木火运——大财）",
+            jb.yuns[4].verdict == JinBiaoVerdict.JI && jb.yuns[5].verdict == JinBiaoVerdict.JI &&
+                jb.yuns[4].items.any { it.action.contains("来木运就是好运") } && jb.yuns[4].items.any { it.action.contains("承载之运") })
+        assertTrue("断语：羊刃自旺承载食伤生财之命", jb.duanYu.contains("羊刃自旺承载食伤生财之命"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正财格成中有败（相神戊逢癸合）——用辛财（同向用财）",
+            old.geJuName.contains("正财格") && old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_CAI)
+    }
 }
