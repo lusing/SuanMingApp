@@ -3319,4 +3319,37 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎七杀格身强成格（食神制杀）——以杀为用，与师断弃杀用财分歧",
             old.geJuName.contains("七杀格") && old.xiangShenRole.contains("食神制杀"))
     }
+
+    // ── 案一百一十五 · 庚寅 辛巳 丙寅 辛卯（乾，卯时）——身旺印旺用财坏印·财透无根·暗冲暗会定发财大小 ──
+    // 排盘口径：此四柱在两个庚寅年的巳月各有一天（1950-05-31、2010-05-16）——年份待用户/师定；不断言起运年。
+    @Test
+    fun `案一百一十五 乾 庚寅辛巳丙寅辛卯 身旺印旺用财坏印 财三透无根巳跟木火一伙根之向背 去寡只论官杀 用之为财不可劫 申运暗冲寅暗会巳发大财 酉运也能发财不如申 暗冲暗会定发财大小`() {
+        val bazi = chart(1950, 5, 31, 6)
+        assertTrue(bazi.fullBazi.startsWith("庚寅 辛巳 丙寅 辛卯"))
+        assertTrue("同四柱亦见于 2010-05-16 卯时", chart(2010, 5, 16, 6).fullBazi.startsWith("庚寅 辛巳 丙寅 辛卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：壬午 癸未 甲申 乙酉",
+            daYun.yuns.take(4).map { it.pillar.fullName } == listOf("壬午", "癸未", "甲申", "乙酉"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺——印旺用财坏印",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.HUAI_YIN &&
+                jb.yongShenElement == Element.METAL && jb.strengthBasis.contains("身旺印旺"))
+        assertTrue("财三透无根：巳是根没错，但巳跟木火一伙——根之向背",
+            jb.health.level == JinBiaoHealth.WU_QI && jb.health.rootNote.startsWith("无根虚浮") &&
+                jb.health.rootNote.contains("根之向背"))
+        assertTrue("取用依据：没根、巳还是跟木火一伙了、去寡只论官杀、用之为财不可劫、暗冲暗会尤为喜、暗冲暗会定发财大小",
+            jb.quYongBasis.contains("但没根") && jb.quYongBasis.contains("巳还是跟木火一伙了") &&
+                jb.quYongBasis.contains("去寡只论官杀") && jb.quYongBasis.contains("用之为财不可劫") &&
+                jb.quYongBasis.contains("暗冲暗会尤为喜") && jb.quYongBasis.contains("暗冲暗会定发财大小") &&
+                jb.quYongBasis.contains("酉运也能发财，不如申"))
+        assertTrue("运：甲申——暗冲寅去印病＋暗会巳，发大财（吉）",
+            jb.yuns[2].verdict == JinBiaoVerdict.JI &&
+                jb.yuns[2].items.any { it.action.contains("暗冲病支寅") && it.action.contains("暗会巳") && it.action.contains("发大财") })
+        assertTrue("运：乙酉——暗冲卯，也能发财、不如申（吉）",
+            jb.yuns[3].verdict == JinBiaoVerdict.JI &&
+                jb.yuns[3].items.any { it.action.contains("暗冲病支卯") && it.action.contains("也能发财") })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎建禄格身强成格——用辛财（同向用财）",
+            old.geJuName.contains("建禄格") && old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_CAI)
+    }
 }

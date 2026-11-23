@@ -789,6 +789,14 @@ object JinBiaoCalculator {
             } &&
             bazi.stems.none { it != dayMaster && it.element == caiEl } &&
             bazi.branches.any { br -> br.element == shiEl && branchHiddenStems.getValue(br).any { it.element == caiEl } }
+        // 案一百一十五·身旺印旺用财坏印而财无根（建禄＋印本气支≥3、财透≥2 而无本气根、无官、食伤不透）——
+        // 藏根之支向背不从我（巳跟木火一伙）：去寡只论官杀；运支暗冲印病＝发大财
+        val anCaiWuGen115 = strength == DayStrength.STRONG && !ruoJi && !wangJi && !qiangJi &&
+            bazi.monthPillar.branch == luZhi &&
+            bazi.branches.count { it.element == yinEl } >= 3 &&
+            bazi.stems.count { it != dayMaster && it.element == caiEl } >= 2 &&
+            !hasBenQiRoot(bazi, caiEl) && guanS == 0.0 &&
+            bazi.stems.none { it != dayMaster && it.element == shiEl }
 
         val choice: Choice = when {
             // 第三讲·弱极从势：命里谁旺即随谁；无明显独大而财官食并存者，必要财运解围
@@ -1561,8 +1569,32 @@ object JinBiaoCalculator {
                 yinS >= YIN_HUAI && (caiZai || bazi.stems.count { it != dayMaster && it.element == caiEl } >= 2) -> Choice(
                     JinBiaoQuYongWay.HUAI_YIN, caiEl,
                     buildString {
-                        append("正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用而官食俱不可用——必用财星坏印（财党力 ${format(caiS)}，${if (caiZai) "地支有载" else "双透得气"}）。")
+                        append("正格五理·印可配官煞（身旺印坏）：印党力 ${format(yinS)} 起坏作用而官食俱不可用——必用财星坏印（财党力 ${format(caiS)}，${if (caiZai) "地支有载" else if (anCaiWuGen115) "透而无根" else "双透得气"}）。")
                         append("身足够旺——**喜财坏印，财好大家都好**（财官就是机会：身板够硬就差机会）；财富值取决于用神财之力（案六十一）")
+                    // 案一百一十五·身旺印旺用财坏印而财无根：藏根之支向背不从我（巳跟木火一伙）；
+                    // 去寡只论官杀不论财（「用之为财不可劫」玄机在「用」字）；运：申暗冲暗会发大财＞酉
+                    if (anCaiWuGen115) {
+                        val keCai = Element.entries.first { it.controls == caiEl }
+                        val shengKeCai = Element.entries.first { it.generates == keCai }
+                        val xiangBei = bazi.branches.filter { br ->
+                            br.element == keCai && branchHiddenStems.getValue(br).any { it.element == caiEl }
+                        }.distinct()
+                        val yinZhis = bazi.branches.filter { it.element == yinEl }.distinct()
+                        val chongZhis = yinZhis.map { LIU_CHONG[it]!! }.distinct()
+                        val zhu = chongZhis.maxByOrNull { z -> bazi.branches.count { LIU_CHONG[it] == z } }!!
+                        val zhuBing = bazi.branches.filter { LIU_CHONG[it] == zhu }.joinToString("") { it.chinese }
+                        val anHui = bazi.branches.firstOrNull { LIU_HE[it] == zhu }
+                        val ci = chongZhis.filter { it != zhu }.joinToString("、") { it.chinese }
+                        append("。**身旺印旺，用财来坏印（案一百一十五）**：天干透${bazi.stems.count { it != dayMaster && it.element == caiEl }}个${caiEl.chinese}财但没根——" +
+                            (xiangBei.takeIf { it.isNotEmpty() }?.let { xs ->
+                                "${xs.joinToString("、") { it.chinese }}中虽有${caiEl.chinese}，然地支${shengKeCai.chinese}${keCai.chinese}两旺、${keCai.chinese}当令、还有${shengKeCai.chinese}生${keCai.chinese}：**${xs.joinToString("、") { it.chinese }}还是跟${shengKeCai.chinese}${keCai.chinese}一伙了**（${xs.joinToString("、") { it.chinese }}是根没错——${shengKeCai.chinese}${keCai.chinese}旺还能说${xs.joinToString("、") { it.chinese }}是${caiEl.chinese}的根吗？**根之向背**：得分析跟谁是一伙的）；"
+                            } ?: "") +
+                            "**去寡只论官杀——没有说财还要去寡的**（除非不用财）：此命用财，有比劫就不行了（比劫见财必破财）——「**用之为财不可劫**」，玄机在于一个「用」字。运：「**暗冲暗会尤为喜，彼冲我兮皆冲起**」——${zhu.chinese}运暗冲病支${zhuBing}（去印旺之病）" +
+                            (anHui?.let { "＋暗会${it.chinese}（${it.chinese}${zhu.chinese}合）" } ?: "") +
+                            "——**把病去了发大财**" +
+                            (if (ci.isNotEmpty()) "；${ci}运也能发财，不如${zhu.chinese}" else "") +
+                            "；走${caiEl.chinese}得根之运发财——没暗冲也能得财，不大。**暗冲暗会定发财大小**（有的命来好运如枯苗得雨、有的发财费劲——差在有没有暗冲暗会）")
+                    }
                         // 案一百零三·印旺得局用财（调候让位为加分项）
                         if (geJuZu103) {
                             append("。**印旺得局用财·暖为锦上添花（案一百零三）**：${monthBranch.chinese}月${yinEl.chinese}印得局（${if (sanHuiSanLiuHeNote.isNotEmpty()) "三会" else "会局"}）肯定印旺——印旺要用的配置就是**财来坏印**；无${guanEl.chinese}官可用，${caiEl.chinese}财**通两根有力还是能克${yinEl.chinese}的——只能用财：财星有力就是个好命**。**寒木向阳——锦上添花**：${shiEl.chinese}生${caiEl.chinese}（财有源头）兼暖局——**有火当局长、无火（午换戌）也当正科：半级之差——不是没有火就不行**；**暖不是命局的命根子**（喜欢暖但不依赖暖——命局不依赖暖、土有力自立；对勘案六三「一切以寒暖为规范」——那是命局全靠调候之局）。**哪有去暖的？没听说过的东西不要自己搞开发——问题的关键点在于用神${caiEl.chinese}**")
@@ -2018,6 +2050,11 @@ object JinBiaoCalculator {
             liangRen110 = liangRen110 && choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI,
             bingZhi113 = shiSanHe113?.first?.getOrNull(1)?.takeIf { choice.way == JinBiaoQuYongWay.GUO_XIE_QIU_YIN },
             bingZhi114 = bazi.dayPillar.branch.takeIf { anCai114 && choice.way == JinBiaoQuYongWay.SHI_CAI_YONG_CAI },
+            bingZhis115 = if (anCaiWuGen115 && choice.way == JinBiaoQuYongWay.HUAI_YIN) {
+                bazi.branches.filter { it.element == yinEl }.distinct()
+            } else {
+                emptyList()
+            },
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -2040,9 +2077,11 @@ object JinBiaoCalculator {
         }
         val yunPings = daYun?.yuns?.mapIndexed { idx, yun ->
             // 案十一：身弱用印局行印比连行方局（南方火印地）——整运作吉（杀旺印旺身衰补起，富贵）
+            // 案一百一十五：身旺印旺用财坏印——运支暗冲印病（申冲寅、酉冲卯）整运作吉（把病去了发大财——师断「走申运发了大财」）
             pingYun(
                 bazi.branches, yun.pillar, yun.startAge, yun.startYear, ctx, bureauOverride[idx],
-                forceJI = choice.way == JinBiaoQuYongWay.HUA_SHA && bureauOverride[idx] != null,
+                forceJI = (choice.way == JinBiaoQuYongWay.HUA_SHA && bureauOverride[idx] != null) ||
+                    ctx.bingZhis115.any { LIU_CHONG[yun.pillar.branch] == it },
             )
         }
 
@@ -2167,6 +2206,11 @@ object JinBiaoCalculator {
                 } else {
                     ""
                 }) +
+                (if (anCaiWuGen115) {
+                    "；**身旺印旺——用财坏印**（建禄通根、${yinEl.chinese}印三支；财透而无根——藏根之支向背不从我；案一百一十五）"
+                } else {
+                    ""
+                }) +
                 (if (strength == DayStrength.WEAK &&
                     ((biEl == Element.WOOD && monthBranch == EarthlyBranch.XU) ||
                         (biEl == Element.FIRE && monthBranch == EarthlyBranch.CHOU) ||
@@ -2259,8 +2303,16 @@ object JinBiaoCalculator {
     /** 用神健全度：通根 → 得扶 → 受伤（克/泄/耗/冲/合绊）。 */
     private fun assessHealth(bazi: BaziResult, dayMaster: HeavenlyStem, yongEl: Element): JinBiaoYongShenHealth {
         val benQiRoots = bazi.branches.filter { it.element == yongEl }
+        // 案一百一十五·根之向背：藏干根之支本气克用神，而其五行当令、地支有其生源成党（火当令、木生火——木火两旺）
+        // ——此支「跟克我者一伙」，不作我根（巳中庚：巳是根没错，但巳跟木火一伙——木火旺还能说巳是金的根吗）
+        val genXiangBei115 = bazi.branches.filter { br ->
+            val el = br.element
+            el != yongEl && el.controls == yongEl && branchHiddenStems.getValue(br).any { it.element == yongEl } &&
+                (bazi.monthPillar.branch.element == el ||
+                    bazi.branches.count { it.element == el || it.element.generates == el } >= 3)
+        }
         val cangRoots = bazi.branches.filter {
-            it.element != yongEl && branchHiddenStems.getValue(it).any { hd -> hd.element == yongEl }
+            it.element != yongEl && branchHiddenStems.getValue(it).any { hd -> hd.element == yongEl } && it !in genXiangBei115
         }
         // 案五十六·三会化根：三会成局而局非用神之党——局内用神本气根/藏根随局走（把比劫都化了——用神无力）
         val sanHuiHuaJu = SAN_HUI_JU.firstOrNull { (bs, _) -> bs.all { it in bazi.branches } }
@@ -2277,11 +2329,18 @@ object JinBiaoCalculator {
             effBenQi.isNotEmpty() -> "通本气根（${effBenQi.joinToString("、") { it.chinese }}）" + (huaJinNote ?: "")
             effCang.isNotEmpty() -> "藏干根（${effCang.joinToString("、") { it.chinese }}）" + (huaJinNote ?: "")
             huaJinNote != null -> "本气根藏根随三会局化尽$huaJinNote"
+            // 案一百一十五·根之向背：藏根之支本气克我而其党当令成势——此根随支向我之敌，不计
+            genXiangBei115.isNotEmpty() ->
+                "无根虚浮（${genXiangBei115.joinToString("、") { it.chinese }}中虽有${yongEl.chinese}——${genXiangBei115.joinToString("、") { it.chinese }}跟${Element.entries.first { e -> e.controls == yongEl }.chinese}一伙：不作${yongEl.chinese}根——根之向背）"
             else -> "无根虚浮"
         }
 
         val supports = mutableListOf<String>()
         val damages = mutableListOf<String>()
+        // 案一百一十五·根之向背：藏根之支本气克我而其党当令成势——此根随支向我之敌（巳中庚：巳跟木火一伙）
+        genXiangBei115.forEach { br ->
+            damages += "${br.chinese}中${yongEl.chinese}根随支向${br.element.chinese}（${br.chinese}是根没错，然${br.chinese}跟${br.element.chinese}一伙——不作${yongEl.chinese}根：根之向背）"
+        }
 
         // 生用/同用之字（不含用神自身首次出现）
         bazi.stems.forEachIndexed { i, st ->
@@ -2426,6 +2485,7 @@ object JinBiaoCalculator {
         val liangRen110: Boolean = false,      // 案一百一十：坐两刃身旺泄秀局——运支冲用神本气根（酉冲卯）＝怕
         val bingZhi113: EarthlyBranch? = null, // 案一百一十三：食伤泄过为病之病支（三合局中神——午）：运支暗冲（子）去病发福最大／克病（亥）次之／穿泄（丑）力最弱
         val bingZhi114: EarthlyBranch? = null, // 案一百一十四：身旺用暗财之病支（坐下印克食伤——卯）：运支暗冲去病＋暗会财局（酉）——更发；合之化比劫（戌）——拱火旺
+        val bingZhis115: List<EarthlyBranch> = emptyList(), // 案一百一十五：身旺印旺用财坏印之病支（印本气支——寅卯）：运支暗冲去病（申冲两寅、酉冲卯）——发大财；兼六合局支者暗会
     )
 
     /** 阳干羊刃支（甲刃卯、丙戊刃午、庚刃酉、壬刃子；阴干无刃）。 */
@@ -2598,6 +2658,12 @@ object JinBiaoCalculator {
                 val anChong114 = bingZhi114 != null && LIU_CHONG[bingZhi114] == zhi
                 val gongBi114 = bingZhi114 != null && !anChong114 && LIU_HE[zhi] == bingZhi114 &&
                     liuHeHuaEl(zhi, bingZhi114) == ctx.biEl
+                // 案一百一十五·暗冲暗会尤为喜（身旺印旺用财坏印）：印本气支为病支——运支冲之去病（发大财）；
+                // 兼与局支六合者「暗会」；冲少者亦能发财、不如冲多者
+                val chongBing115 = if (i == 1) ctx.bingZhis115.filter { LIU_CHONG[zhi] == it } else emptyList()
+                val anChong115 = chongBing115.isNotEmpty()
+                val anHuiZhi115 = chartBranches.firstOrNull { LIU_HE[it] == zhi }
+                val anHui115 = anChong115 && anHuiZhi115 != null
                 // 案九十五·戌丁两运发财（用神得库根／用神透干）＋喜神填拱变旺好运
                 val yongKuYun = i == 1 && ctx.jia95 && ctx.yongKu == zhi
                 val yongTou95 = i == 0 && ctx.jia95 && ganEl == ctx.yongEl
@@ -2616,6 +2682,12 @@ object JinBiaoCalculator {
                         (if (tianGong) "＋暗会${ctx.caiEl.chinese}局（填拱——财局兑现）" else "") +
                         "（**暗冲暗会尤为喜**）：**本来不去病也发，现在再加上去病就更发**（案一百一十四）"
                     gongBi114 -> "运支${zhi.chinese}合日支${ctx.bingZhi114!!.chinese}化${ctx.biEl.chinese}——**拱${ctx.biEl.chinese}旺**（比劫得局夺${ctx.caiEl.chinese}财——财为妻）：**不行，离婚**（案一百一十四）"
+                    // 案一百一十五·暗冲暗会尤为喜：把病去了发大财——暗冲暗会定发财大小
+                    anChong115 -> "运支${zhi.chinese}暗冲病支${chongBing115.joinToString("") { it.chinese }}（${zhi.chinese}${chongBing115.joinToString("") { it.chinese }}冲——去${ctx.yinEl.chinese}旺之病）" +
+                        (anHuiZhi115?.let { "＋暗会${it.chinese}（${it.chinese}${zhi.chinese}合）" } ?: "") +
+                        "（**暗冲暗会尤为喜，彼冲我兮皆冲起**）——**把病去了发大财**" +
+                        (if (chongBing115.size < 2 && !anHui115) "（冲少力轻——也能发财，不如冲多兼暗会之运）" else "") +
+                        "（案一百一十五）"
                     // 案一百一十三·暗冲去病：把病暗冲了，药的力量最大，发福也是最大
                     anChong113 -> "运支${zhi.chinese}暗冲病支${ctx.bingZhi113!!.chinese}（**暗冲暗会尤为喜，彼冲我兮皆冲起**——暗冲就是在地支暗处冲）：**支神只以冲为重——把病暗冲了，药的力量最大，发福也是最大**（案一百一十三）"
                     keBing113 -> "运支${zhi.chinese}克病支${ctx.bingZhi113!!.chinese}——补我日主之气：有效，然不如暗冲（同样是吃药，药跟药有区别——案一百一十三）"
@@ -2675,7 +2747,7 @@ object JinBiaoCalculator {
                     element = if (gongBi114) ctx.biEl else el,
                     stance = if (gongBi114) JinBiaoStance.SUN else stance,
                     action = (if (gongBi114) "克用神" else act) + (note?.let { "·$it" } ?: "") + (if (i == 1) bureauNote else ""),
-                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen || tianGong || tianShiJu || yongKuYun || xiTianGong95 || anChong113 || anChong114 || (ctx.zhiShaCai && el == ctx.caiEl),
+                    favorOverride = huaSha?.first == true || shunXieGan || yinJuBu || heChong || quRenBing || yinHaiFanShen || tianGong || tianShiJu || yongKuYun || xiTianGong95 || anChong113 || anChong114 || anChong115 || (ctx.zhiShaCai && el == ctx.caiEl),
                     // 案一百一十三·穿泄病支（丑穿午）：有效而药力最弱——归中平（映射：师只说「有效果吗？同样是吃药，药跟药有区别」）
                     pingOverride = (huaSha != null && huaSha.first == false) || chuanBing113,
                     xiongOverride = fanWang || zhiDuo || sanHeCheng || biJianGen || haiSiQuHuo || chongYongGen110 || gongBi114,
