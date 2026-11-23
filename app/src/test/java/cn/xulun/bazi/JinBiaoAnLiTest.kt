@@ -3250,4 +3250,38 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎正官格成中有败（官星〔月令〕被冲）——取用同向",
             old.geJuName.contains("正官格") && old.chengBai.chinese.contains("成中有败"))
     }
+
+    // ── 案一百一十三 · 庚戌 乙酉 甲寅 庚午（乾，午时）——食伤泄过为病·要印补身·暗冲暗会尤为喜 ──
+    // 排盘口径：此四柱见 1970-10-01 午时（另 2030-09-16 同柱——尚未出生）。
+    @Test
+    fun `案一百一十三 乾 庚戌乙酉甲寅庚午 金旺当令寅午戌火局泄过身弱 身强方可制之以威 反以泄日主为病要印水补身 量与辨证 暗冲暗会尤为喜 子午暗冲发福最大亥克午次之丑穿午力弱`() {
+        val bazi = chart(1970, 10, 1, 12)
+        assertTrue(bazi.fullBazi.startsWith("庚戌 乙酉 甲寅 庚午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：丙戌1973 丁亥1983 戊子1993",
+            daYun.yuns.take(3).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丙戌(1973)", "丁亥(1983)", "戊子(1993)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱（日主一禄根——不算弱极）", jb.strength == DayStrength.WEAK && !jb.ruoJi)
+        assertTrue("食伤寅午戌泄过——不取食制，要印水补身（原局不现以虚神论）",
+            jb.quYongWay == JinBiaoQuYongWay.GUO_XIE_QIU_YIN && jb.yongShenElement == Element.WATER &&
+                jb.yongShenStars.isEmpty() && jb.xiElements == listOf(Element.METAL, Element.WATER))
+        assertTrue("金旺当令、火局、身强方可制之以威、泄过了、克泄交加、反以泄日主为病、泻药之喻、暗冲暗会尤为喜、药跟药有区别",
+            jb.quYongBasis.contains("身强才可以火制之以威") && jb.quYongBasis.contains("寅午戌泄过了") &&
+                jb.quYongBasis.contains("克泄交加") && jb.quYongBasis.contains("反以泄日主为病") &&
+                jb.quYongBasis.contains("泻药吃多了要拉肚子") && jb.quYongBasis.contains("暗冲暗会尤为喜") &&
+                jb.quYongBasis.contains("药跟药有区别"))
+        assertTrue("不再出「以食伤强制——定是贫穷汉」之断", !jb.duanYu.contains("定是贫穷汉"))
+        assertTrue("清浊：半浊半清（病在而待药——档位为落地映射）",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("泄日主过甚为病"))
+        assertTrue("运：戊子——子午暗冲去病发福最大；丁亥——亥克午有效不如暗冲；己丑——丑穿午药力最弱归中平",
+            jb.yuns[2].items.any { it.action.contains("暗冲病支午") && it.action.contains("发福也是最大") } &&
+                jb.yuns[1].items.any { it.action.contains("克病支午") } &&
+                jb.yuns[3].verdict == JinBiaoVerdict.PING && jb.yuns[3].items.any { it.action.contains("穿病支午") })
+        assertTrue("丙戌助火局之病——凶；壬辰——用神透干不化于支（不作案凶）",
+            jb.yuns[0].verdict == JinBiaoVerdict.XIONG && jb.yuns[0].items[0].action.contains("助火局之病") &&
+                jb.yuns[6].verdict != JinBiaoVerdict.XIONG && jb.yuns[6].items[0].stance == JinBiaoStance.BANG)
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正官格身弱成中有败（官杀混杂）——喜正印（印护官）",
+            old.geJuName.contains("正官格") && old.xiJi.any { it.desc.contains("印护官") })
+    }
 }
