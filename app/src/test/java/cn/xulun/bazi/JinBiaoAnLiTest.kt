@@ -3215,4 +3215,39 @@ class JinBiaoAnLiTest {
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎正官格财生官成格（与师断同向）", old.geJuName.contains("正官格") && old.xiangShenRole.contains("财生官"))
     }
+
+    // ── 案一百一十二 · 辛未 乙未 庚辰 丁丑（乾，丑时）——用官局喜用两伤·两丑未冲拔乙根·克妻损子·上学笨（案一百一十一同盘异时对照） ──
+    // 排盘口径：此四柱在两个辛未年的未月各有一天（1991-07-09、1931-07-24）——年份待用户/师定；不断言起运年。
+    @Test
+    fun `案一百一十二 乾 辛未乙未庚辰丁丑 同样用官丑泄丁 两丑未冲拔乙根辰中乙只值10分 丑未冲克丁 喜用两伤 克妻损子劫刃肆逞离婚 财不行找官官也不行没儿子 劫财见财上学笨笨不笨取决于官星`() {
+        val bazi = chart(1991, 7, 9, 2)
+        assertTrue(bazi.fullBazi.startsWith("辛未 乙未 庚辰 丁丑"))
+        assertTrue("同四柱亦见于 1931-07-24 丑时", chart(1931, 7, 24, 2).fullBazi.startsWith("辛未 乙未 庚辰 丁丑"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：甲午 癸巳 壬辰 辛卯",
+            daYun.yuns.take(4).map { it.pillar.fullName } == listOf("甲午", "癸巳", "壬辰", "辛卯"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺——同样用官",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.PEI_CAI && jb.yongShenElement == Element.FIRE)
+        assertTrue("丑泄丁；两丑未冲乙的根就拔了（上一个辛克乙克不尽）；丑未冲克丁；喜用两伤就完了；只值 10 分；直断克妻损子",
+            jb.quYongBasis.contains("喜用两伤") && jb.quYongBasis.contains("两丑未冲，木的根就拔了") &&
+                jb.quYongBasis.contains("克不尽") && jb.quYongBasis.contains("丑未冲**克火**") &&
+                jb.quYongBasis.contains("只值 10 分") && jb.quYongBasis.contains("直断：克妻损子") &&
+                jb.quYongBasis.contains("劫刃肆逞，离婚") && jb.quYongBasis.contains("官也不行，没儿子"))
+        assertTrue("不再误作案一百一十一「财生出官」／「这局不用食伤」",
+            !jb.quYongBasis.contains("财生出官来了") && !jb.quYongBasis.contains("这局不用食伤"))
+        assertTrue("清浊：清枯（喜用两伤——档位为落地映射）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING_KU && jb.qingZhuoBasis.contains("喜用两伤"))
+        assertTrue("子女：必无儿——身旺财为子，财不行找官，官也不行；劫刃肆逞离婚",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER &&
+                jb.ziNv!!.basis.contains("财不行找官，官也不行") && jb.ziNv!!.basis.contains("只值 10 分") &&
+                jb.ziNv!!.basis.contains("劫刃肆逞"))
+        assertTrue("学历：上学笨——劫财见财的人念书一定笨，笨不笨取决于官星（官代表主见、思路）",
+            jb.xueLi!!.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.SHANG_XUE_BEN &&
+                jb.xueLi!!.basis.contains("念书的时候一定笨") && jb.xueLi!!.basis.contains("官代表主见、思路"))
+        assertTrue("断语直断克妻损子、上学不行", jb.duanYu.contains("克妻损子") && jb.duanYu.contains("上学笨"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正官格成中有败（官星〔月令〕被冲）——取用同向",
+            old.geJuName.contains("正官格") && old.chengBai.chinese.contains("成中有败"))
+    }
 }

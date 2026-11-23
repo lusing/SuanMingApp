@@ -483,6 +483,8 @@ object JinBiaoCalculator {
         val caiZhuBing = biS >= caiS || bazi.branches.any { br ->
             br.element == biEl && LIU_CHONG[br] != null && LIU_CHONG.getValue(br).let { p -> p.element == caiEl && p in bazi.branches }
         }
+        // 案一百一十二·用官局喜用两伤（官干坐印被泄、官根被冲克、财根被冲拔——只余一处余气）
+        val liangShang112 = xiYongLiangShang112(bazi, yinEl, caiEl, guanEl)
 
         // ── 昆仑得局（命二/命三）：地支一五行得局（本气≥3支，或三合成局）＋配生源＋日主无自根而漂——不以日主论，顺其势 ──
         val branchCount = Element.entries.associateWith { el -> bazi.branches.count { it.element == el } }
@@ -1336,11 +1338,22 @@ object JinBiaoCalculator {
                         ) {
                             append("；官杀两透本赖混杂加力（官弱喜混杂），比肩合去其一——不宜合（愈合官愈弱）；幸被合之干坐强根（壬坐申金旺）合而不化（若化${yinEl.chinese}成印即无情）——走一路金水之运把官杀补起来亦发")
                         }
-                        // 案一百一十一·印旺身旺·财生出官：劫干贴克财干而用神是官——就财论无子，然财生出官有子
-                        if (jieKeCai111(bazi, yinEl, biEl, caiEl, guanS)) {
-                            val caiGenN111 = bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == caiEl } }
+                        // 案一百一十二·用官局喜用两伤（先于案一百一十一「财生出官」——财根被冲拔则克尽）
+                        val ls112 = liangShang112
+                        if (strength == DayStrength.STRONG && ls112 != null) {
+                            val guanZuo112 = bazi.stems.indices.first { it != 2 && bazi.stems[it].element == guanEl }
+                            append("；**喜用两伤（案一百一十二）**：同样用${guanEl.chinese}官——${guanEl.chinese}坐${bazi.branches[guanZuo112].chinese}被${yinEl.chinese}泄（这是一方面，主要在冲）；**${ls112.chongShu}${ls112.chongShen.chinese}${ls112.beiChong.chinese}冲，${caiEl.chinese}的根就拔了**（上一个〔案一百一十一〕${biEl.chinese}克${caiEl.chinese}是克不尽的——此则${ls112.beiChong.chinese}中${caiEl.chinese}之根被${ls112.chongShen.chinese}冲拔）；${ls112.chongShen.chinese}${ls112.beiChong.chinese}冲**克${guanEl.chinese}**（${ls112.beiChong.chinese}中${guanEl.chinese}之根被冲克）——用神被泄被克、喜神被伤没：**喜用两伤就完了**。${ls112.shengCaiGen.joinToString("") { it.chinese }}中虽有一点${caiEl.chinese}——**只值 10 分**（没有是 0 分、有是 10 分，还是个差生）。**直断：克妻损子**（财是妻子——劫刃肆逞，离婚；身旺财为子——财不行找官，官也不行，没儿子）、**学习肯定不行**（劫财见财的人念书一定笨——笨不笨取决于官星：官代表主见、思路；此局官也不行）")
+                        } else if (jieKeCai111(bazi, yinEl, biEl, caiEl, guanS)) {
+                            // 案一百一十一·印旺身旺·财生出官：劫干贴克财干而用神是官——就财论无子，然财生出官有子
+                            val caiGenN111 = bazi.branches.count { br ->
+                                branchHiddenStems.getValue(br).any { it.element == caiEl } &&
+                                    (LIU_CHONG[br]?.let { it !in bazi.branches } ?: true)
+                            }
+                            val guanZuoShi111 = bazi.stems.indices.any { i ->
+                                i != 2 && bazi.stems[i].element == guanEl && bazi.branches[i].element == shiEl
+                            }
                             append("；**印旺身旺·财生出官（案一百一十一）**：劫财${biEl.chinese}透干贴克${caiEl.chinese}财——**就财论是没儿子的**（儿子不取决于财了）；然**螳螂捕蝉黄雀在后——财生出官来了**：**用神是官、不是用财**，劫克财克不尽（${caiEl.chinese}通${caiGenN111}根），多少能生这个${guanEl.chinese}官——**不是说克一下就没了**；官不贴着劫也无问题（**挨着层次更高**）" +
-                                (if (bazi.stems.none { it != dayMaster && it.element == shiEl })
+                                (if (guanZuoShi111 && bazi.stems.none { it != dayMaster && it.element == shiEl })
                                     "。**这局不用食伤**：${shiEl.chinese}被旺${yinEl.chinese}克着没力量、又跟${caiEl.chinese}一伙且润${yinEl.chinese}养${caiEl.chinese}——官坐其上（自合）不碍官"
                                     else "") +
                                 "。身旺用食伤、用财、用官，**无非就是克耗泄我，让我达到平衡就能生儿子**——有儿子、事业还好（**当官**）")
@@ -1585,12 +1598,16 @@ object JinBiaoCalculator {
         // 层次高不了（运再好也只能小康或不如小康）；财星起坏作用＝财神反不真罪加一等
         val yinGenBaCai107 = choice.way == JinBiaoQuYongWay.FU_SHEN && yongEl == yinEl &&
             strength == DayStrength.WEAK && yinGenBaCai && shiS >= GUAN_WANG
+        // 案一百一十二·用官局喜用两伤（身旺取官方论）
+        val liangShang112Pei = liangShang112?.takeIf { strength == DayStrength.STRONG && choice.way == JinBiaoQuYongWay.PEI_CAI }
         val qingZhuo = when {
             // 案九十九·一制一化有情：有情就是有格局（不虑旺衰——制化相得）
             choice.way == JinBiaoQuYongWay.YI_ZHI_YI_HUA -> JinBiaoQingZhuo.QING
             yinGenBaCai107 -> JinBiaoQingZhuo.BAN_QING
             // 案一百零九·土重金埋：印过旺用财破印而藏财之根被贴冲砍伐尽——用神无着（财都没了就完了）
             maJin109 && caiGenBa109 && choice.way == JinBiaoQuYongWay.HUAI_YIN -> JinBiaoQingZhuo.QING_KU
+            // 案一百一十二·用官局喜用两伤：官被泄被冲克、财根被冲拔——就完了（档位为落地映射）
+            liangShang112Pei != null -> JinBiaoQingZhuo.QING_KU
             qingKu -> JinBiaoQingZhuo.QING_KU
             quanZhuo -> JinBiaoQingZhuo.QUAN_ZHUO
             yongWuLiHua -> JinBiaoQingZhuo.MAN_ZHUO
@@ -1616,7 +1633,9 @@ object JinBiaoCalculator {
             if (jianBing != null) append("；$jianBing")
             when (qingZhuo) {
                 JinBiaoQingZhuo.QING_KU -> append(
-                    if (maJin109 && caiGenBa109 && choice.way == JinBiaoQuYongWay.HUAI_YIN)
+                    if (liangShang112Pei != null)
+                        "——用官局**喜用两伤**：用神${guanEl.chinese}被${yinEl.chinese}泄、又被${liangShang112Pei.chongShen.chinese}${liangShang112Pei.beiChong.chinese}冲克；喜神${caiEl.chinese}之根被冲拔——只余${liangShang112Pei.shengCaiGen.joinToString("、") { it.chinese }}中一点（**只值 10 分——不过一点余气，不能说${caiEl.chinese}旺**）：一点救没有——**喜用两伤就完了**（直断克妻损子；档位为落地映射——师只说「就完了」；案一百一十二）"
+                    else if (maJin109 && caiGenBa109 && choice.way == JinBiaoQuYongWay.HUAI_YIN)
                         "——印过旺用${caiEl.chinese}破印，然${caiEl.chinese}仅藏于${caiGen109.joinToString("、") { it.chinese }}、根气被两组贴冲砍伐殆尽（藏干互战暗相坎伐）——用神无着：**财都没了，就完了**（直断克妻无子——原局上人基本就完了）；**辟「冲开财库必发」**：「财官临库喜刑冲」不可以这么用——刻舟求剑；原局坏绝，好运也只是多要一个馒头（案一百零九）"
                     else if (choice.way == JinBiaoQuYongWay.FU_SHEN)
                         "——用神${yongEl.chinese}（印）被得局之${caiEl.chinese}财坏（财有多旺他就有多穷——食伤生财＝给忌神添粮）：病大难救——**清枯之命**：印运把印补起来还能温饱，食伤生财之运身无分文、负债"
@@ -1652,7 +1671,7 @@ object JinBiaoCalculator {
 
         // ── 子女判读（第十一讲·子女章判定树：子星按原局喜忌而定，来回检查；子星要昌） ──
         // 四情况铁律：必有儿／必无儿／无儿有女／无儿无女损子——逃不出这个圈。
-        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = ziNvOf(bazi, daYun, choice, strength, ruoJi, wangJi, dayMaster, yinEl, biEl, shiEl, caiEl, guanEl, yinS, biS, caiS, guanS, shiS, monthBranch, guoXieFanRuo, kunLunEl, kunLunSource, gongCaiYinHua, gongCaiTrio, yongEl, caiZai)
+        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = ziNvOf(bazi, daYun, choice, strength, ruoJi, wangJi, dayMaster, yinEl, biEl, shiEl, caiEl, guanEl, yinS, biS, caiS, guanS, shiS, monthBranch, guoXieFanRuo, kunLunEl, kunLunSource, gongCaiYinHua, gongCaiTrio, yongEl, caiZai, liangShang112Pei)
 
         // ── 学历判读（案九十四·学历章开讲：印为用神之局适用） ──
         // 看学历不能只看初运好坏：①印星原局没被破坏→小时候脑子没毛病、头脑不笨（底子）；
@@ -1660,7 +1679,7 @@ object JinBiaoCalculator {
         // （火最怕湿土来晦）学历就不高——但学习肯定不错或者好学（走坏运＝平时学习好、考试发挥失常）；
         // ③大运地支不载不碍（甲申乙酉——支不载而天干生火）：只要天干没把印坏了，就可以有学历、
         // 可以上大学——干定学历。
-        val xueLi: cn.xulun.bazi.model.JinBiaoXueLi? = xueLiOf(bazi, daYun, choice, strength, ruoJi, wangJi, qiangJi, yongEl, yinEl, caiEl, shiEl, guanEl, yinS)
+        val xueLi: cn.xulun.bazi.model.JinBiaoXueLi? = xueLiOf(bazi, daYun, choice, strength, ruoJi, wangJi, qiangJi, yongEl, yinEl, caiEl, shiEl, guanEl, yinS, liangShang112Pei)
 
         // ── 运年评断（以用神为中心；从格/专旺的反常识运断由用神立场自动成立） ──
         // 财解围局（第三讲）：行财运亨通；行官/食运稍差但无大碍——中平。
@@ -2008,6 +2027,9 @@ object JinBiaoCalculator {
                 )
                 JinBiaoQingZhuo.MAN_ZHUO -> append("此为满盘浊气之命——病神之力太大、毁坏用神：差命穷命，走什么运也好不了。")
                 JinBiaoQingZhuo.BAN_QING -> append("此为半浊半清之命——普通人之命：多成多败、好两年坏两年（帮用去病之运好，帮病之运差）。")
+            }
+            if (liangShang112Pei != null) {
+                append("直断：**克妻损子**（财是妻子——劫刃肆逞，离婚；身旺财为子——财不行找官，官也不行，没儿子）、上学不行——喜用两伤，财运也不行（案一百一十二）。")
             }
             if (xueLi != null && xueLi.level != cn.xulun.bazi.model.JinBiaoXueLiLevel.YIN_HUAI) {
                 append("学历：${xueLi.level.chinese}。")
@@ -2580,7 +2602,7 @@ object JinBiaoCalculator {
     /** 取用候选（analyze 与学历判读共用）。 */
     private data class Choice(val way: JinBiaoQuYongWay, val el: Element, val basis: String)
 
-    /** 学历判读（案九十四~一百·学历章：印为用神之局适用；案一百扩杀印局、财坏印型、弃印就财注）。 */
+    /** 学历判读（案九十四~一百·学历章：印为用神之局适用；案一百扩杀印局、财坏印型、弃印就财注；案一百一十二扩用官局喜用两伤「上学笨」档）。 */
     private fun xueLiOf(
         bazi: BaziResult,
         daYun: DaYunInfo?,
@@ -2595,7 +2617,17 @@ object JinBiaoCalculator {
         shiEl: Element,
         guanEl: Element,
         yinS: Double,
+        liangShang112: LiangShang112? = null,
     ): cn.xulun.bazi.model.JinBiaoXueLi? {
+        // 案一百一十二·用官局喜用两伤：劫财见财的人上学笨，笨不笨取决于官星——此局官也不行
+        // （印未坏——上学笨非印之故，故 yinWanHao 仍记 true）
+        if (!(ruoJi || wangJi || qiangJi) && liangShang112 != null) {
+            return cn.xulun.bazi.model.JinBiaoXueLi(
+                yinWanHao = true,
+                level = cn.xulun.bazi.model.JinBiaoXueLiLevel.SHANG_XUE_BEN,
+                basis = "**用财而劫财见财的人，念书的时候一定笨**——笨不笨又取决于官星：**官是什么？官代表主见、思路**——劫财见财又有官，说明这人学习的时候是有主见的（为什么当官的人就听自己的：自己有思路；没思路就只能被别人劫）；如果没有这个官，什么都得问，最后什么都还不明白。**此局喜用两伤——官也不行：此人上学不行（学习肯定不行）**（案一百一十二）",
+            )
+        }
         return if (!(ruoJi || wangJi || qiangJi) && yongEl == yinEl &&
             (choice.way == JinBiaoQuYongWay.FU_SHEN || choice.way == JinBiaoQuYongWay.HUA_SHA) && daYun != null
         ) {
@@ -2715,6 +2747,7 @@ object JinBiaoCalculator {
         gongCaiTrio: Pair<Set<EarthlyBranch>, Element>?,
         yongEl: Element,
         caiZai: Boolean,
+        liangShang112: LiangShang112? = null,
     ): cn.xulun.bazi.model.JinBiaoZiNv? {
         return if (ruoJi) {
             // 案七十一（案四盘复看）·从势局子女另裁：特殊格局不按身衰印做儿/身旺财为子正常树断——
@@ -2823,6 +2856,9 @@ object JinBiaoCalculator {
                             bazi.stems.any { it != dayMaster && it.element == guanEl } &&
                             jieKeCai111(bazi, yinEl, biEl, caiEl, guanS)
                         when {
+                            // 案一百一十二·喜用两伤：身旺财为子——财不行找官，官也不行——没儿子（克妻损子）
+                            liangShang112 != null -> ZN(caiEl, false, false,
+                                "**身旺财为子，财不行找官，官也不行，也没儿子**（案一百一十二·喜用两伤）：${caiEl.chinese}之根被${liangShang112.chongShu}${liangShang112.chongShen.chinese}${liangShang112.beiChong.chinese}冲拔（${liangShang112.beiChong.chinese}中${caiEl.chinese}之根被拔——对勘案一百一十一：劫克财克不尽则财生出官有子），只余${liangShang112.shengCaiGen.joinToString("") { it.chinese }}中一点——**只值 10 分，还是个差生**；${guanEl.chinese}又被${yinEl.chinese}泄、被冲克——财不行、官也不行。**财是妻子，劫刃肆逞——离婚**（克妻两义：离婚／丧妻——克妻损子）。**此人上学不行、喜用两伤财运也不行**")
                             guanJiu -> ZN(guanEl, true, false, "身旺财为子而**比劫贴克财**——然官杀克劫护财（官透坐根有力）：**官杀为儿子，有官杀就有儿子**（怕食地——食伤制官来捣乱）")
                             caiShengGuan111 -> {
                                 val caiGenN111 = bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == caiEl } }
@@ -3236,7 +3272,48 @@ object JinBiaoCalculator {
             }
         }
         if (!tieKe) return false
-        return bazi.branches.count { br -> branchHiddenStems.getValue(br).any { it.element == caiEl } } >= 3
+        // 案一百一十二戒：藏财之支被冲拔（两丑未冲拔乙根）者不计——根拔则克尽，非「克不尽」
+        return bazi.branches.count { br ->
+            branchHiddenStems.getValue(br).any { it.element == caiEl } &&
+                (LIU_CHONG[br]?.let { it !in bazi.branches } ?: true)
+        } >= 3
+    }
+
+    /** 案一百一十二·喜用两伤明细：冲神、被冲之支、财根被拔后所余之支。 */
+    private class LiangShang112(
+        val chongShen: EarthlyBranch,
+        val beiChong: EarthlyBranch,
+        val shengCaiGen: List<EarthlyBranch>,
+        /** 被冲之支在局个数（≥2 即「两丑未冲」） */
+        val chongN: Int,
+    ) {
+        /** 「两丑未冲」之数词（一组则不书） */
+        val chongShu: String get() = if (chongN >= 2) "两" else ""
+    }
+
+    /**
+     * 案一百一十二·用官局喜用两伤：官干透干而同柱坐印本气支（丁坐丑——丑泄丁）；
+     * 冲对之中被冲之支藏官藏财（未中丁乙）、冲神藏干克官克财（丑中癸辛）——官根被冲克、财根被冲拔
+     * （两丑未冲——隔位亦论：师未提隔位，径以拔根断）；财根拔后所剩不过一处（辰中乙只值 10 分）。
+     */
+    private fun xiYongLiangShang112(bazi: BaziResult, yinEl: Element, caiEl: Element, guanEl: Element): LiangShang112? {
+        val guanZuoYin = bazi.stems.indices.any { i ->
+            i != 2 && bazi.stems[i].element == guanEl && bazi.branches[i].element == yinEl
+        }
+        if (!guanZuoYin) return null
+        val keGuan = Element.entries.first { it.controls == guanEl }
+        val keCai = Element.entries.first { it.controls == caiEl }
+        val chongShen = bazi.branches.firstOrNull { br ->
+            val p = LIU_CHONG[br]
+            p != null && p in bazi.branches &&
+                branchHiddenStems.getValue(br).let { h -> h.any { it.element == keGuan } && h.any { it.element == keCai } } &&
+                branchHiddenStems.getValue(p).let { h -> h.any { it.element == guanEl } && h.any { it.element == caiEl } }
+        } ?: return null
+        val beiChong = LIU_CHONG[chongShen]!!
+        val caiGenZhis = bazi.branches.filter { br -> branchHiddenStems.getValue(br).any { it.element == caiEl } }
+        val sheng = caiGenZhis.filter { br -> LIU_CHONG[br]?.let { it in bazi.branches } != true }
+        if (hasBenQiRoot(bazi, caiEl) || sheng.size == caiGenZhis.size || sheng.size > 1) return null
+        return LiangShang112(chongShen, beiChong, sheng.distinct(), bazi.branches.count { it == beiChong })
     }
 
     private fun format(v: Double): String = if (v % 1.0 == 0.0) v.toInt().toString() else String.format("%.1f", v)
