@@ -3284,4 +3284,39 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎正官格身弱成中有败（官杀混杂）——喜正印（印护官）",
             old.geJuName.contains("正官格") && old.xiJi.any { it.desc.contains("印护官") })
     }
+
+    // ── 案一百一十四 · 丁巳 癸丑 丁卯 丙午（乾，午时）——身旺用暗处的财·暗冲暗会尤为喜 ──
+    // 排盘口径：此四柱唯 1918-01-20 午时（民国七年腊月；1978／2038 丑月无此日）。
+    @Test
+    fun `案一百一十四 乾 丁巳癸丑丁卯丙午 丑虽当令木火一片身旺 身旺忌印喜用食伤财官哪个好用用哪个 杀露坐土不行 食伤被卯克不能为用 财藏丑中未破用暗处财喜食伤 酉运暗冲去卯病加暗会财局更发 戌运合卯化火拱火旺不行离婚`() {
+        val bazi = chart(1918, 1, 20, 12)
+        assertTrue(bazi.fullBazi.startsWith("丁巳 癸丑 丁卯 丙午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：壬子1922 辛亥1932 庚戌1942 己酉1952",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("壬子(1922)", "辛亥(1932)", "庚戌(1942)", "己酉(1952)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺——丑虽当令，整个局木火一片",
+            jb.strength == DayStrength.STRONG && jb.strengthBasis.contains("整个局火木一片"))
+        assertTrue("用财（金）——暗处的财；喜食伤（土）；不再取杀",
+            jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI && jb.yongShenElement == Element.METAL &&
+                jb.xiElements == listOf(Element.EARTH, Element.METAL) && !jb.quYongBasis.contains("财滋弱杀"))
+        assertTrue("哪个好用用哪个；杀露坐土不行；食伤被卯克；财藏丑中未破；故用暗处的财；没有丑这财也不行；木是忌讳的",
+            jb.quYongBasis.contains("哪个好用用哪个") && jb.quYongBasis.contains("杀也不行") &&
+                jb.quYongBasis.contains("卯克丑") && jb.quYongBasis.contains("巳丑拱酉") &&
+                jb.quYongBasis.contains("故最终用暗处的财") && jb.quYongBasis.contains("这财也不行") &&
+                jb.quYongBasis.contains("木是忌讳的"))
+        assertTrue("清浊：半浊半清（食伤半通关——财富全凭食伤一字定之；档位为落地映射）",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("食伤半通关") && jb.qingZhuoBasis.contains("暗处的财"))
+        assertTrue("运：己酉——暗冲去卯病＋暗会金局，更发（吉）",
+            jb.yuns[3].verdict == JinBiaoVerdict.JI &&
+                jb.yuns[3].items.any { it.action.contains("暗冲暗会尤为喜") && it.action.contains("就更发") })
+        assertTrue("运：庚戌——戌合卯化火拱火旺，不行、离婚（凶；不随连行方局以金论）",
+            jb.yuns[2].verdict == JinBiaoVerdict.XIONG &&
+                jb.yuns[2].items[1].action.contains("拱火旺") && jb.yuns[2].items[1].action.contains("离婚") &&
+                jb.yuns[2].items[1].element == Element.FIRE)
+        assertTrue("断语：身旺用暗处之财", jb.duanYu.contains("用暗处之财"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎七杀格身强成格（食神制杀）——以杀为用，与师断弃杀用财分歧",
+            old.geJuName.contains("七杀格") && old.xiangShenRole.contains("食神制杀"))
+    }
 }
