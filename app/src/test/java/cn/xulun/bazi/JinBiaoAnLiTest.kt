@@ -3733,4 +3733,61 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("正财格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
                 old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.SHI_SHEN })
     }
+
+    // ── 案一百二十三 · 庚申 壬午 辛酉 癸巳（乾，巳时）——用官喜帮火·基本平衡（午火孤：被水克、无源、巳被合走） ──
+    // 排盘口径：**年份未定**——此四柱在世两日同柱：1980-06-17（癸未 1987 起）与 1920-07-02（癸未 1922 起）；
+    // 大运干支序同、仅起运年异，待用户／师定；不断言起运年。
+    @Test
+    fun `案一百二十三 乾 庚申壬午辛酉癸巳 金有力年柱专旺帮身力大 巳酉化金不燥 午火当令基本平衡 水通根有源而旺克火 火无源稍不平衡 喜帮火 不错的命好命不得志当不上官 不是说官没源就不好 必须有木 不属去寡 不泄金 丙戌火通根肯定旺 木运也行不如丙戌 走水就完了 土泄火`() {
+        val bazi = chart(1980, 6, 17, 10)
+        assertTrue(bazi.fullBazi.startsWith("庚申 壬午 辛酉 癸巳"))
+        assertTrue("同四柱亦见于 1920-07-02 巳时", chart(1920, 7, 2, 10).fullBazi.startsWith("庚申 壬午 辛酉 癸巳"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：癸未 甲申 乙酉 丙戌 丁亥 戊子 己丑 庚寅",
+            daYun.yuns.map { it.pillar.fullName } == listOf("癸未", "甲申", "乙酉", "丙戌", "丁亥", "戊子", "己丑", "庚寅"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("金有力（年柱专旺）——身强；用官（午火）——不再走「弱而根气足·食神制杀」",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.PEI_CAI &&
+                jb.yongShenElement == Element.FIRE && jb.xiElements.contains(Element.WOOD) && jb.xiElements.contains(Element.FIRE))
+        assertTrue("旺衰注：年柱一柱专旺帮身力大；基本上平衡",
+            jb.strengthBasis.contains("年柱一柱专旺") && jb.strengthBasis.contains("基本上平衡"))
+        assertTrue("取用依据：金有力／巳酉化金／基本上平衡／水也旺／稍微有点儿不平衡／火没有源头／喜帮火／午火有点孤／不错的命／好命但当不上官儿／不是说官没有源头就不好／肯定是官命／必须得有木／不属于去寡／没有泄金的道理／丙戌火通根肯定旺／走水就完了",
+            jb.quYongBasis.contains("金有力的") && jb.quYongBasis.contains("巳酉化金") &&
+                jb.quYongBasis.contains("基本上平衡") && jb.quYongBasis.contains("水也旺") &&
+                jb.quYongBasis.contains("稍微有点儿不平衡") && jb.quYongBasis.contains("火没有源头") &&
+                jb.quYongBasis.contains("喜帮火了") && jb.quYongBasis.contains("午火就有点孤了") &&
+                jb.quYongBasis.contains("不错的命") && jb.quYongBasis.contains("是好命，但当不上官儿") &&
+                jb.quYongBasis.contains("不是说官没有源头就不好") && jb.quYongBasis.contains("肯定是官命") &&
+                jb.quYongBasis.contains("必须得有木") && jb.quYongBasis.contains("不属于去寡") &&
+                jb.quYongBasis.contains("没有泄金的道理") && jb.quYongBasis.contains("火通根，肯定旺") &&
+                jb.quYongBasis.contains("走水就完了"))
+        assertTrue("清浊：清而稍有病——好命而不得志（档位为落地映射）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("午火有点孤") && jb.qingZhuoBasis.contains("不得志"))
+        assertTrue("丙戌——吉：火通根，肯定旺；天干也克金——火维持平衡",
+            jb.yuns[3].verdict == JinBiaoVerdict.JI && jb.yuns[3].items[1].action.contains("肯定旺") &&
+                jb.yuns[3].items[1].favorOverride)
+        assertTrue("甲申、乙酉——中平：木补午火之源——肯定也行，不如丙戌",
+            listOf(1, 2).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.PING && jb.yuns[k].items[0].action.contains("不如丙戌") })
+        assertTrue("走水——凶（癸未之干、丁亥之支、戊子之支）：走水就去火了，走水就完了",
+            listOf(0, 4, 5).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.XIONG && jb.yuns[k].items.any { it.action.contains("走水就完了") } })
+        assertTrue("土——既生金也泄火（这局火不旺）：癸未之支、己丑之支",
+            jb.yuns[0].items[1].action.contains("也泄火") && jb.yuns[6].items[1].action.contains("也泄火"))
+        assertTrue("断语：好命而不得志；必须得有木、喜帮火；丙戌火通根肯定旺；走水就完了；稍有病",
+            jb.duanYu.contains("好命而不得志") && jb.duanYu.contains("必须得有木") &&
+                jb.duanYu.contains("火通根——肯定旺") && jb.duanYu.contains("走水就完了") && jb.duanYu.contains("稍有病"))
+        // 反事实（师）：「没有壬水，这局也是相对平衡了，他肯定是官命」——月干换戊之合成盘不入「用官喜帮火」之档
+        val fan = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = Pillar(HeavenlyStem.WU, bazi.monthPillar.branch),
+            dayPillar = bazi.dayPillar,
+            hourPillar = bazi.hourPillar,
+            birthDateTime = LocalDateTime.of(1980, 6, 17, 10, 0),
+        )
+        val jf = JinBiaoCalculator.analyze(fan, daYun, Gender.MALE)
+        assertTrue("反事实：无壬——不入用官喜帮火之档", !jf.quYongBasis.contains("喜帮火了"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎七杀格成格（相神癸「食神制杀」）——以食伤制杀为相，与师断「用火、走水就完了」相反",
+            old.geJuName.contains("七杀格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
+                old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.SHI_SHEN })
+    }
 }
