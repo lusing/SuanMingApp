@@ -3580,4 +3580,57 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("正印格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
                 old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.JI && it.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_CAI })
     }
+
+    // ── 案一百二十 · 戊午 乙卯 癸卯 癸亥（乾，亥时）——伤官用劫·不从格找平衡·克泄交加（蹲大牢／死；没有印富裕不了） ──
+    // 排盘口径：此四柱在世唯 1858-03-11 亥时（引擎全量扫描 1800–2100——另 2038-03-27、2098-03-12；1978 年卯月无癸卯日）。
+    // **事实：戊午运死亡**（讲死亡的单说——细则待授）。
+    @Test
+    fun `案一百二十 乾 戊午乙卯癸卯癸亥 有帮身带地支根不从格 木泄水太过无印必用比劫 直断蹲大牢不蹲大牢得死 没有印富裕不了 来水运仅温饱 金克木方平衡 戊午运克泄交加死亡 亥卯合局给木加分壬子时更强 戊癸隔位不论合化`() {
+        val bazi = chart(1858, 3, 11, 22)
+        assertTrue(bazi.fullBazi.startsWith("戊午 乙卯 癸卯 癸亥"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：丙辰1866 丁巳1876 戊午1886 己未1896",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("丙辰(1866)", "丁巳(1876)", "戊午(1886)", "己未(1896)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("不从格（有帮身、带地支根）——伤官用劫：用神比劫（癸亥）",
+            jb.strength == DayStrength.WEAK && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE &&
+                jb.yongShenElement == Element.WATER)
+        assertTrue("取用依据：不从格之由／木泄水太过必须帮身／没有印肯定用比劫／直断蹲大牢不蹲大牢得死／克一下木才能平衡得要金克／戊土克泄交加／没有印富裕不了／亥卯合局给木加分／壬子时更强／戊癸离得远／平衡俩字儿",
+            jb.quYongBasis.contains("肯定不是从格") && jb.quYongBasis.contains("木泄水太过了，必须帮身") &&
+                jb.quYongBasis.contains("没有印——肯定用比劫") && jb.quYongBasis.contains("蹲大牢，不蹲大牢的得死") &&
+                jb.quYongBasis.contains("克一下木才能平衡，得要金克") && jb.quYongBasis.contains("命局克泄交加") &&
+                jb.quYongBasis.contains("没有印，富裕不了") && jb.quYongBasis.contains("亥卯合局要给木加分") &&
+                jb.quYongBasis.contains("就要比癸亥强") && jb.quYongBasis.contains("不能以合化论") &&
+                jb.quYongBasis.contains("一个平衡俩字儿"))
+        assertTrue("旺衰注：有帮身、带地支根——肯定不是从格；找平衡",
+            jb.strengthBasis.contains("肯定不是从格") && jb.strengthBasis.contains("找平衡"))
+        assertTrue("清浊：清枯（印全无而官杀透——克泄交加；没有印富裕不了；档位为落地映射）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING_KU && jb.qingZhuoBasis.contains("克泄交加") &&
+                jb.qingZhuoBasis.contains("富裕不了"))
+        assertTrue("戊午运——凶：克泄交加，死亡（讲死亡的单说）",
+            jb.yuns[2].verdict == JinBiaoVerdict.XIONG && jb.yuns[2].items[0].action.contains("戊午运克泄交加") &&
+                jb.yuns[2].items[0].action.contains("死亡") && jb.yuns[2].items[0].xiongOverride)
+        assertTrue("壬戌、癸亥运——中平：来水运也仅仅是温饱（没有印，富裕不了）",
+            listOf(6, 7).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.PING && jb.yuns[k].items.any { it.action.contains("仅仅是温饱") } })
+        assertTrue("庚申、辛酉运——吉：金克木——克一下木才能平衡（伤官配印）",
+            listOf(4, 5).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.JI && jb.yuns[k].items.all { it.action.contains("克一下木才能平衡") } })
+        assertTrue("断语直断：蹲大牢／死、没有印富裕不了、清枯之命",
+            jb.duanYu.contains("蹲大牢，不蹲大牢的得死") && jb.duanYu.contains("富裕不了") && jb.duanYu.contains("此为清枯之命"))
+        // 反事实（师）：时柱换壬子——无亥卯合局（不给木加分），要比癸亥强
+        val renZi = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = bazi.monthPillar,
+            dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(HeavenlyStem.REN, EarthlyBranch.ZI),
+            birthDateTime = LocalDateTime.of(1858, 3, 11, 0, 30),
+        )
+        val jz = JinBiaoCalculator.analyze(renZi, daYun, Gender.MALE)
+        assertTrue("反事实：壬子时——仍用比劫，用神通根子（无亥卯合泄之注）",
+            jz.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE && jz.health.rootNote.contains("子") &&
+                !jz.quYongBasis.contains("合局要给木加分"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎食神格成格（以食神为用、忌偏印「枭神夺食」）——与金镖门「以食伤为泄、得要金克」相反",
+            old.geJuName.contains("食神格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
+                old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.JI && it.tenGod == cn.xulun.bazi.model.TenGod.PIAN_YIN })
+    }
 }
