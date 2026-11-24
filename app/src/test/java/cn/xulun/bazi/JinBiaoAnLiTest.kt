@@ -3790,4 +3790,67 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("七杀格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
                 old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.SHI_SHEN })
     }
+
+    // ── 案一百二十四 · 辛未 庚寅 庚午 丙子（乾，早子时）——有力就能食神制杀·病在午火、药在子水 ──
+    // 排盘口径：用户附起运年表（己丑 1999 起）→ 1991-03-01 早子时（8 岁起运）；另 1811-02-13、2051-02-14 同柱、起运年异。
+    @Test
+    fun `案一百二十四 乾 辛未庚寅庚午丙子 年柱辛未有印非特殊格局 没力量要补有力量要抑制 财生杀旺病在午火 天干三金无根辛未有点力 有力就能食神制杀非虚透无力强制 子水去火之药 存金不对局里没有金 非克泄交加 杀有源制而不绝还是平衡 用神子水 子水运去病发大财 戊子统看也可以 戌运克药神拱火大灾 申运帮身好运 子换未层次不高换丑层次高`() {
+        val bazi = chart(1991, 3, 1, 0)
+        assertTrue(bazi.fullBazi.startsWith("辛未 庚寅 庚午 丙子"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：己丑1999 戊子2009 丁亥2019 丙戌2029 乙酉2039 甲申2049 癸未2059 壬午2069",
+            daYun.yuns.map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("己丑(1999)", "戊子(2009)", "丁亥(2019)", "丙戌(2029)", "乙酉(2039)", "甲申(2049)", "癸未(2059)", "壬午(2069)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱（日主有点力）——食神制杀（先于「杀重用印」）：用神子水",
+            jb.strength == DayStrength.WEAK && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.ZHI_SHA &&
+                jb.yongShenElement == Element.WATER)
+        assertTrue("旺衰注：日主不旺但有点力——有力就能食神制杀",
+            jb.strengthBasis.contains("有点力") && jb.strengthBasis.contains("有力就能食神制杀"))
+        assertTrue("取用依据：起码是个印／没力量的要补、有力量的要抑制／财生杀旺病在午火／子水就是去火的药／去火对存金不对／三个金无根／有点力／虚透无力强制之别／有丑土来化更好／不是克泄交加／杀有源制而不绝／用神肯定是子水／去病发大财／统看也可以／戌运大灾／比劫运好运／子换未、换丑／思考要往问题点上",
+            jb.quYongBasis.contains("起码是个印") && jb.quYongBasis.contains("没有力量的要补上，有力量的要抑制") &&
+                jb.quYongBasis.contains("生火旺——病在午火") && jb.quYongBasis.contains("子水就是去火的药") &&
+                jb.quYongBasis.contains("存金不对") && jb.quYongBasis.contains("天干露3个金") &&
+                jb.quYongBasis.contains("日主不旺，但日主是有点力") && jb.quYongBasis.contains("虚透无力强制杀") &&
+                jb.quYongBasis.contains("有丑土来化更好") && jb.quYongBasis.contains("不是克泄交加") &&
+                jb.quYongBasis.contains("还是平衡的") && jb.quYongBasis.contains("用神肯定是子水") &&
+                jb.quYongBasis.contains("去病发大财") && jb.quYongBasis.contains("统看也可以") &&
+                jb.quYongBasis.contains("戌运（印来了）肯定有大灾") && jb.quYongBasis.contains("肯定是好运") &&
+                jb.quYongBasis.contains("子换未") && jb.quYongBasis.contains("换丑") &&
+                jb.quYongBasis.contains("思考要往问题点上去动"))
+        assertTrue("清浊：清而病杀有药（病在午火、药在子水——制而不绝）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("病在午火、药在子水"))
+        assertTrue("己丑——吉：丑土印化杀（泄火生金）", jb.yuns[0].verdict == JinBiaoVerdict.JI && jb.yuns[0].items[1].action.contains("泄火生金"))
+        assertTrue("戊子——吉：子水去火之药——去病发大财；戊土泄火生金——统看也可以",
+            jb.yuns[1].verdict == JinBiaoVerdict.JI && jb.yuns[1].items[1].action.contains("去病发大财") &&
+                jb.yuns[1].items[0].action.contains("统看也可以"))
+        assertTrue("丙戌——凶：印来了却克药神、而且拱火——肯定有大灾",
+            jb.yuns[3].verdict == JinBiaoVerdict.XIONG && jb.yuns[3].items[1].action.contains("肯定有大灾") &&
+                jb.yuns[3].items[1].xiongOverride)
+        assertTrue("乙酉、甲申——吉：比劫帮身——肯定是好运",
+            listOf(4, 5).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.JI && jb.yuns[k].items[1].action.contains("肯定是好运") })
+        assertTrue("丁亥、癸未、壬午——水（药神）到位之运皆吉",
+            listOf(2, 6, 7).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.JI })
+        assertTrue("断语：病在午火、药在子水；水运去病发大财；戌运大灾",
+            jb.duanYu.contains("病在午火") && jb.duanYu.contains("药在子水") &&
+                jb.duanYu.contains("去病发大财") && jb.duanYu.contains("戌运肯定有大灾"))
+        // 反事实（师）：「没有子，换成未——层次就不高了，也管事；换成丑——层次就高了」——皆不入「有力就能食神制杀」之档
+        fun syn(br: EarthlyBranch) = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = bazi.monthPillar,
+            dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(bazi.hourPillar.stem, br),
+            birthDateTime = LocalDateTime.of(1991, 3, 1, 0, 0),
+        )
+        assertTrue("反事实：时支子换未／换丑——不入食神制杀之档（仍走印化杀）",
+            listOf(syn(EarthlyBranch.WEI), syn(EarthlyBranch.CHOU)).all {
+                it.let { JinBiaoCalculator.analyze(it, daYun, Gender.MALE) }.let { r ->
+                    r.quYongWay != JinBiaoQuYongWay.ZHI_SHA && !r.quYongBasis.contains("有力就能食神制杀")
+                }
+            })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎身弱七杀格成格（相神未中己「印化杀」；以杀为格、印化为相）——与金镖门「用子水食神制杀」取用不同",
+            old.geJuName.contains("七杀格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
+                old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.SHI_SHEN })
+    }
 }
