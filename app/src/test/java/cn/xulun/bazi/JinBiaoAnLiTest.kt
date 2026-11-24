@@ -3853,4 +3853,72 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("七杀格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
                 old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.SHI_SHEN })
     }
+
+    // ── 案一百二十五 · 己亥 甲戌 丁卯 甲辰（乾，辰时）——假去寡·印护官·当兵（兵卒）——当兵专项首例 ──
+    // 排盘口径：用户附起运年表（癸酉 1960 起）→ 1959-10-12 辰时（1 岁起运）；另 1899-10-26 同柱、起运年异。
+    // **事实：当兵（兵卒）；午运发财；2012 年厂房拆迁拿了拆迁款；未运没发财。**
+    @Test
+    fun `案一百二十五 乾 己亥甲戌丁卯甲辰 身旺去寡用官两可得看走什么大运 用官不如去寡有层次 用神打架木克土 身旺不能伤官制官 印护官了当兵 没有甲木印就是犯法 独官去不尽才犯法 浊不浊就是军官 兵卒学历低出身差 金水运只能用官没层次 未运亥卯未木旺没法去寡没发财 午运发财 假去寡但也叫去寡`() {
+        val bazi = chart(1959, 10, 12, 8)
+        assertTrue(bazi.fullBazi.startsWith("己亥 甲戌 丁卯 甲辰"))
+        assertTrue("同四柱亦见于 1899-10-26 辰时", chart(1899, 10, 26, 8).fullBazi.startsWith("己亥 甲戌 丁卯 甲辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：癸酉1960 壬申1970 辛未1980 庚午1990 己巳2000 戊辰2010 丁卯2020 丙寅2030",
+            daYun.yuns.map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("癸酉(1960)", "壬申(1970)", "辛未(1980)", "庚午(1990)", "己巳(2000)", "戊辰(2010)", "丁卯(2020)", "丙寅(2030)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺——食伤泄秀之路（假去寡：走火土运则去寡、走金水运则用官）；用神食伤（土）",
+            jb.strength == DayStrength.STRONG && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.SHI_SHENG_CAI &&
+                jb.yongShenElement == Element.EARTH)
+        assertTrue("旺衰注：身旺没争议——去寡／用官两可；用神打架（木克土）需火通关；假去寡也叫去寡",
+            jb.strengthBasis.contains("去寡（火土运）／用官（金水运）两可") && jb.strengthBasis.contains("用神打架（木克土）需火通关") &&
+                jb.strengthBasis.contains("假去寡也叫去寡"))
+        assertTrue("取用依据：去寡用官两可看大运／用官不如去寡有层次／用神打架／身旺不能伤官制官／印护官了当兵／没有甲木印就是犯法／独官／假去寡／没有死定义要学活／肯定浊不浊就是军官／未运没发财／午运发财／2012 拆迁款／兵卒的命",
+            jb.quYongBasis.contains("假去寡·印护官——当兵") && jb.quYongBasis.contains("说去寡也对，用官也对，得看命主走什么大运") &&
+                jb.quYongBasis.contains("用官肯定不如去寡有层次") && jb.quYongBasis.contains("用神打架") &&
+                jb.quYongBasis.contains("身旺肯定不能伤官制官") && jb.quYongBasis.contains("印护官了，当兵") &&
+                jb.quYongBasis.contains("要是没有这个甲甲木印就是犯法") && jb.quYongBasis.contains("独官") &&
+                jb.quYongBasis.contains("假去寡，但也叫去寡") && jb.quYongBasis.contains("没有死定义，一定要学活") &&
+                jb.quYongBasis.contains("肯定浊——不浊就是军官") && jb.quYongBasis.contains("未运没发财") &&
+                jb.quYongBasis.contains("午运发财") && jb.quYongBasis.contains("2012") &&
+                jb.quYongBasis.contains("厂房拆迁拿了拆迁款") && jb.quYongBasis.contains("兵卒的命") &&
+                !jb.quYongBasis.contains("印为格局之病"))
+        assertTrue("清浊：半浊半清而注「浊」——不浊就是军官而不是兵卒",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("浊（案一百二十五）") &&
+                jb.qingZhuoBasis.contains("不浊就是军官"))
+        assertTrue("学历：学历不高（兵卒之命——学历低、出身差）",
+            jb.xueLi!!.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO &&
+                jb.xueLi!!.basis.contains("兵卒") && jb.xueLi!!.basis.contains("学历低"))
+        assertTrue("癸酉、壬申——中平：金水运只能用官——用神太弱，没有层次",
+            listOf(0, 1).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.PING && jb.yuns[k].items.all { it.action.contains("只能用官") } })
+        assertTrue("辛未——中平：亥卯未木旺护官——没法去寡，没发财（不作「填局出事」凶论）",
+            jb.yuns[2].verdict == JinBiaoVerdict.PING && jb.yuns[2].items[1].action.contains("没法去寡——没发财") &&
+                jb.yuns[2].items.none { it.xiongOverride })
+        assertTrue("庚午——吉：午火去官星之寡（火通关）——发财",
+            jb.yuns[3].verdict == JinBiaoVerdict.JI && jb.yuns[3].items[1].action.contains("发财"))
+        assertTrue("戊辰——吉：土起了好作用——2012 壬辰年厂房拆迁拿了拆迁款",
+            jb.yuns[5].verdict == JinBiaoVerdict.JI && jb.yuns[5].items[1].action.contains("厂房拆迁拿了拆迁款") &&
+                jb.yuns[5].years.first { it.year == 2012 }.verdict == JinBiaoVerdict.JI)
+        assertTrue("丁卯、丙寅——中平：木旺护官没法去寡",
+            listOf(6, 7).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.PING })
+        assertTrue("断语：印护官——当兵（兵卒之命）；浊——不浊就是军官；假去寡，但也叫去寡",
+            jb.duanYu.contains("假去寡·印护官") && jb.duanYu.contains("印护官——当兵（兵卒之命）") &&
+                jb.duanYu.contains("不浊就是军官") && jb.duanYu.contains("假去寡，但也叫去寡"))
+        // 反事实（师）：「要是没有这个甲木印就是犯法」——去印（月时干换戊庚）不入「假去寡·印护官」之档；
+        // 「如果再有个子水那肯定就是犯法」——非独官（时支辰换子）亦不入此档
+        fun syn(mStem: HeavenlyStem, hStem: HeavenlyStem, hBranch: EarthlyBranch) = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = Pillar(mStem, bazi.monthPillar.branch),
+            dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(hStem, hBranch),
+            birthDateTime = LocalDateTime.of(1959, 10, 12, 8, 0),
+        )
+        assertTrue("反事实：无印（月时干换戊庚）／非独官（时支换子）——不入「印护官当兵」之档",
+            listOf(syn(HeavenlyStem.WU, HeavenlyStem.GENG, EarthlyBranch.CHEN), syn(HeavenlyStem.JIA, HeavenlyStem.JIA, EarthlyBranch.ZI)).all {
+                JinBiaoCalculator.analyze(it, daYun, Gender.MALE).let { r -> !r.quYongBasis.contains("印护官——当兵") }
+            })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎伤官格成中有败（相神甲「伤官佩印」）——以伤官为格、印为相；旺衰同向（身强）",
+            old.geJuName.contains("伤官格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI)
+    }
 }
