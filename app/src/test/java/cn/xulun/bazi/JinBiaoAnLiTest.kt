@@ -46,7 +46,7 @@ class JinBiaoAnLiTest {
         birthDateTime = LocalDateTime.of(1982, 7, 1, 12, 0),
     )
 
-    /** 合成盘·旺极：甲木四柱全比劫印枭，无一点克耗泄。[yinZhong] 印重（子×2）/ 印轻（子×1）。 */
+    /** 合成盘·旺极：甲木四柱全比劫印枭，无一点克耗泄。[yinZhong] 二印（子×2——案一百一十八：一二印枭＝印轻、地支不成局）/ 一印（子×1）。 */
     private fun syntheticWangJi(yinZhong: Boolean): BaziResult =
         if (yinZhong) {
             BaziResult(
@@ -149,7 +149,7 @@ class JinBiaoAnLiTest {
     }
 
     @Test
-    fun `旺极食伤运 印重夺食不可行 印轻顺泄也是好运`() {
+    fun `旺极食伤运 印轻顺泄也是好运 两印支地支不成局走食伤运没事 地支印成局枭夺干支一体皆凶`() {
         val daYun = DaYunInfo(
             forward = true,
             qiYunText = "合成",
@@ -158,11 +158,18 @@ class JinBiaoAnLiTest {
                 DaYun(Pillar(HeavenlyStem.DING, EarthlyBranch.SI), 4, 1988, emptyList()), // 丁巳纯食伤
             ),
         )
-        val yinZhong = JinBiaoCalculator.analyze(syntheticWangJi(yinZhong = true), daYun)
-        val yinQing = JinBiaoCalculator.analyze(syntheticWangJi(yinZhong = false), daYun)
-        assertTrue("局中印重——走食伤运印夺食，不可行（凶）", yinZhong.yuns[0].verdict == JinBiaoVerdict.XIONG)
+        val yinQing = JinBiaoCalculator.analyze(syntheticWangJi(yinZhong = false), daYun)   // 子×1：印轻
+        val liangYin = JinBiaoCalculator.analyze(syntheticWangJi(yinZhong = true), daYun)   // 子×2：一二印枭——地支不成局
+        val deJu = JinBiaoCalculator.analyze(syntheticQiangJi(deJu = true), daYun)          // 子×3＋亥：地支印成局
         assertTrue("局中印轻——食伤顺泄而行也是好运（吉）", yinQing.yuns[0].verdict == JinBiaoVerdict.JI)
         assertTrue("印轻食伤运标注顺泄可行", yinQing.yuns[0].items.all { it.action.contains("泄") })
+        // 案一百一十八（师反事实「去掉两午火还没事」）：两印支＝一二印枭、地支不成局——走食伤运没事
+        // （原基线「印党力≥2 即夺」据此改校为「地支印成局〔本气≥3／三合支全〕方夺」）
+        assertTrue("两印支地支不成局——走食伤运没事（吉）", liangYin.yuns[0].verdict == JinBiaoVerdict.JI &&
+            liangYin.yuns[0].items.none { it.action.contains("枭夺") })
+        assertTrue("地支印成局——走食伤运枭神夺食：干支一体皆凶（走食伤运一定会出灾）",
+            deJu.yuns[0].verdict == JinBiaoVerdict.XIONG &&
+                deJu.yuns[0].items.all { it.xiongOverride && it.action.contains("一定会出灾") })
     }
 
     /** 合成盘·强极：[deJu] 印星得局（壬子 癸亥 甲子 壬子——剩下一两个比劫全是印）/ 未得局（甲子 乙卯 甲子 甲子——印比相当）。 */
@@ -3429,5 +3436,79 @@ class JinBiaoAnLiTest {
             jt.ruoJi && jt.quYongWay == JinBiaoQuYongWay.SUI_CAI && jt.yongShenElement == Element.WOOD)
         val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
         assertTrue("老引擎偏财格身弱败格（比劫夺财）——同向", old.geJuName.contains("偏财格") && old.chengBai.chinese.contains("败格"))
+    }
+
+    // ── 案一百一十八 · 戊午 戊午 戊午 戊午（乾，午时）——旺强极无食伤憋着生不出来·印得局走泄他的也不行（金运一定出灾） ──
+    // 排盘口径：此四柱在世唯 1978-06-25 午时（引擎全量扫描 1800–2100——另 2038-06-10 尚未出生）；阳年乾造顺行，起运 1982。
+    @Test
+    fun `案一百一十八 乾 四戊午 印比同心地支印成局 走好运一样没儿子身旺全憋着无处发泄只能说刚猛 走金运一定会出灾来了金就是枭神夺食 干支一体同夺 去掉两午火则没事`() {
+        val bazi = chart(1978, 6, 25, 12)
+        assertTrue(bazi.fullBazi.startsWith("戊午 戊午 戊午 戊午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：己未1982 庚申1992 辛酉2002 壬戌2012",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("己未(1982)", "庚申(1992)", "辛酉(2002)", "壬戌(2012)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("地支四午全是印、天干四戊全是比肩——强极印比同心；用神取比劫（土）",
+            jb.wangJi && jb.wangJiType == JinBiaoWangJiType.YIN_BI_TONG_XIN &&
+                jb.quYongWay == JinBiaoQuYongWay.SUI_WANG && jb.yongShenElement == Element.EARTH)
+        assertTrue("取用依据：印多、走泄他的也是不行的、地支全是火、来了金就是枭神夺食、走金运一定会出灾、全憋着、刚猛、走好运一样没儿子、反事实去掉两午",
+            jb.quYongBasis.contains("印多") && jb.quYongBasis.contains("走泄他的也是不行的") &&
+                jb.quYongBasis.contains("地支午午午午全是火") && jb.quYongBasis.contains("枭神夺食") &&
+                jb.quYongBasis.contains("走金运一定会出灾") && jb.quYongBasis.contains("去掉两个午") &&
+                jb.quYongBasis.contains("全憋着了") && jb.quYongBasis.contains("刚猛") &&
+                jb.quYongBasis.contains("走好运（土运）一样没儿子"))
+        assertTrue("子女：必无儿——憋着生不出来（走土运戊辰没有、走好运己未一样没儿子）",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER &&
+                jb.ziNv!!.basis.contains("憋着生不出来") && jb.ziNv!!.basis.contains("戊辰之属") &&
+                jb.ziNv!!.basis.contains("己未之属") && jb.ziNv!!.basis.contains("走金运一定会出灾"))
+        assertTrue("运：己未——吉（印比顺运）", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("运：庚申、辛酉——凶（干支一体同被枭夺——走金运一定会出灾；不再判「天干泄秀可行」）",
+            listOf(1, 2).all { k ->
+                jb.yuns[k].verdict == JinBiaoVerdict.XIONG &&
+                    jb.yuns[k].items.all { it.xiongOverride && it.action.contains("一定会出灾") } &&
+                    jb.yuns[k].items[0].action.contains("干支一体") &&
+                    jb.yuns[k].items.none { it.favorOverride || it.action.contains("顺其旺势，可行") }
+            })
+        assertTrue("断语直断：没儿子（走好运亦然）；走金运一定会出灾",
+            jb.duanYu.contains("直断") && jb.duanYu.contains("没儿子") && jb.duanYu.contains("走金运一定会出灾"))
+        // 反事实（师）：去掉两午火——印减至两支、地支不成局，走金运没事（合成盘校验：年月去午／年时去午两式）
+        val jinYun = DaYunInfo(
+            forward = true, qiYunText = "合成", startDate = LocalDateTime.of(1982, 8, 2, 0, 0),
+            yuns = listOf(
+                DaYun(Pillar(HeavenlyStem.GENG, EarthlyBranch.SHEN), 15, 1992, emptyList()),
+                DaYun(Pillar(HeavenlyStem.XIN, EarthlyBranch.YOU), 25, 2002, emptyList()),
+            ),
+        )
+        fun siWu(brs: List<EarthlyBranch>) = JinBiaoCalculator.analyze(
+            BaziResult(
+                yearPillar = Pillar(HeavenlyStem.WU, brs[0]),
+                monthPillar = Pillar(HeavenlyStem.WU, brs[1]),
+                dayPillar = Pillar(HeavenlyStem.WU, brs[2]),
+                hourPillar = Pillar(HeavenlyStem.WU, brs[3]),
+                birthDateTime = LocalDateTime.of(1978, 6, 25, 12, 0),
+            ),
+            jinYun,
+            Gender.MALE,
+        )
+        val liangWu = listOf(
+            listOf(EarthlyBranch.XU, EarthlyBranch.XU, EarthlyBranch.WU, EarthlyBranch.WU),   // 戊戌 戊戌 戊午 戊午
+            listOf(EarthlyBranch.XU, EarthlyBranch.WU, EarthlyBranch.WU, EarthlyBranch.XU),   // 戊戌 戊午 戊午 戊戌（月令仍午）
+        ).map { siWu(it) }
+        assertTrue("反事实：两午——地支印不成局，庚申辛酉走金运没事（不作枭神夺食凶、不注「一定会出灾」）",
+            liangWu.all { r ->
+                r.wangJi && r.yuns.all { y ->
+                    y.verdict != JinBiaoVerdict.XIONG &&
+                        y.items.none { i -> i.xiongOverride || i.action.contains("被印枭夺") || i.action.contains("一定会出灾") } &&
+                        y.items.any { i -> i.action.contains("走金运没事") }
+                }
+            })
+        val sanWu = siWu(listOf(EarthlyBranch.WU, EarthlyBranch.WU, EarthlyBranch.WU, EarthlyBranch.XU))   // 三午一戌：地支印仍成局
+        assertTrue("边界：三午一戌——地支印仍成局（本气三支），走金运仍出灾",
+            sanWu.yuns.all { it.verdict == JinBiaoVerdict.XIONG && it.items.all { i -> i.xiongOverride } })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正印格成格（用丁正印、相神戊比劫护印；喜官杀「杀印相生」、忌财「贪财坏印」）——以印为用",
+            old.geJuName.contains("正印格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
+                old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_YIN &&
+                old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.QI_SHA })
     }
 }
