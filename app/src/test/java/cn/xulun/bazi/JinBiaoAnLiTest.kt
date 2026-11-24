@@ -3682,4 +3682,55 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("正财格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
                 old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.SHI_SHEN })
     }
+
+    // ── 案一百二十二 · 己酉 丁卯 庚辰 甲申（乾，申时）——身强用官而病太大·找源头（找平衡＝找生他的） ──
+    // 排盘口径：**年份未定**——此四柱在世三日同柱：1969-03-06（丙寅 1969 起）、1909-03-21（丙寅 1914 起）、1849-04-04（丙寅 1859 起）；
+    // 大运干支序同、仅起运年异，待用户／师定；不断言起运年。案廿二／案一百二十一姊妹盘。
+    @Test
+    fun `案一百二十二 乾 己酉丁卯庚辰甲申 辰酉辰申生金得局虽木当令亦身强 得用财官丁火没被伤优先用官 官只指卯木全让金克了不平衡 甲木地支不载不起作用 找地支有没有水没水就不行 辰中乙木补救不了 卯剩一小口气能吃口饭 来水一定好然病太大只凑合化水局挣钱多 申辰无水不拱土生金 金运彻底完了 找平衡即找源头`() {
+        val bazi = chart(1969, 3, 6, 16)
+        assertTrue(bazi.fullBazi.startsWith("己酉 丁卯 庚辰 甲申"))
+        assertTrue("同四柱亦见于 1909-03-21、1849-04-04 申时",
+            chart(1909, 3, 21, 16).fullBazi.startsWith("己酉 丁卯 庚辰 甲申") &&
+                chart(1849, 4, 4, 16).fullBazi.startsWith("己酉 丁卯 庚辰 甲申"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：丙寅 乙丑 甲子 癸亥 壬戌 辛酉 庚申 己未",
+            daYun.yuns.map { it.pillar.fullName } == listOf("丙寅", "乙丑", "甲子", "癸亥", "壬戌", "辛酉", "庚申", "己未"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("金得局——虽木当令亦身强（不再是身弱财党杀攻身）；身强用官（丁火没被伤）",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.PEI_CAI &&
+                jb.yongShenElement == Element.FIRE && jb.strengthBasis.contains("金得局"))
+        assertTrue("取用依据：优先用官／卯木全让金给克了不平衡／甲木地支不载／找地支有没有水／没水那就不行／绝症／能吃口饭／换位克尽死／土肯定要生金／找源头",
+            jb.quYongBasis.contains("优先用官") && jb.quYongBasis.contains("全让金给克了") &&
+                jb.quYongBasis.contains("地支不载，起不到实质性作用") && jb.quYongBasis.contains("找地支有没有水") &&
+                jb.quYongBasis.contains("没水那就不行") && jb.quYongBasis.contains("绝症") &&
+                jb.quYongBasis.contains("能吃口饭") && jb.quYongBasis.contains("就克尽死了") &&
+                jb.quYongBasis.contains("土肯定要生金的") && jb.quYongBasis.contains("找平衡之法——找源头") &&
+                !jb.quYongBasis.contains("一样发富发贵"))
+        assertTrue("清浊：清枯（病太大——来水仅凑合；档位为落地映射）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING_KU && jb.qingZhuoBasis.contains("病太大"))
+        assertTrue("甲子——中平：申子辰化水局挣钱多（相对其层次而言）",
+            jb.yuns[2].verdict == JinBiaoVerdict.PING && jb.yuns[2].items[1].action.contains("化水局了肯定挣钱多"))
+        assertTrue("癸亥——中平：来水一定好，衣食无忧（病太大只凑合）",
+            jb.yuns[3].verdict == JinBiaoVerdict.PING && jb.yuns[3].items.all { it.action.contains("衣食无忧") })
+        assertTrue("辛酉、庚申——凶：金运太不平衡，彻底完了",
+            listOf(5, 6).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.XIONG && jb.yuns[k].items.all { it.action.contains("彻底完了") } })
+        assertTrue("断语直断：病太大、没水那就不行；金运彻底完了",
+            jb.duanYu.contains("病太大") && jb.duanYu.contains("彻底完了") && jb.duanYu.contains("此为清枯之命"))
+        // 反事实（师）：「或者甲木换成壬水，就要拱水的」——有水则维持平衡，不入「病太大」之档
+        val ren = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = bazi.monthPillar,
+            dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(HeavenlyStem.REN, EarthlyBranch.SHEN),
+            birthDateTime = LocalDateTime.of(1969, 3, 6, 16, 0),
+        )
+        val jr = JinBiaoCalculator.analyze(ren, daYun, Gender.MALE)
+        assertTrue("反事实：时干换壬——不入病太大之档（无清枯「病太大」之注）",
+            !jr.quYongBasis.contains("病太大") && jr.qingZhuo != JinBiaoQingZhuo.QING_KU)
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎身强、正财格成中有败（相神丁坐卯被冲；以财为用、忌比肩）——旺衰同向，水运喜忌相反",
+            old.geJuName.contains("正财格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
+                old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.SHI_SHEN })
+    }
 }
