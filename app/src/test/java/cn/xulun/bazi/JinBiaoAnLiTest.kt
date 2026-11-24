@@ -3633,4 +3633,53 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("食神格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
                 old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.JI && it.tenGod == cn.xulun.bazi.model.TenGod.PIAN_YIN })
     }
+
+    // ── 案一百二十一 · 己亥 丁卯 庚申 庚辰（乾，辰时）——身旺用官·平衡与情份·闲神护卫（走什么都不怕） ──
+    // 排盘口径：**年份未定**——此四柱在世两日同柱：2019-03-24（现年 7 岁，丙寅 2025 起）与 1839-03-08（道光十九年，丙寅 1839 起）；
+    // 大运干支序同、仅起运年异，待用户／师定；不断言起运年。案廿二（己酉丙寅庚申庚辰）姊妹盘。
+    @Test
+    fun `案一百二十一 乾 己亥丁卯庚申庚辰 身旺财官旺不纠结皆有力 木当令有源金旺克之亦平衡 日主身有力承载财官首用官 己土闲神护卫丁火 走什么都不怕一生平安 无己土则癸亥运犯官灾 食伤反生官之源头友情`() {
+        val bazi = chart(2019, 3, 24, 8)
+        assertTrue(bazi.fullBazi.startsWith("己亥 丁卯 庚申 庚辰"))
+        assertTrue("同四柱亦见于 1839-03-08 辰时", chart(1839, 3, 8, 8).fullBazi.startsWith("己亥 丁卯 庚申 庚辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：丙寅 乙丑 甲子 癸亥 壬戌 辛酉 庚申 己未",
+            daYun.yuns.map { it.pillar.fullName } == listOf("丙寅", "乙丑", "甲子", "癸亥", "壬戌", "辛酉", "庚申", "己未"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身旺用官（财滋弱官）——用神丁火；财当令",
+            jb.strength == DayStrength.STRONG && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.PEI_CAI &&
+                jb.yongShenElement == Element.FIRE)
+        assertTrue("取用依据：俩都旺不纠结／即使被克了也有平衡／身有力承载财官首用官／己土护卫丁火／闲神／走什么都不怕一生平安／反事实犯官灾／友情／对勘案九十五",
+            jb.quYongBasis.contains("俩都旺——都有力量") && jb.quYongBasis.contains("即使被克了也有平衡") &&
+                jb.quYongBasis.contains("一定要用官用财；官没有问题首先要用官") && jb.quYongBasis.contains("己土可以护卫丁火") &&
+                jb.quYongBasis.contains("闲神") && jb.quYongBasis.contains("走什么都不怕，一生平安") &&
+                jb.quYongBasis.contains("犯官灾") && jb.quYongBasis.contains("都算友情") && jb.quYongBasis.contains("案九十五"))
+        assertTrue("旺衰注：身旺与财官旺不纠结——身有力足以承载",
+            jb.strengthBasis.contains("不纠结") && jb.strengthBasis.contains("承载"))
+        assertTrue("清浊：清（病神经木通关有情——平衡＋情份）",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("走什么都不怕，一生平安"))
+        assertTrue("丙寅——吉（财生官）", jb.yuns[0].verdict == JinBiaoVerdict.JI)
+        assertTrue("其余七运——走什么都不怕（中平：闲神立功；不再作凶论）",
+            (1..7).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.PING && jb.yuns[k].items.none { it.xiongOverride } })
+        assertTrue("水运（甲子癸亥壬戌）——伤官克官有土闲神挡住护卫",
+            listOf(2, 3, 4).all { k -> jb.yuns[k].items.any { it.action.contains("闲神挡住护卫") } })
+        assertTrue("断语：走什么都不怕，一生平安（印为闲神）",
+            jb.duanYu.contains("走什么都不怕，一生平安") && jb.duanYu.contains("闲神"))
+        // 反事实（师）：无己土（年干换乙）——命局亦平衡，然癸亥运命主得犯官灾
+        val fan = BaziResult(
+            yearPillar = Pillar(HeavenlyStem.YI, EarthlyBranch.HAI),
+            monthPillar = bazi.monthPillar,
+            dayPillar = bazi.dayPillar,
+            hourPillar = bazi.hourPillar,
+            birthDateTime = LocalDateTime.of(2019, 3, 24, 8, 0),
+        )
+        val jf = JinBiaoCalculator.analyze(fan, daYun, Gender.MALE)
+        assertTrue("反事实：无印护卫——仍用官、无闲神之注；癸亥运凶（伤官克官无印护卫：犯官灾）",
+            jf.quYongWay == JinBiaoQuYongWay.PEI_CAI && !jf.quYongBasis.contains("闲神") &&
+                jf.yuns[3].verdict == JinBiaoVerdict.XIONG && jf.yuns[3].items.all { it.action.contains("犯官灾") })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正财格成格（以财为用、相神丁「官杀护财」；喜食神「食伤生财」忌比肩）——水运吉凶与金镖门相反",
+            old.geJuName.contains("正财格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
+                old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.SHI_SHEN })
+    }
 }
