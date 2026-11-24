@@ -3511,4 +3511,73 @@ class JinBiaoAnLiTest {
                 old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_YIN &&
                 old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.XI && it.tenGod == cn.xulun.bazi.model.TenGod.QI_SHA })
     }
+
+    // ── 案一百一十九 · 丙子 己亥 乙亥 丙子（乾，早子时）——印旺用财·维持平衡·火土虚透无根（走火土运小康） ──
+    // 排盘口径：此四柱在世唯 1996-12-04 早子时（引擎全量扫描 1800–2100——另 1816-11-18、2056-11-19）；
+    // 案一百零三（丙子己亥乙丑壬午）姊妹盘——同丙子年己亥月乙日，大运干支相同、起运年异（彼庚子 2001 起）。
+    @Test
+    fun `案一百一十九 乾 丙子己亥乙亥丙子 地支四印无金不是昆仑之水 印得局要维持平衡无非用财克印 火土虚透无根用神无力 走火土运肯定能小康 水木运把丙火己土都伤了没有作为 单天干木运一般 地支走木更差 丑湿土止不了水 印旺用财怕劫财 没有去财星之寡`() {
+        val bazi = chart(1996, 12, 4, 0)
+        assertTrue(bazi.fullBazi.startsWith("丙子 己亥 乙亥 丙子"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：庚子1997 辛丑2007 壬寅2017 癸卯2027",
+            daYun.yuns.take(4).map { "${it.pillar.fullName}(${it.startYear})" } == listOf("庚子(1997)", "辛丑(2007)", "壬寅(2017)", "癸卯(2027)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("地支四印得局、无金——不是昆仑之水；印旺用财维持平衡（先于身旺食伤泄秀）——用神己土财",
+            jb.strength == DayStrength.STRONG && jb.quYongWay == JinBiaoQuYongWay.HUAI_YIN &&
+                jb.yongShenElement == Element.EARTH && !jb.wangJi)
+        assertTrue("取用依据：不是昆仑之水／维持平衡无非用财克印／平衡总纲／虚透没有根用神无力／没有金就是好事／走火土之运肯定能小康／水木运差没有作为／单天干木运一般／地支走木不如天干／丑湿土止不了水／对勘案一百零三午火根／印旺用财怕劫财／没有去财星之寡",
+            jb.quYongBasis.contains("不是昆仑之水") && jb.quYongBasis.contains("要维持平衡，无非就用土财来克印") &&
+                jb.quYongBasis.contains("任何八字都讲究平衡") && jb.quYongBasis.contains("虚透没有根——用神无力") &&
+                jb.quYongBasis.contains("没有金就是好事") && jb.quYongBasis.contains("走火土之运肯定能小康") &&
+                jb.quYongBasis.contains("把火伤了、把土也伤了") && jb.quYongBasis.contains("就没有作为了") &&
+                jb.quYongBasis.contains("单天干木运") && jb.quYongBasis.contains("一般的运") &&
+                jb.quYongBasis.contains("地支走木") && jb.quYongBasis.contains("还不如天干走木") &&
+                jb.quYongBasis.contains("起不到止水的作用") && jb.quYongBasis.contains("亥子丑") &&
+                jb.quYongBasis.contains("午火根") && jb.quYongBasis.contains("印旺用财，怕劫财") &&
+                jb.quYongBasis.contains("没有「去财星之寡」这么一说"))
+        assertTrue("用神健全度：无气受伤、无根虚浮（年时两丙生用）",
+            jb.health.level == JinBiaoHealth.WU_QI && jb.health.rootNote.contains("无根虚浮"))
+        assertTrue("清浊：半浊半清（用神无力——走火土运小康；档位为落地映射）",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("用神无力") &&
+                jb.qingZhuoBasis.contains("印旺用财怕劫财"))
+        assertTrue("庚子——凶（水生印又失衡）", jb.yuns[0].verdict == JinBiaoVerdict.XIONG)
+        assertTrue("辛丑——凶：丑是湿土，基本上起不到止水的用（毕竟有个亥子丑）",
+            jb.yuns[1].verdict == JinBiaoVerdict.XIONG && jb.yuns[1].items[1].action.contains("起不到止水的作用"))
+        assertTrue("壬寅、癸卯——凶：水木运肯定是差运（把丙火伤了、把土也伤了——没有作为）；地支走木还不如天干走木",
+            listOf(2, 3).all { k ->
+                jb.yuns[k].verdict == JinBiaoVerdict.XIONG &&
+                    jb.yuns[k].items[0].action.contains("水木运肯定是差运") &&
+                    jb.yuns[k].items[1].action.contains("还不如天干走木")
+            })
+        assertTrue("甲辰——中平：单天干木运不能算好运但也不算差，一般的运",
+            jb.yuns[4].verdict == JinBiaoVerdict.PING && jb.yuns[4].items[0].action.contains("一般的运"))
+        assertTrue("乙巳、丙午、丁未——吉：走火土之运肯定能小康",
+            listOf(5, 6, 7).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.JI && jb.yuns[k].items.any { it.action.contains("肯定能小康") } })
+        assertTrue("断语：印旺用财之命——走火土之运肯定能小康；不从（没有去财星之寡）",
+            jb.duanYu.contains("此为印旺用财之命") && jb.duanYu.contains("肯定能小康") &&
+                jb.duanYu.contains("没有「去财星之寡」这么一说"))
+        // 对勘案一百零三（丙子己亥乙丑壬午）：有午火根——地支来木也没事（生午火了）；木运不如火土运
+        val b3 = chart(1996, 11, 24, 12)
+        val j3 = JinBiaoCalculator.analyze(b3, DaYunCalculator.compute(b3, Gender.MALE), Gender.MALE)
+        assertTrue("案一百零三：有午火根——地支来木也没事（壬寅癸卯甲辰不作凶）",
+            j3.quYongWay == JinBiaoQuYongWay.HUAI_YIN && j3.yongShenElement == Element.EARTH &&
+                listOf(2, 3, 4).all { j3.yuns[it].verdict == JinBiaoVerdict.PING && j3.yuns[it].items[1].action.contains("地支来木也没事") })
+        // 反事实（师）：把子水换成未土——来木还是一样不行（印旺用财怕劫财——地支没有火；合成盘校验）
+        val ziWei = BaziResult(
+            yearPillar = Pillar(HeavenlyStem.BING, EarthlyBranch.ZI),
+            monthPillar = Pillar(HeavenlyStem.JI, EarthlyBranch.HAI),
+            dayPillar = Pillar(HeavenlyStem.YI, EarthlyBranch.HAI),
+            hourPillar = Pillar(HeavenlyStem.BING, EarthlyBranch.WEI),
+            birthDateTime = LocalDateTime.of(1996, 12, 4, 0, 0),
+        )
+        val jw = JinBiaoCalculator.analyze(ziWei, daYun, Gender.MALE)
+        assertTrue("反事实：子换未——仍印旺用财（调候让位），壬寅癸卯来木还是一样不行",
+            jw.quYongWay == JinBiaoQuYongWay.HUAI_YIN && jw.yongShenElement == Element.EARTH &&
+                jw.quYongBasis.contains("来木还是一样不行") && listOf(2, 3).all { jw.yuns[it].verdict == JinBiaoVerdict.XIONG })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正印格成中有败（以印为用、忌财「贪财坏印」）——与师断「用财克印维持平衡」相反",
+            old.geJuName.contains("正印格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
+                old.xiJi.any { it.kind == cn.xulun.bazi.model.XiJi.JI && it.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_CAI })
+    }
 }
