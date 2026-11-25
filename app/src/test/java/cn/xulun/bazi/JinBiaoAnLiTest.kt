@@ -4319,4 +4319,57 @@ class JinBiaoAnLiTest {
                 old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.JIE_CAI &&
                 old.xiangShen?.tenGod == cn.xulun.bazi.model.TenGod.PIAN_YIN)
     }
+
+    // ── 案一百三十一 · 庚戌 庚辰 辛巳 辛卯（坤，卯时）——劫争财严重·兄弟章女命次例（有兄弟，兄弟是残疾） ──
+    // 排盘口径：用户附起运年表（己卯 1978 起）→ 1970-05-01 卯时（9 岁起运）；另 2030-04-16 同柱、起运年异。
+    // **师断：劫争财严重；有兄弟，兄弟是残疾（过得不好、不和睦）——财是没克尽的；非官杀护财（官管不住）。**
+    // 取用师未断（沿用通则「身旺印坏·财星坏印」）；子女、婚姻、各运师未断。
+    @Test
+    fun `案一百三十一 坤 庚戌庚辰辛巳辛卯 劫争财严重 言传劫争财无兄弟 意会有兄弟的本质 有兄弟兄弟是残疾 官杀护财是表面官管不住 财是没克尽的 拿辰来当兄弟肯定没有兄弟戌把辰砍伐了 生时是卯春天的木力量还是大 卯木克泄交加但是春天的卯木时辰 辰戌冲有关系兄弟过得不好兄弟不和睦 有益思考无益断对`() {
+        val bazi = chart(1970, 5, 1, 6)
+        assertTrue(bazi.fullBazi.startsWith("庚戌 庚辰 辛巳 辛卯"))
+        assertTrue("卯时 05:00–07:00 皆辛卯时", chart(1970, 5, 1, 5).fullBazi.startsWith("庚戌 庚辰 辛巳 辛卯"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue("阳年坤造逆行：己卯1978 戊寅1988 丁丑1998 丙子2008 乙亥2018 甲戌2028 癸酉2038 壬申2048",
+            daYun.yuns.map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("己卯(1978)", "戊寅(1988)", "丁丑(1998)", "丙子(2008)", "乙亥(2018)", "甲戌(2028)", "癸酉(2038)", "壬申(2048)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("身强——身旺印坏·财星坏印（取用师未断——沿用通则）：用神财（木）",
+            jb.strength == DayStrength.STRONG && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.HUAI_YIN &&
+                jb.yongShenElement == Element.WOOD)
+        assertTrue("旺衰注：劫争财严重——比劫成林，财（卯木——春天的木）被盖头克泄交加而没克尽",
+            jb.strengthBasis.contains("劫争财严重——比劫成林") && jb.strengthBasis.contains("春天的木"))
+        assertTrue("取用依据：通则文案（身旺印坏·财星坏印）仍在＋兄弟章附注——劫争财严重／言传劫争财无兄弟／意会有兄弟的本质／有兄弟兄弟是残疾／官杀护财是表面官管不住／财是没克尽的／拿辰来当兄弟肯定没有兄弟戌把辰砍伐了／生时是卯春天的木／卯木克泄交加但是春天的卯木时辰／辰戌冲有关系兄弟过得不好兄弟不和睦／有益思考无益断对",
+            jb.quYongBasis.contains("身旺印坏") && jb.quYongBasis.contains("财星坏印") &&
+                jb.quYongBasis.contains("劫争财严重·兄弟章（女命次例）（案一百三十一）") &&
+                jb.quYongBasis.contains("——劫争财无兄弟") && jb.quYongBasis.contains("有兄弟的本质是什么") &&
+                jb.quYongBasis.contains("有兄弟，兄弟是残疾") && jb.quYongBasis.contains("搞客观事实，不要牵强附会") &&
+                jb.quYongBasis.contains("根本就管不住") && jb.quYongBasis.contains("财是没克尽的") &&
+                jb.quYongBasis.contains("拿辰（中藏木）来当兄弟，肯定是没有兄弟的，因为戌把辰砍伐了") &&
+                jb.quYongBasis.contains("生时就是卯时，春天的木") && jb.quYongBasis.contains("卯的力量还是大的") &&
+                jb.quYongBasis.contains("卯木是克泄交加没错") && jb.quYongBasis.contains("春天的卯木时辰") &&
+                jb.quYongBasis.contains("戌辰冲绝对有关系") && jb.quYongBasis.contains("她兄弟肯定过得不好") &&
+                jb.quYongBasis.contains("而且兄弟也不和睦") && jb.quYongBasis.contains("有益思考无益断对"))
+        assertTrue("清浊：档位沿用通则（师未点名清浊）而注「劫争财严重」",
+            jb.qingZhuoBasis.contains("劫争财严重（案一百三十一）") && jb.qingZhuoBasis.contains("师未点名清浊"))
+        assertTrue("断语：劫争财严重——有兄弟，兄弟是残疾；兄弟过得不好、不和睦",
+            jb.duanYu.contains("劫争财严重——有兄弟，兄弟是残疾") && jb.duanYu.contains("兄弟过得不好、兄弟不和睦"))
+        // 对勘：财不被盖头（时干换癸）／时支非财（时柱换辛酉）——不入此档
+        val gaiTouQu = BaziResult(
+            yearPillar = bazi.yearPillar, monthPillar = bazi.monthPillar, dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(HeavenlyStem.GUI, EarthlyBranch.MAO), birthDateTime = LocalDateTime.of(1970, 5, 1, 6, 0),
+        )
+        val shiZhiYou = BaziResult(
+            yearPillar = bazi.yearPillar, monthPillar = bazi.monthPillar, dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(HeavenlyStem.XIN, EarthlyBranch.YOU), birthDateTime = LocalDateTime.of(1970, 5, 1, 6, 0),
+        )
+        assertTrue("对勘：财不被盖头（时干换癸）／时支非财（时柱换辛酉）——不入「劫争财严重」之档",
+            listOf(gaiTouQu, shiZhiYou).all {
+                JinBiaoCalculator.analyze(it, daYun, Gender.FEMALE).quYongBasis.let { q -> !q.contains("劫争财严重·兄弟章") }
+            })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正印格败（相神年干庚「比劫护印」；败：相神庚坐支戌被冲）——另判土金毓秀格",
+            old.geJuName.contains("正印格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.BAI &&
+                old.xiangShen?.tenGod == cn.xulun.bazi.model.TenGod.JIE_CAI)
+    }
 }

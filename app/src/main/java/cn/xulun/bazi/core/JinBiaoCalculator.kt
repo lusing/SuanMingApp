@@ -930,6 +930,8 @@ object JinBiaoCalculator {
         // 案一百三十（＝案七十四复看）·劫刃肆逞·食伤生财（「食伤生财，比劫争财有点过」「这个劫刃肆逞都有兄弟」
         // 「是因为申酉金财没被克绝尽」——判据见 jieCai130Of）
         val jieCai130 = jieCai130Of(bazi, dayMaster, strength, ruoJi, wangJi, yinEl, biEl, shiEl, caiEl, guanEl)
+        // 案一百三十一·劫争财严重（「这个也是劫争财严重」「有兄弟，兄弟是残疾」「财是没克尽的」——判据见 jieCai131Of）
+        val jieCai131 = jieCai131Of(bazi, strength, ruoJi, wangJi, yinEl, biEl, caiEl)
 
         // 取用依据文案共用上下文（各案文案自 analyze 抽出——方法体量上限）
         val cb = CtxB(bazi, dayMaster, monthBranch, luZhi, yinEl, biEl, shiEl, caiEl, guanEl)
@@ -1588,7 +1590,7 @@ object JinBiaoCalculator {
         } else {
             null
         }
-        val qingZhuoBasis = qingZhuoBasisOf(cb, choice, qingZhuo, jianBing, bingEl, yongEl, bingS2, yongS2, yongDeLi, yaoEl, tongGuanEl, yaoS, bingHua, bingYiTU, bingTongGuanTou, gongCaiTongMen, huaJuBuYong, yongWuLiHua, anCai114, liangShang112Pei, ganDuoBuZai117, maJin109, caiGenBa109, caiGen109, shiBanTongGuan, shiSanHe113, yinGenBaCai107, yinWangCai119, keGuan, keYinEl, keXieJiaoJia120, qingFen121, shiZhi124, jiaQuGua125, bingDa122, yongGuan123, anYin126, yingKang127, kangSha128D, zaoTu129D, jieCai130)
+        val qingZhuoBasis = qingZhuoBasisOf(cb, choice, qingZhuo, jianBing, bingEl, yongEl, bingS2, yongS2, yongDeLi, yaoEl, tongGuanEl, yaoS, bingHua, bingYiTU, bingTongGuanTou, gongCaiTongMen, huaJuBuYong, yongWuLiHua, anCai114, liangShang112Pei, ganDuoBuZai117, maJin109, caiGenBa109, caiGen109, shiBanTongGuan, shiSanHe113, yinGenBaCai107, yinWangCai119, keGuan, keYinEl, keXieJiaoJia120, qingFen121, shiZhi124, jiaQuGua125, bingDa122, yongGuan123, anYin126, yingKang127, kangSha128D, zaoTu129D, jieCai130, jieCai131)
 
         // ── 喜忌（第一讲：帮用=喜，损用=忌） ──
         val xiElements = Element.entries.filter { it.generates == yongEl || it == yongEl }
@@ -1989,6 +1991,8 @@ object JinBiaoCalculator {
             if (zaoTu129D) append(zhiDuan129(cb, gender))
             // 案一百三十·劫刃肆逞·食伤生财——比劫争财有点过；有兄弟；没儿子
             if (jieCai130D) append(zhiDuan130(cb, jieCai130!!))
+            // 案一百三十一·劫争财严重——有兄弟，兄弟是残疾
+            if (jieCai131 != null) append(zhiDuan131(cb, jieCai131!!))
             if (choice.way == JinBiaoQuYongWay.GONG_SHEN) {
                 append("此为财党杀攻身之命——旺财党杀攻身、财先破印：身衰撑不住，非贫即夭（重病之属——肾病严重放弃治疗，身太衰）；丙寅之类印透化杀之运能稍安，然难救本。")
             }
@@ -2091,6 +2095,7 @@ object JinBiaoCalculator {
                 (if (kangSha128D) qiangNote128(cb) else "") +
                 (if (zaoTu129D) qiangNote129(cb) else "") +
                 (if (jieCai130D) qiangNote130(cb) else "") +
+                (if (jieCai131 != null) qiangNote131(cb, jieCai131!!) else "") +
                 (if (jiaQuGua125) qiangNote125(cb) else "") +
                 (if (shiZhi124) qiangNote124(cb) else "") +
                 (if (nianZhuZhuanWang123) qiangNote123(cb) else "") +
@@ -2164,7 +2169,8 @@ object JinBiaoCalculator {
             yongShenGod = yongGod,
             yongShenElement = yongEl,
             yongShenStars = yongShenStars,
-            quYongBasis = choice.basis,
+            // 案一百三十一·劫争财严重——取用师未断（沿用通则文案），仅附兄弟章之断
+            quYongBasis = choice.basis + (if (jieCai131 != null) jieCai131Basis(cb, jieCai131!!, biS, guanS) else ""),
             daiMing = daiMing,
             health = health,
             xiElements = xiElements,
@@ -4453,6 +4459,7 @@ object JinBiaoCalculator {
         kangSha128: Boolean,
         zaoTu129: Boolean,
         jieCai130: JR130?,
+        jieCai131: JC131?,
     ): String = buildString {
         val bazi = cb.bazi
         val biEl = cb.biEl
@@ -4526,6 +4533,8 @@ object JinBiaoCalculator {
         if (zaoTu129) append(zaoTu129Note(cb))
         // 案一百三十·劫刃肆逞·食伤生财——比劫争财有点过（师未点名清浊，档位沿用通则）
         if (jieCai130 != null) append(jieCai130Note(cb, jieCai130))
+        // 案一百三十一·劫争财严重（师未点名清浊，档位沿用通则）
+        if (jieCai131 != null) append(jieCai131Note(cb, jieCai131))
     }
 
     /** 月建自寅起之序（寅 0…丑 11）及四季、孟仲季之名——案一百二十六文案用。 */
@@ -5273,6 +5282,74 @@ object JinBiaoCalculator {
     /** 案一百三十·子女续注（羊刃肆逞档——比劫争财太狠身体有缺陷；中医调理纵有不如无）。 */
     private fun jieCai130ZiNvNote(c: CtxB): String =
         "；**复看（案一百三十）：比劫争财太狠——一般身体都有缺陷（${zangFu130(c.biEl)}${c.biEl.chinese}旺、${zangFu130(c.yinEl)}${zangFu130(c.guanEl)}都有毛病、${zangFu130(c.guanEl)}${c.guanEl.chinese}不足），生不出来儿子；中医调理找对大夫能调出来，但纵有不如无——这局一般就是没有儿子的**"
+
+    /** 案一百三十一·劫争财严重——结构：[caiZhi]＝被比劫盖头之财本气支（时支卯——当季之木，没克尽）；[cang]＝藏财之余气而被冲伐之印支（辰）；[chongShen]＝其冲神（戌）。 */
+    private class JC131(val caiZhi: EarthlyBranch, val cang: EarthlyBranch?, val chongShen: EarthlyBranch?)
+
+    /** 月建所属之季的五行（春木、夏火、秋金、冬水）——案一百三十一「春天的木」。 */
+    private fun jiWu131(branch: EarthlyBranch): Element = when (ji126(branch)) {
+        "春" -> Element.WOOD
+        "夏" -> Element.FIRE
+        "秋" -> Element.METAL
+        else -> Element.WATER
+    }
+
+    /**
+     * 案一百三十一·劫争财严重——判据。
+     * 师断：「这个也是劫争财严重」「有兄弟，兄弟是残疾」「拿辰来当兄弟，肯定是没有兄弟的，因为戌把辰砍伐了，
+     * 但是不影响他是春天，生时是卯，卯的力量还是大的，财是没克尽的」「卯木是克泄交加没错，但是是春天的卯木时辰」。
+     * 身强非旺极＋比劫透干≥2＋财得时支本气根而当季（没克尽）且被比劫盖头（克泄交加）；
+     * 印本气支藏财之余气而被冲伐者（辰戌冲）记为砍伐之象。
+     */
+    private fun jieCai131Of(
+        bazi: BaziResult,
+        strength: DayStrength,
+        ruoJi: Boolean,
+        wangJi: Boolean,
+        yinEl: Element,
+        biEl: Element,
+        caiEl: Element,
+    ): JC131? {
+        if (strength != DayStrength.STRONG || ruoJi || wangJi) return null
+        if (bazi.stems.indices.count { it != 2 && bazi.stems[it].element == biEl } < 2) return null
+        if (bazi.hourPillar.branch.element != caiEl || bazi.hourPillar.stem.element != biEl) return null
+        if (jiWu131(bazi.monthPillar.branch) != caiEl) return null
+        val cang = bazi.branches.firstOrNull { br ->
+            br != bazi.hourPillar.branch && br.element == yinEl &&
+                branchHiddenStems.getValue(br).any { it.element == caiEl } &&
+                bazi.branches.any { it != br && LIU_CHONG[it] == br }
+        }
+        return JC131(bazi.hourPillar.branch, cang, cang?.let { LIU_CHONG[it] })
+    }
+
+    /** 案一百三十一·取用依据附注（劫争财严重——兄弟章女命次例；取用师未断，仅附不改）。 */
+    private fun jieCai131Basis(c: CtxB, jc: JC131, biS: Double, guanS: Double): String {
+        val ji = ji126(c.monthBranch)
+        val caiZhi = jc.caiZhi.chinese
+        val cangNote = if (jc.cang != null && jc.chongShen != null) {
+            val z = jc.cang!!.chinese
+            val s = jc.chongShen!!.chinese
+            "${s}${z}冲没错——把${z}的${c.caiEl.chinese}砍伐了：拿${z}（中藏${c.caiEl.chinese}）来当兄弟，肯定是没有兄弟的，因为${s}把${z}砍伐了；但是不影响他是${ji}天，"
+        } else ""
+        val canNote = jc.chongShen?.let { "${it.chinese}${jc.cang!!.chinese}冲绝对有关系——" } ?: ""
+        return "；**劫争财严重·兄弟章（女命次例）（案一百三十一）**：这个也是劫争财严重。**言传**——劫争财无兄弟；**意会**——有兄弟的本质是什么？一定要学本质。**有兄弟，兄弟是残疾**。「${c.guanEl.chinese}杀护财，有兄弟」是从表面看——不管结论对不对，结论对也是蒙对的，不是断对的；**搞客观事实，不要牵强附会**：比劫争财，这个官（${c.guanEl.chinese}，党力${format(guanS)}对比劫${format(biS)}）根本就管不住。**为什么有兄弟——财是没克尽的**：${c.dayMaster.chinese}${c.dayMaster.element.chinese}生在${c.monthBranch.chinese}月${ji}天，生时就是${caiZhi}时，${ji}天的${c.caiEl.chinese}；${cangNote}生时是${caiZhi}，${caiZhi}的力量还是大的，财是没克尽的。${caiZhi}${c.caiEl.chinese}是克泄交加没错（${c.bazi.hourPillar.stem.chinese}${c.biEl.chinese}盖头），但是是${ji}天的${caiZhi}${c.caiEl.chinese}时辰——**她兄弟肯定过得不好，严重是残疾**（${canNote}克泄交加兄弟肯定不行），**而且兄弟也不和睦**。学规：先不下结论——一个八字起码要琢磨十分钟；有益思考无益断对，思考完了自然对。"
+    }
+
+    /** 案一百三十一·直断。 */
+    private fun zhiDuan131(c: CtxB, jc: JC131): String {
+        val ji = ji126(c.monthBranch)
+        val caiZhi = jc.caiZhi.chinese
+        val chongNote = jc.chongShen?.let { "、${it.chinese}冲砍伐${jc.cang!!.chinese}" } ?: ""
+        return "直断：**劫争财严重——有兄弟，兄弟是残疾**（有兄弟的本质——财是没克尽的：${ji}天的${caiZhi}${c.caiEl.chinese}、力量还是大；非${c.guanEl.chinese}杀护财——比劫争财，官管不住）；**兄弟过得不好、兄弟不和睦**（${caiZhi}${c.caiEl.chinese}克泄交加${chongNote}）（案一百三十一）。"
+    }
+
+    /** 案一百三十一·旺衰注（劫争财严重）。 */
+    private fun qiangNote131(c: CtxB, jc: JC131): String =
+        "；**劫争财严重——比劫成林，财（${jc.caiZhi.chinese}${c.caiEl.chinese}——${ji126(c.monthBranch)}天的${c.caiEl.chinese}）被盖头克泄交加而没克尽（案一百三十一）**"
+
+    /** 案一百三十一·清浊附注（师未点名清浊，档位沿用通则）。 */
+    private fun jieCai131Note(c: CtxB, jc: JC131): String =
+        "——**劫争财严重（案一百三十一）**：比劫成林，财${jc.caiZhi.chinese}${c.caiEl.chinese}当季而没克尽——有兄弟而兄弟残疾（克泄交加）。师未点名清浊，档位沿用通则"
 
     private fun format(v: Double): String = if (v % 1.0 == 0.0) v.toInt().toString() else String.format("%.1f", v)
     private fun pct(v: Double): String = String.format("%.0f%%", v * 100)
