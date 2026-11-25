@@ -4101,4 +4101,68 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎偏财格成格（相神己「食伤生财」；救应比劫夺财——透食伤化劫或官杀制劫）——与金镖门「身弱用劫、财官旺」相反",
             old.geJuName.contains("偏财格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG)
     }
+
+    // ── 案一百二十八 · 壬申 乙巳 庚寅 壬午（乾，午时）——财生杀旺·全靠比劫扛杀——当兵专项④类之反例（师未断当兵） ──
+    // 排盘口径：用户附起运年表（丙午 1999 起）→ 1992-05-14 午时（8 岁起运）；另 1932-05-29 同柱、起运年异。
+    // **事实：学习不好（没有印）；没有儿子（目前未反馈）。**
+    // 各步大运之吉凶师未断——运层 verdict 为通则映射，不作断言。
+    @Test
+    fun `案一百二十八 乾 壬申乙巳庚寅壬午 身弱全靠比劫申扛杀 合不合杀无所谓 财生杀旺 一点壬水不但不能克火反而生木助火 食药为忌 申中戊不行 印藏比劫支不可用 这局金水旺就是用劫 没有印不能有儿子 学习不好 一般当兵族那种都是学习不好的 没有儿子目前未反馈`() {
+        val bazi = chart(1992, 5, 14, 12)
+        assertTrue(bazi.fullBazi.startsWith("壬申 乙巳 庚寅 壬午"))
+        assertTrue("午时 11:00–13:00 皆壬午时", chart(1992, 5, 14, 11).fullBazi.startsWith("壬申 乙巳 庚寅 壬午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：丙午1999 丁未2009 戊申2019 己酉2029 庚戌2039 辛亥2049 壬子2059 癸丑2069",
+            daYun.yuns.map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("丙午(1999)", "丁未(2009)", "戊申(2019)", "己酉(2029)", "庚戌(2039)", "辛亥(2049)", "壬子(2059)", "癸丑(2069)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱——身弱用劫（取用走伤官用劫之路；文案整体换为「财生杀旺·全靠比劫扛杀」）：用神比劫（金）",
+            jb.strength == DayStrength.WEAK && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE &&
+                jb.yongShenElement == Element.METAL)
+        assertTrue("用神仅年支申本气（比肩）——食（壬壬）为忌不列",
+            jb.yongShenStars == listOf("年支申本气（比肩）"))
+        assertTrue("旺衰注：全靠比劫申扛杀——财生杀旺、一点水反助火；合不合杀无所谓",
+            jb.strengthBasis.contains("全靠比劫申扛杀") && jb.strengthBasis.contains("财生杀旺") &&
+                jb.strengthBasis.contains("合不合杀无所谓"))
+        assertTrue("取用依据：财生杀旺全靠比劫扛杀／合不合杀无所谓／一点壬水反助火／食药为忌／申中戊不行／印藏比劫支不可用／这局金水旺就是用劫／没有印不能有儿子／学习不好／一般当兵族那种都是学习不好的／反事实寅巳换位层次高",
+            jb.quYongBasis.contains("财生杀旺·全靠比劫扛杀（案一百二十八）") &&
+                jb.quYongBasis.contains("合不合杀无所谓的") && jb.quYongBasis.contains("一点壬水不但不能克火") &&
+                jb.quYongBasis.contains("反而生木助火") && jb.quYongBasis.contains("食药为忌") &&
+                jb.quYongBasis.contains("申中戊不行") && jb.quYongBasis.contains("印藏比劫支不可用") &&
+                jb.quYongBasis.contains("这局金水旺，就是用劫的") && jb.quYongBasis.contains("没有印，不能有儿子") &&
+                jb.quYongBasis.contains("学习肯定不好") && jb.quYongBasis.contains("一般当兵族那种都是学习不好的") &&
+                jb.quYongBasis.contains("**反事实**：寅和巳换一个位置也是木火旺") && jb.quYongBasis.contains("不会层次更低") &&
+                jb.quYongBasis.contains("层次会比这个高的"))
+        assertTrue("清浊：档位沿用通则（师未点名清浊）而注「全靠比劫扛杀」——满盘浊气（师未断穷）",
+            jb.qingZhuo == JinBiaoQingZhuo.MAN_ZHUO && jb.qingZhuoBasis.contains("全靠比劫扛杀（案一百二十八）") &&
+                jb.qingZhuoBasis.contains("师未点名"))
+        assertTrue("子女：必无儿——没有印，不能有儿子（目前未反馈）",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER &&
+                jb.ziNv!!.basis.contains("没有印——没有儿子") && jb.ziNv!!.basis.contains("不能有儿子") &&
+                jb.ziNv!!.basis.contains("目前未反馈"))
+        assertTrue("学历：学历不高——没有印，学习不好",
+            jb.xueLi!!.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO &&
+                jb.xueLi!!.basis.contains("没有印——学习不好"))
+        assertTrue("断语：财生杀旺·全靠比劫扛杀；学习不好；没有儿子；替「贵命」通句；替「差命穷命」通句",
+            jb.duanYu.contains("财生杀旺·全靠比劫扛杀（身弱用劫——壬水反助火）") &&
+                jb.duanYu.contains("学习不好**（没有印——一般当兵族那种都是学习不好的）") &&
+                jb.duanYu.contains("没有儿子**（没有印，不能有儿子——目前未反馈）") &&
+                !jb.duanYu.contains("贵命，走什么运都不怕") && !jb.duanYu.contains("差命穷命，走什么运也好不了") &&
+                jb.duanYu.contains("全靠比劫扛杀之命") && jb.duanYu.contains("师未断穷"))
+        // 反事实（师）：「寅和巳换一个位置也是木火旺——不会层次更低，层次会比这个高的」——合成盘不入此档（财党杀攻身）
+        val swap = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = Pillar(HeavenlyStem.YI, EarthlyBranch.YIN),
+            dayPillar = bazi.dayPillar,
+            hourPillar = bazi.hourPillar,
+            birthDateTime = LocalDateTime.of(1992, 5, 14, 12, 0),
+        )
+        val js = JinBiaoCalculator.analyze(swap, daYun, Gender.MALE)
+        assertTrue("反事实：寅巳换位——不入「全靠比劫扛杀」之档（财党杀攻身）",
+            js.quYongWay == JinBiaoQuYongWay.GONG_SHEN && !js.quYongBasis.contains("全靠比劫扛杀"))
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎七杀格成中有败（相神年干壬「食神制杀」；败：相神壬坐支申被冲）——与金镖门「身弱用劫、全靠比劫扛杀」取用不同",
+            old.geJuName.contains("七杀格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
+                old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.QI_SHA)
+    }
 }
