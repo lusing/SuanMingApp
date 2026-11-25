@@ -3921,4 +3921,100 @@ class JinBiaoAnLiTest {
         assertTrue("老引擎伤官格成中有败（相神甲「伤官佩印」）——以伤官为格、印为相；旺衰同向（身强）",
             old.geJuName.contains("伤官格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI)
     }
+
+    // ── 案一百二十六 · 辛酉 庚寅 己未 戊辰（乾，辰时）——坐下暗印·印护官·吉神深藏终身之福——当兵专项第二例 ──
+    // 排盘口径：用户附起运年表（己丑 1983 起）→ 1981-02-10 辰时（3 岁起运）；另 1921-02-25 同柱、起运年异。
+    // **事实：当兵（丁丑戊寅己卯）；没学历（初学毕业）；有儿子；犯过法（当村干部老打人被判一年；丁亥年殴打上访群众——进去了也没事儿）。**
+    // 各步大运之吉凶师未断——运层 verdict 为通则映射，不作断言。
+    @Test
+    fun `案一百二十六 乾 辛酉庚寅己未戊辰 用印还是用官用印 孟春土虚 伤官见官克泄交加 身旺中变弱必须用印用未中丁火 身弱不用官 无理之人犯法 吉神深藏终身之福 印能护官当兵 没有印就是贱人犯官 流年印露当一年兵跟应期没关系 印没发露没学历初学毕业 未中丁火不伤有儿子 犯过法判一年进去也没事儿 伤官见官不可刻舟求剑 没有劫财抗杀一样当兵 辰换戌身也强但虚了整体把握`() {
+        val bazi = chart(1981, 2, 10, 8)
+        assertTrue(bazi.fullBazi.startsWith("辛酉 庚寅 己未 戊辰"))
+        assertTrue("同四柱亦见于 1921-02-25 辰时", chart(1921, 2, 25, 8).fullBazi.startsWith("辛酉 庚寅 己未 戊辰"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：己丑1983 戊子1993 丁亥2003 丙戌2013 乙酉2023 甲申2033 癸未2043 壬午2053",
+            daYun.yuns.map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("己丑(1983)", "戊子(1993)", "丁亥(2003)", "丙戌(2013)", "乙酉(2023)", "甲申(2033)", "癸未(2043)", "壬午(2053)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱（身旺中变弱）——扶身用印（坐下暗印；先于身弱「伤官用劫」——藏支之印于此亦为有印）：用神火（印）",
+            jb.strength == DayStrength.WEAK && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.FU_SHEN &&
+                jb.yongShenElement == Element.FIRE)
+        assertTrue("旺衰注：身旺中变弱——孟春土虚、伤官见官克泄交加，必须用印（坐下未中丁火暗印）",
+            jb.strengthBasis.contains("身旺中变弱——孟春土虚") && jb.strengthBasis.contains("必须用印（坐下未中丁火暗印）"))
+        assertTrue("取用依据：坐下暗印印护官当兵／用印还是用官用印／孟春土虚（水生夏天火生冬天之喻）／庚与寅打架克泄交加／坐未有力但偏弱／身旺中变弱必须用印用未中丁火／身弱不用官／无理／吉神深藏终身之福／丁丑戊寅己卯当兵／有印护官国家的东西给保卫了／不露流年也当兵跟应期没关系／贱人犯官／没有法律概念就犯法／伤官见官不可刻舟求剑／一切都跟喜用有关系／没有劫财抗杀／没学历初学毕业／未中丁火不伤／犯过法判一年丁亥年／辰换戌虚了整体把握",
+            jb.quYongBasis.contains("坐下暗印·印护官——当兵") && jb.quYongBasis.contains("用印还是用官？**用印**") &&
+                jb.quYongBasis.contains("己土生在孟春（寅月）土虚") &&
+                jb.quYongBasis.contains("春天土虚，相当于水生在夏天、火生冬天一样") &&
+                jb.quYongBasis.contains("庚与寅（木）打架叫**克泄交加**") &&
+                jb.quYongBasis.contains("日主坐未是有力，但是偏弱的") &&
+                jb.quYongBasis.contains("身旺中变弱了，必须用印，用未中丁火") &&
+                jb.quYongBasis.contains("此时身弱不用官") && jb.quYongBasis.contains("这样也叫无理") &&
+                jb.quYongBasis.contains("吉神深藏，终身之福") && jb.quYongBasis.contains("丁丑戊寅己卯当兵") &&
+                jb.quYongBasis.contains("有印护官了，国家的东西给保卫了——有印就代表他能去参军") &&
+                jb.quYongBasis.contains("这人不露流年也当兵") && jb.quYongBasis.contains("跟应期没关系") &&
+                jb.quYongBasis.contains("贱人犯官") && jb.quYongBasis.contains("没有这个概念就犯法") &&
+                jb.quYongBasis.contains("不能刻舟求剑") && jb.quYongBasis.contains("一切都跟喜用有关系") &&
+                jb.quYongBasis.contains("根本没有什么劫财抗杀，一样当兵") &&
+                jb.quYongBasis.contains("没学历**（初学毕业）") && jb.quYongBasis.contains("印没发露读不了书") &&
+                jb.quYongBasis.contains("未中丁火不伤") && jb.quYongBasis.contains("事儿跟事儿不一样") &&
+                jb.quYongBasis.contains("犯过法**——当村干部老打人、被判了一年") &&
+                jb.quYongBasis.contains("丁亥年殴打上访群众") &&
+                jb.quYongBasis.contains("时支换戌——身也强，但克泄交加、又在春，虚了") &&
+                jb.quYongBasis.contains("需要整体把握，不要单看某个字") &&
+                // 工程陷阱（案一百一十七之诫）：五行枚举名不得漏进文案
+                !jb.quYongBasis.contains("EARTH"))
+        assertTrue("清浊：清（档位为落地映射——师未点名清浊）而注「吉神深藏，终身之福」",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("吉神深藏，终身之福（案一百二十六）") &&
+                jb.qingZhuoBasis.contains("清浊档位沿用通则——师未点名"))
+        assertTrue("子女：必有儿——身衰印做儿、未中丁火不伤（学历无、儿子有——事儿跟事儿不一样）",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER &&
+                jb.ziNv!!.ziEl == Element.FIRE && jb.ziNv!!.basis.contains("未中丁火不伤，有儿子") &&
+                jb.ziNv!!.basis.contains("事儿跟事儿不一样"))
+        assertTrue("学历：学历不高——印没发露读不了书（初学毕业）",
+            jb.xueLi!!.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO &&
+                jb.xueLi!!.basis.contains("印没发露——没学历（初学毕业）"))
+        assertTrue("丁丑（17 岁）——流年印露：当一年兵（有印就代表能去参军）",
+            jb.yuns[1].years.first { it.year == 1997 }.let { y ->
+                y.pillarName == "丁丑" && y.items[0].action.contains("流年干丁火——印露：**当一年兵**")
+            })
+        assertTrue("参军之龄外（丁卯 7 岁、丙戌 26 岁、丁亥 27 岁、丁丑 77 岁）与大运干丁丙——不注「当一年兵」（二十多岁人家也不要你——得切合实际）",
+            listOf(jb.yuns[0].years.first { it.year == 1987 }, jb.yuns[2].years.first { it.year == 2006 },
+                jb.yuns[2].years.first { it.year == 2007 }, jb.yuns[7].years.first { it.year == 2057 })
+                .all { y -> y.items.none { it.action.contains("当一年兵") } } &&
+                jb.yuns[2].items.none { it.action.contains("当一年兵") } &&
+                jb.yuns[3].items.none { it.action.contains("当一年兵") })
+        assertTrue("断语：印护官——当兵（兵卒）；没学历（初学毕业）；有儿子；犯过法；吉神深藏终身之福（替「贵命、走什么运都不怕」通句）",
+            jb.duanYu.contains("印护官——当兵（兵卒）") && jb.duanYu.contains("没学历**（初学毕业）") &&
+                jb.duanYu.contains("有儿子**——未中丁火不伤") && jb.duanYu.contains("犯过法**（当村干部老打人、被判一年") &&
+                jb.duanYu.contains("丁亥年殴打上访群众") && jb.duanYu.contains("吉神深藏，终身之福") &&
+                !jb.duanYu.contains("贵命，走什么运都不怕"))
+        // 反事实（师）：「辰变成戌是不是身就强了——这个身也强，但克泄交加，又在春天，虚了」——仍身弱用印；事实性断语不套
+        val xu = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = bazi.monthPillar,
+            dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(HeavenlyStem.WU, EarthlyBranch.XU),
+            birthDateTime = LocalDateTime.of(1981, 2, 10, 8, 0),
+        )
+        val jx = JinBiaoCalculator.analyze(xu, daYun, Gender.MALE)
+        assertTrue("反事实：时支辰换戌——身也强但虚了：仍身弱用印；事实性断语不套",
+            jx.strength == DayStrength.WEAK && jx.quYongWay == JinBiaoQuYongWay.FU_SHEN &&
+                jx.quYongBasis.contains("坐下暗印·印护官") && !jx.quYongBasis.contains("丁丑戊寅己卯当兵") &&
+                !jx.quYongBasis.contains("初学毕业"))
+        // 「要是没有印，那就是贱人犯官」——日支未换丑（无暗印）不入此档：走身弱「伤官用劫」（案五十二）
+        val chou = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = bazi.monthPillar,
+            dayPillar = Pillar(HeavenlyStem.JI, EarthlyBranch.CHOU),
+            hourPillar = bazi.hourPillar,
+            birthDateTime = LocalDateTime.of(1981, 2, 10, 8, 0),
+        )
+        val jc = JinBiaoCalculator.analyze(chou, daYun, Gender.MALE)
+        assertTrue("反事实：无暗印（日支未换丑）——不入「坐下暗印·印护官」之档",
+            !jc.quYongBasis.contains("印护官——当兵") && jc.quYongWay != JinBiaoQuYongWay.FU_SHEN)
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎正官格成中有败（伤官见官；以官为用、财生官）——与金镖门「身旺中变弱、用未中丁火印」取用不同",
+            old.geJuName.contains("正官格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
+                old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_GUAN)
+    }
 }
