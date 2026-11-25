@@ -4250,4 +4250,73 @@ class JinBiaoAnLiTest {
                 old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.SHANG_GUAN &&
                 old.xiangShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_CAI)
     }
+
+    // ── 案一百三十 · 丙辰 甲午 丙申 丁酉（乾，酉时）——案七十四复看·劫刃肆逞·食伤生财——兄弟章男命次例 ──
+    // 排盘口径：同案七十四（1976-06-13 酉时；乙未 1984 起，9 岁起运）；用户未附起运年表——另 1916-06-28 同柱、起运年异。
+    // **师断：食伤生财，比劫争财有点过；劫刃肆逞都有兄弟（申酉金财没被克绝尽）；去申／去酉辰则没有兄弟；
+    //   没儿子（比劫争财太狠——身体有缺陷：肾水不足、肝肾都有毛病；中医调理找对大夫能调出来，但纵有不如无）。**
+    @Test
+    fun `案一百三十 乾 丙辰甲午丙申丁酉复看 食伤生财比劫争财有点过 劫刃肆逞都有兄弟 申酉金财没被克绝尽 去申去酉辰没有兄弟 辰收火之烈 比劫见财没官就没儿子是言传还有意会 比劫争财太过身体有缺陷 心火旺肝肾都有毛病肾水不足 辰挺干 中医调理纵有不如无 这局一般就是没有儿子的`() {
+        val bazi = chart(1976, 6, 13, 18)
+        assertTrue(bazi.fullBazi.startsWith("丙辰 甲午 丙申 丁酉"))
+        assertTrue("酉时 17:00–19:00 皆丁酉时", chart(1976, 6, 13, 17).fullBazi.startsWith("丙辰 甲午 丙申 丁酉"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阳年乾造顺行：乙未1984 丙申1994 丁酉2004 戊戌2014 己亥2024 庚子2034 辛丑2044 壬寅2054",
+            daYun.yuns.map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("乙未(1984)", "丙申(1994)", "丁酉(2004)", "戊戌(2014)", "己亥(2024)", "庚子(2034)", "辛丑(2044)", "壬寅(2054)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身强——身旺食伤生财·用财星（先于身旺通则：文案整体换为「劫刃肆逞·食伤生财」）：用神财（金）",
+            jb.strength == DayStrength.STRONG && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI &&
+                jb.yongShenElement == Element.METAL)
+        assertTrue("旺衰注：劫刃肆逞——羊刃当令、印生刃、飞刃透干",
+            jb.strengthBasis.contains("劫刃肆逞——羊刃当令、印生刃、飞刃透干"))
+        assertTrue("取用依据：食伤生财比劫争财有点过／劫刃肆逞都有兄弟——申酉金财没被克绝尽／去申去酉辰没有兄弟／辰收火之烈／言传与意会／身体有缺陷／心火旺肝肾都有毛病肾水不足／辰挺干／中医调理纵有不如无",
+            jb.quYongBasis.contains("劫刃肆逞·食伤生财·比劫争财有点过（案一百三十＝案七十四复看）") &&
+                jb.quYongBasis.contains("食伤生财，比劫争财有点过") && jb.quYongBasis.contains("这个劫刃肆逞都有兄弟") &&
+                jb.quYongBasis.contains("是因为申酉金财没被克绝尽") && jb.quYongBasis.contains("把申去了——就没有兄弟了") &&
+                jb.quYongBasis.contains("供不供水，辰都收火之烈") && jb.quYongBasis.contains("再把酉还有辰都去了") &&
+                jb.quYongBasis.contains("午火克申金") && jb.quYongBasis.contains("纵然这个申金里边带水") &&
+                jb.quYongBasis.contains("辰收火之烈") && jb.quYongBasis.contains("是言传，还有意会") &&
+                jb.quYongBasis.contains("只可意会不可言传") && jb.quYongBasis.contains("一般他身体都有缺陷了") &&
+                jb.quYongBasis.contains("心火旺，肝一定也有问题") && jb.quYongBasis.contains("辰滋不了水") &&
+                jb.quYongBasis.contains("肺金给克了，就不能下生肾水") && jb.quYongBasis.contains("肾水不足，肝肾都有毛病") &&
+                jb.quYongBasis.contains("反正挺干的") && jb.quYongBasis.contains("找对大夫能给你调出来") &&
+                jb.quYongBasis.contains("但纵有不如无") && jb.quYongBasis.contains("这局一般就是没有儿子的") &&
+                // 既有缺陷之修：案五十五「水木运发大财／土金旺运则破／申酉戌西方比劫之地」硬编码文案不再串入本案
+                !jb.quYongBasis.contains("北方坎、东方震") && !jb.quYongBasis.contains("西方比劫之地"))
+        assertTrue("清浊：档位沿用通则（师未点名清浊）而注「比劫争财有点过」",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("比劫争财有点过（案一百三十）") &&
+                jb.qingZhuoBasis.contains("师未点名清浊"))
+        assertTrue("子女：羊刃肆逞必无儿（案七十四）＋复看续注——比劫争财太狠身体有缺陷、中医调理纵有不如无",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER &&
+                jb.ziNv!!.basis.contains("羊刃肆逞") && jb.ziNv!!.basis.contains("复看（案一百三十）") &&
+                jb.ziNv!!.basis.contains("肾水不足") && jb.ziNv!!.basis.contains("但纵有不如无"))
+        assertTrue("断语：劫刃肆逞·食伤生财；有兄弟；没有儿子；替「普通人之命」通句",
+            jb.duanYu.contains("劫刃肆逞·食伤生财（身旺用财——比劫争财有点过）") && jb.duanYu.contains("有兄弟**（申酉金财没被克绝尽）") &&
+                jb.duanYu.contains("这局一般就是没有儿子的") && jb.duanYu.contains("比劫争财有点过**（劫刃肆逞") &&
+                !jb.duanYu.contains("普通人之命：多成多败"))
+        // 反事实（师）：「把申金去了……就没有兄弟了」「把酉金还有辰都去了……也一样没有」——皆不入此档（子女仍羊刃肆逞必无儿）
+        val quShen = BaziResult(
+            yearPillar = bazi.yearPillar, monthPillar = bazi.monthPillar,
+            dayPillar = Pillar(bazi.dayPillar.stem, EarthlyBranch.WU), hourPillar = bazi.hourPillar,
+            birthDateTime = LocalDateTime.of(1976, 6, 13, 18, 0),
+        )
+        val quYouChen = BaziResult(
+            yearPillar = Pillar(bazi.yearPillar.stem, EarthlyBranch.WU), monthPillar = bazi.monthPillar,
+            dayPillar = bazi.dayPillar, hourPillar = Pillar(bazi.hourPillar.stem, EarthlyBranch.WU),
+            birthDateTime = LocalDateTime.of(1976, 6, 13, 18, 0),
+        )
+        assertTrue("反事实：去申（日支换午）／去酉辰（年时支换午）——不入「劫刃肆逞都有兄弟」之档",
+            listOf(quShen, quYouChen).all {
+                JinBiaoCalculator.analyze(it, daYun, Gender.MALE).let { r ->
+                    !r.quYongBasis.contains("劫刃肆逞都有兄弟") &&
+                        r.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER
+                }
+            })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎阳刃格成中有败（相神甲「财印辅官杀」；败：阳刃无官杀制伏）——「无官制刃」与师断同向",
+            old.geJuName.contains("阳刃格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
+                old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.JIE_CAI &&
+                old.xiangShen?.tenGod == cn.xulun.bazi.model.TenGod.PIAN_YIN)
+    }
 }
