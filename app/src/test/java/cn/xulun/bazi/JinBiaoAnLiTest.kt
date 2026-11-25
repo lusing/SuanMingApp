@@ -4165,4 +4165,89 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("七杀格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
                 old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.QI_SHA)
     }
+
+    // ── 案一百二十九 · 甲辰 辛未 丙戌 甲午（坤，午时）——火土伤官生财·燥土夺财·忌神深藏——兄弟章开讲（首例） ──
+    // 排盘口径：用户附起运年表（庚午 2029 起）→ 2024-07-21 午时（6 岁起运）；另 2084-07-06 同柱、起运年异。
+    // **师断（皆未验之断）：出身好（父亲不错）、有钱而得财不大；必有兄弟——死兄弟加离婚；病在火旺（忌神入五脏）；
+    //   乙丑年结婚又离婚；己巳戊辰运发财、丁卯运一无所有；生不出来儿子。** 学历师未断。
+    @Test
+    fun `案一百二十九 坤 甲辰辛未丙戌甲午 用财辛金火土伤官生财格 出身好父亲不错 火燥有人要跟她分财 比劫忌神深藏成养虎之患 兄弟章比劫为兄弟不可刻舟求剑 与劫财扯上关系的喜用论兄弟兼论夫 食伤旺必有兄弟 死兄弟加离婚 病在火旺忌神入五脏唯修心 己巳戊辰运发财 丁卯运非常差一无所有 乙丑年结婚又离婚 身旺财为子有甲木无秀生不出来儿子`() {
+        val bazi = chart(2024, 7, 21, 12)
+        assertTrue(bazi.fullBazi.startsWith("甲辰 辛未 丙戌 甲午"))
+        assertTrue("午时 11:00–13:00 皆甲午时", chart(2024, 7, 21, 11).fullBazi.startsWith("甲辰 辛未 丙戌 甲午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.FEMALE)
+        assertTrue("阳年坤造顺行：庚午2029 己巳2039 戊辰2049 丁卯2059 丙寅2069 乙丑2079 甲子2089 癸亥2099",
+            daYun.yuns.map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("庚午(2029)", "己巳(2039)", "戊辰(2049)", "丁卯(2059)", "丙寅(2069)", "乙丑(2079)", "甲子(2089)", "癸亥(2099)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.FEMALE)
+        assertTrue("身旺——火土伤官生财格（取用走身旺食伤生财·用财星；先于身弱「伤官配印」——甲甲两印为忌不为用）：用神财（金）",
+            jb.strength == DayStrength.STRONG && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.SHI_CAI_YONG_CAI &&
+                jb.yongShenElement == Element.METAL)
+        assertTrue("用神之位仅财辛（月干、戌中）——印（甲甲）为忌不列",
+            jb.yongShenStars == listOf("月干辛（正财）", "日支戌中辛（正财）"))
+        assertTrue("旺衰注：身旺——火土伤官生财格（旺衰之理师未展开）",
+            jb.strengthBasis.contains("身旺——火土伤官生财格") && jb.strengthBasis.contains("旺衰之理师未展开"))
+        assertTrue("取用依据：火土伤官生财燥土夺财忌神深藏／用财辛金／出身好／有人要跟她分财／兄弟章——十神取象不可刻舟求剑、官杀是兄弟、食伤也是兄弟、与劫财扯上关系的喜用论兄弟兼论夫／必有兄弟／死兄弟加离婚／病在火旺、忌神入五脏、唯修心",
+            jb.quYongBasis.contains("火土伤官生财·燥土夺财·忌神深藏（案一百二十九）") && jb.quYongBasis.contains("用财辛金") &&
+                jb.quYongBasis.contains("火土伤官生财格") && jb.quYongBasis.contains("父亲不错，命主比一般人出身都强") &&
+                jb.quYongBasis.contains("火燥，实际上是有人要跟她分财") && jb.quYongBasis.contains("未戌燥土中藏火比劫") &&
+                jb.quYongBasis.contains("成养虎之患") && jb.quYongBasis.contains("甲甲木印") &&
+                jb.quYongBasis.contains("比劫为兄弟姐妹＝官杀为丈夫＝财为妻子＝财为父亲＝食伤为孩子") &&
+                jb.quYongBasis.contains("十神取象不可刻舟求剑") && jb.quYongBasis.contains("劫刃肆逞") &&
+                jb.quYongBasis.contains("官杀是兄弟") && jb.quYongBasis.contains("食伤也是兄弟") &&
+                jb.quYongBasis.contains("必须要与劫财扯上关系") &&
+                jb.quYongBasis.contains("与劫财扯上关系的喜用，一定可以用这个喜用来论断兄弟") &&
+                jb.quYongBasis.contains("只代表夫") && jb.quYongBasis.contains("它跟比劫扯上关系了") &&
+                jb.quYongBasis.contains("说明她必有兄弟") && jb.quYongBasis.contains("她就得死兄弟") &&
+                jb.quYongBasis.contains("她是死兄弟加离婚的命") && jb.quYongBasis.contains("病在心") &&
+                jb.quYongBasis.contains("忌神入五脏") && jb.quYongBasis.contains("唯一能治的就是修心"))
+        assertTrue("清浊：档位沿用通则（师未点名清浊）而注「比劫忌神深藏，成养虎之患」",
+            jb.qingZhuo == JinBiaoQingZhuo.BAN_QING && jb.qingZhuoBasis.contains("比劫忌神深藏，成养虎之患（案一百二十九）") &&
+                jb.qingZhuoBasis.contains("师未点名清浊"))
+        assertTrue("子女：必无儿——身旺财为子，财在戌有根，然甲木克土、没有丝毫的秀可言（反事实：无甲能生；换丁火能生）",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER && jb.ziNv!!.ziEl == Element.METAL &&
+                jb.ziNv!!.basis.contains("身旺财为子——生不出来儿子") && jb.ziNv!!.basis.contains("财在戌有根") &&
+                jb.ziNv!!.basis.contains("一个人身旺得有秀") && jb.ziNv!!.basis.contains("没有丝毫的秀可言") &&
+                jb.ziNv!!.basis.contains("她就是能生儿子") && jb.ziNv!!.basis.contains("换丁火"))
+        assertTrue("学历：师未断——不判", jb.xueLi == null)
+        assertTrue("己巳、戊辰——吉：虽未戌燥还有个辰——可以生财、可以发财",
+            listOf(1, 2).all { k -> jb.yuns[k].verdict == JinBiaoVerdict.JI && jb.yuns[k].items.all { it.favorOverride && it.action.contains("可以生财、可以发财") } })
+        assertTrue("丁卯——凶（非常差）：忌神深藏之虎出来——破财、离婚、死兄弟，一无所有",
+            jb.yuns[3].verdict == JinBiaoVerdict.XIONG && jb.yuns[3].items[0].action.contains("非常差") &&
+                jb.yuns[3].items.all { it.action.contains("一无所有") && it.xiongOverride })
+        assertTrue("丙寅（比劫干坐印支——与丁卯同构）：仅注「师未断此运」，不改判",
+            jb.yuns[4].items[0].action.contains("师未断此运") && !jb.yuns[4].items[0].xiongOverride)
+        val ln2045 = jb.yuns[1].years.first { it.year == 2045 }
+        assertTrue("乙丑年（2045）——结婚：财见根，没有拦截的就结了（结婚又离婚）",
+            ln2045.pillarName == "乙丑" && ln2045.items[0].action.contains("乙丑年结婚") && ln2045.items[0].action.contains("结婚又离婚"))
+        val ln2046 = jb.yuns[1].years.first { it.year == 2046 }
+        assertTrue("流年见比劫（丙寅、丁卯）——凶：忌神比劫露出来，她就得死兄弟（同时克夫）",
+            ln2046.verdict == JinBiaoVerdict.XIONG && ln2046.items[0].action.contains("她就得死兄弟") &&
+                jb.yuns[1].years.first { it.year == 2047 }.verdict == JinBiaoVerdict.XIONG)
+        assertTrue("断语：火土伤官生财；出身好；必有兄弟；死兄弟加离婚；病在火旺；生不出来儿子；替「普通人之命」通句",
+            jb.duanYu.contains("火土伤官生财（身旺用财——燥土夺财·忌神深藏）") && jb.duanYu.contains("出身好（父亲不错") &&
+                jb.duanYu.contains("必有兄弟") && jb.duanYu.contains("死兄弟加离婚") && jb.duanYu.contains("病在火旺") &&
+                jb.duanYu.contains("生不出来儿子") && jb.duanYu.contains("比劫忌神深藏成养虎之患") &&
+                !jb.duanYu.contains("普通人之命：多成多败"))
+        // 反事实（师）：「没有甲木，她当然能生儿子」「换丁火当然能生了儿子了——丁火能泄甲木，丁火也能生这个土」
+        //   ——皆不入「火土伤官生财·燥土夺财」之档（去甲合成盘之子女通则仍判无儿——师曰能生，未动，待案例）
+        fun syn(yStem: HeavenlyStem, mStem: HeavenlyStem, hStem: HeavenlyStem) = BaziResult(
+            yearPillar = Pillar(yStem, bazi.yearPillar.branch),
+            monthPillar = Pillar(mStem, bazi.monthPillar.branch),
+            dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(hStem, bazi.hourPillar.branch),
+            birthDateTime = LocalDateTime.of(2024, 7, 21, 12, 0),
+        )
+        val jQuJia = JinBiaoCalculator.analyze(syn(HeavenlyStem.WU, bazi.monthPillar.stem, HeavenlyStem.GENG), daYun, Gender.FEMALE)
+        val jHuanDing = JinBiaoCalculator.analyze(syn(bazi.yearPillar.stem, HeavenlyStem.DING, bazi.hourPillar.stem), daYun, Gender.FEMALE)
+        assertTrue("反事实：去甲（年时干换戊庚）／辛换丁——不入此档",
+            !jQuJia.quYongBasis.contains("火土伤官生财·燥土夺财") && !jHuanDing.quYongBasis.contains("火土伤官生财·燥土夺财"))
+        assertTrue("反事实：辛换丁——身旺泄秀之路，子女判有儿（师：「当然能生了儿子了」）",
+            jHuanDing.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_YOU_ER)
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎伤官格成格（相神月干辛「伤官生财」）——取用与师断同向（旺衰判身弱为异）",
+            old.geJuName.contains("伤官格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG &&
+                old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.SHANG_GUAN &&
+                old.xiangShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_CAI)
+    }
 }
