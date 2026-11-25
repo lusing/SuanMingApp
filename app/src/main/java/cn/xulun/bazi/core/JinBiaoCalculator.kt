@@ -916,6 +916,10 @@ object JinBiaoCalculator {
             bazi.branches.none { it != bazi.dayPillar.branch && LIU_CHONG[it] == bazi.dayPillar.branch } &&
             bazi.stems.none { it != dayMaster && it.element == caiEl }
 
+        // 案一百二十七·财官旺·比劫硬扛（当兵专项④类「气势」——判据见 yingKang127Of：「财星当令，财生官旺，
+        // 这都挡不住了，完全是拿比劫硬扛」「肯定用神是午火比劫」）
+        val yk127 = yingKang127Of(bazi, dayMaster, luZhi, strength, ruoJi, wangJi, yinEl, biEl, caiEl, guanEl)
+
         // 取用依据文案共用上下文（各案文案自 analyze 抽出——方法体量上限）
         val cb = CtxB(bazi, dayMaster, monthBranch, luZhi, yinEl, biEl, shiEl, caiEl, guanEl)
 
@@ -1101,6 +1105,8 @@ object JinBiaoCalculator {
             // 案一百二十四·有力就能食神制杀——病在午火（财生杀旺）、药在子水（先于「杀重用印」：原局作用方式即食伤制杀）
             // 案一百二十六·坐下暗印——用印（先于身弱「伤官用劫」：印藏日支亦为有印——印能护官、吉神深藏）
             anYin126JieGou -> Choice(JinBiaoQuYongWay.FU_SHEN, yinEl, anYin126Basis(cb))
+            // 案一百二十七·财官旺·比劫硬扛——身弱用劫（先于身弱通则：文案整体换为「硬扛之气势·当兵」）
+            yk127.ok -> Choice(JinBiaoQuYongWay.SHANG_YONG_JIE, biEl, yingKang127Basis(cb, yk127, gender))
             youLiShiZhi124 -> Choice(JinBiaoQuYongWay.ZHI_SHA, shiEl, youLiShiZhi124Basis(cb))
             // 案一百二十三·金有力而基本平衡、水旺克火而火无源——用官喜帮火（先于身弱「食神制杀」与身强「制杀」）
             yongGuan123 -> Choice(JinBiaoQuYongWay.PEI_CAI, guanEl, yongGuan123Basis(cb))
@@ -1598,6 +1604,9 @@ object JinBiaoCalculator {
         val jiaQuGua125 = jiaQuGua125JieGou && choice.way == JinBiaoQuYongWay.SHI_SHENG_CAI
         // 案一百二十六·坐下暗印（取用已定——用印）
         val anYin126 = anYin126JieGou && choice.way == JinBiaoQuYongWay.FU_SHEN && yongEl == yinEl
+        // 案一百二十七·财官旺·比劫硬扛（取用走身弱用劫）；学历：没有印——学习不好（兵卒）
+        val yingKang127 = yk127.ok && choice.way == JinBiaoQuYongWay.SHANG_YONG_JIE && yongEl == biEl
+        val xueLi127: cn.xulun.bazi.model.JinBiaoXueLi? = if (yingKang127) xueLi127Of() else null
         // 案一百二十六·学历：印没发露——没学历
         val xueLi126: cn.xulun.bazi.model.JinBiaoXueLi? =
             if (anYin126) xueLi126Of(cb) else null
@@ -1605,7 +1614,10 @@ object JinBiaoCalculator {
         val xueLi125: cn.xulun.bazi.model.JinBiaoXueLi? =
             if (jiaQuGua125) xueLi125Of() else null
         val yongGod = representativeGod(bazi, dayMaster, yongEl)
-        val yongShenStars = locateElementStars(bazi, dayMaster, yongEl)
+        // 案一百二十七·巳亥冲去火存金——巳随金走（「巳火当然帮金了」）：不入用神之位
+        val yongShenStars = locateElementStars(bazi, dayMaster, yongEl).let { ss ->
+            if (yingKang127 && yk127.sui != null) ss.filterNot { it.contains("${yk127.sui.chinese}本气") } else ss
+        }
 
         // ── 用神健全度（第二讲） ──
         val health = assessHealth(bazi, dayMaster, yongEl)
@@ -1729,7 +1741,7 @@ object JinBiaoCalculator {
         } else {
             null
         }
-        val qingZhuoBasis = qingZhuoBasisOf(cb, choice, qingZhuo, jianBing, bingEl, yongEl, bingS2, yongS2, yongDeLi, yaoEl, tongGuanEl, yaoS, bingHua, bingYiTU, bingTongGuanTou, gongCaiTongMen, huaJuBuYong, yongWuLiHua, anCai114, liangShang112Pei, ganDuoBuZai117, maJin109, caiGenBa109, caiGen109, shiBanTongGuan, shiSanHe113, yinGenBaCai107, yinWangCai119, keGuan, keYinEl, keXieJiaoJia120, qingFen121, shiZhi124, jiaQuGua125, bingDa122, yongGuan123, anYin126)
+        val qingZhuoBasis = qingZhuoBasisOf(cb, choice, qingZhuo, jianBing, bingEl, yongEl, bingS2, yongS2, yongDeLi, yaoEl, tongGuanEl, yaoS, bingHua, bingYiTU, bingTongGuanTou, gongCaiTongMen, huaJuBuYong, yongWuLiHua, anCai114, liangShang112Pei, ganDuoBuZai117, maJin109, caiGenBa109, caiGen109, shiBanTongGuan, shiSanHe113, yinGenBaCai107, yinWangCai119, keGuan, keYinEl, keXieJiaoJia120, qingFen121, shiZhi124, jiaQuGua125, bingDa122, yongGuan123, anYin126, yingKang127)
 
         // ── 喜忌（第一讲：帮用=喜，损用=忌） ──
         val xiElements = Element.entries.filter { it.generates == yongEl || it == yongEl }
@@ -1737,7 +1749,7 @@ object JinBiaoCalculator {
 
         // ── 子女判读（第十一讲·子女章判定树：子星按原局喜忌而定，来回检查；子星要昌） ──
         // 四情况铁律：必有儿／必无儿／无儿有女／无儿无女损子——逃不出这个圈。
-        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = ziNvOf(bazi, daYun, choice, strength, ruoJi, wangJi, dayMaster, yinEl, biEl, shiEl, caiEl, guanEl, yinS, biS, caiS, guanS, shiS, monthBranch, guoXieFanRuo, kunLunEl, kunLunSource, gongCaiYinHua, gongCaiTrio, yongEl, caiZai, liangShang112Pei, ganDuoBuZai117, anYin126)
+        val ziNv: cn.xulun.bazi.model.JinBiaoZiNv? = ziNvOf(bazi, daYun, choice, strength, ruoJi, wangJi, dayMaster, yinEl, biEl, shiEl, caiEl, guanEl, yinS, biS, caiS, guanS, shiS, monthBranch, guoXieFanRuo, kunLunEl, kunLunSource, gongCaiYinHua, gongCaiTrio, yongEl, caiZai, liangShang112Pei, ganDuoBuZai117, anYin126, yingKang127)
 
         // ── 学历判读（案九十四·学历章开讲：印为用神之局适用） ──
         // 看学历不能只看初运好坏：①印星原局没被破坏→小时候脑子没毛病、头脑不笨（底子）；
@@ -1745,7 +1757,7 @@ object JinBiaoCalculator {
         // （火最怕湿土来晦）学历就不高——但学习肯定不错或者好学（走坏运＝平时学习好、考试发挥失常）；
         // ③大运地支不载不碍（甲申乙酉——支不载而天干生火）：只要天干没把印坏了，就可以有学历、
         // 可以上大学——干定学历。
-        val xueLi: cn.xulun.bazi.model.JinBiaoXueLi? = xueLi126 ?: xueLi125 ?: xueLiOf(bazi, daYun, choice, strength, ruoJi, wangJi, qiangJi, yongEl, yinEl, caiEl, shiEl, guanEl, yinS, liangShang112Pei)
+        val xueLi: cn.xulun.bazi.model.JinBiaoXueLi? = xueLi127 ?: xueLi126 ?: xueLi125 ?: xueLiOf(bazi, daYun, choice, strength, ruoJi, wangJi, qiangJi, yongEl, yinEl, caiEl, shiEl, guanEl, yinS, liangShang112Pei)
 
         // ── 运年评断（以用神为中心；从格/专旺的反常识运断由用神立场自动成立） ──
         // 财解围局（第三讲）：行财运亨通；行官/食运稍差但无大碍——中平。
@@ -2023,6 +2035,7 @@ object JinBiaoCalculator {
             shiZhi124 = youLiShiZhi124 && choice.way == JinBiaoQuYongWay.ZHI_SHA,
             jiaQuGua125 = jiaQuGua125,
             anYin126 = anYin126,
+            yingKang127 = yingKang127,
         )
         // 案五补丁：大运连行方局——连续三步大运支成三会方局且方局五行为印比（帮身方向）时，
         // 局内之支皆随方局作印比论（未随南方火局连行——辛未亦帮身破败）；顺势方局（财官食方向）不改支性。
@@ -2076,7 +2089,7 @@ object JinBiaoCalculator {
             if (ruoJi) append("（弱极·${ruoJiType!!.chinese}）")
             if (qiangJi) append("（强极·${cn.xulun.bazi.model.JinBiaoWangJiType.YIN_BI_TONG_XIN.chinese}）")
             else if (wangJi) append("（旺极·${cn.xulun.bazi.model.JinBiaoWangJiType.BI_DANG_SHI.chinese}）")
-            append("，${if (jiaQuGua125) "假去寡·印护官（身旺食伤泄秀——走火土运则去寡、走金水运则用官）" else choice.way.chinese}，用神取${yongGod.chinese}（${yongEl.chinese}）")
+            append("，${if (yingKang127) "财官旺·比劫硬扛（身弱用劫——当兵之气势）" else if (jiaQuGua125) "假去寡·印护官（身旺食伤泄秀——走火土运则去寡、走金水运则用官）" else choice.way.chinese}，用神取${yongGod.chinese}（${yongEl.chinese}）")
             if (yongShenStars.isNotEmpty()) append("，见于${yongShenStars.joinToString("、")}")
             else append("——用神五行不现于原局，以虚神论")
             append("。用神${health.level.chinese}（${health.rootNote}）")
@@ -2118,6 +2131,8 @@ object JinBiaoCalculator {
             if (jiaQuGua125) append(zhiDuan125(cb))
             // 案一百二十六·坐下暗印——印护官当兵（兵卒）；没学历；有儿子；犯过法——吉神深藏
             if (anYin126) append(zhiDuan126(cb))
+            // 案一百二十七·财官旺·比劫硬扛——当兵（兵卒）；学习不好；没有儿子
+            if (yingKang127) append(zhiDuan127(cb, yk127, gender))
             if (choice.way == JinBiaoQuYongWay.GONG_SHEN) {
                 append("此为财党杀攻身之命——旺财党杀攻身、财先破印：身衰撑不住，非贫即夭（重病之属——肾病严重放弃治疗，身太衰）；丙寅之类印透化杀之运能稍安，然难救本。")
             }
@@ -2174,6 +2189,8 @@ object JinBiaoCalculator {
                     else if (shiZhi124) duanYuQing124(cb)
                     // 案一百二十六·清浊档位为通则映射（师未点名）——师断吉神深藏终身之福：替「贵命走什么运都不怕」通句
                     else if (anYin126) duanYuQing126(cb)
+                    // 案一百二十七·层次不高——兵卒的命：替通句
+                    else if (yingKang127) duanYuQing127(cb)
                     else "此为清命——用神有力、病神无（或已化已制）：贵命，走什么运都不怕，坏运来了也无病。"
                 )
                 JinBiaoQingZhuo.MAN_ZHUO -> append("此为满盘浊气之命——病神之力太大、毁坏用神：差命穷命，走什么运也好不了。")
@@ -2182,7 +2199,10 @@ object JinBiaoCalculator {
             if (liangShang112Pei != null) {
                 append("直断：**克妻损子**（财是妻子——劫刃肆逞，离婚；身旺财为子——财不行找官，官也不行，没儿子）、上学不行——喜用两伤，财运也不行（案一百一十二）。")
             }
-            if (xueLi != null && xueLi.level != cn.xulun.bazi.model.JinBiaoXueLiLevel.YIN_HUAI) {
+            // 案一百二十五／一百二十六／一百二十七·当兵三档之学历已入直断——通则档位标签（「脑子没问题好学」）与师断不合，不附
+            if (xueLi != null && xueLi.level != cn.xulun.bazi.model.JinBiaoXueLiLevel.YIN_HUAI &&
+                !jiaQuGua125 && !anYin126 && !yingKang127
+            ) {
                 append("学历：${xueLi.level.chinese}。")
             }
         }
@@ -2197,6 +2217,7 @@ object JinBiaoCalculator {
                     else -> strength.chinese
                 }) +
                 (if (anYin126) qiangNote126(cb) else "") +
+                (if (yingKang127) qiangNote127(cb, yk127) else "") +
                 (if (jiaQuGua125) qiangNote125(cb) else "") +
                 (if (shiZhi124) qiangNote124(cb) else "") +
                 (if (nianZhuZhuanWang123) qiangNote123(cb) else "") +
@@ -2524,6 +2545,7 @@ object JinBiaoCalculator {
         val shiZhi124: Boolean = false, // 案一百二十四：有力就能食神制杀——水（药神）去病作吉（子运发大财）；比劫帮身作吉；戌（印克食伤兼拱火）大灾；丑（湿土化杀）作吉
         val jiaQuGua125: Boolean = false, // 案一百二十五：假去寡·印护官——火土运去寡（火通关）作吉（午运发财、戊辰运拆迁款）；金水运只能用官（层次低）、印运木旺没法去寡——中平
         val anYin126: Boolean = false, // 案一百二十六：坐下暗印——用印；伤官见官无印则犯法、有暗印护官则当兵（吉神深藏终身之福）；流年印露＝当一年兵
+        val yingKang127: Boolean = false, // 案一百二十七：财官旺·比劫硬扛——身弱用劫（当兵之气势）；子水大运官杀克比劫——肯定要犯法
     )
 
     /** 案一百一十六·羊刃自旺之命根：自坐之刃、被官所盖之禄、露干之官。 */
@@ -2735,6 +2757,8 @@ object JinBiaoCalculator {
                 // 案一百二十六·流年印露＝当一年兵——仅流年干、且在参军之龄（「当兵一般都是十八去当兵，二十多岁想当兵人家也不要你——
                 // 得切合实际」；虚岁 17–23 为落地映射）
                 val yinLu126 = ctx.anYin126 && lnAge in 17..23 && i == 0 && gan.element == ctx.yinEl
+                // 案一百二十七·子水大运——官杀克比劫：肯定要犯法（仅大运支；「命主要是走子水大运，肯定要犯法的」）
+                val ziFanFa127 = ctx.yingKang127 && lnAge < 0 && i == 1 && zhi == EarthlyBranch.ZI
                 // 案九十四·运支贴冲用神印之根（申冲寅）：支神只以冲为重——拔根之运
                 val chongYinGenNote = i == 1 && ctx.chongYinGen != null && zhi == LIU_CHONG[ctx.chongYinGen]
                 // 案一百一十·坐两刃泄秀局：运支冲用神之本气根（酉冲卯）——支神只以冲为重：怕
@@ -2784,6 +2808,7 @@ object JinBiaoCalculator {
             ctx.jiaQuGua125 -> yunNote125(gan, zhi, i, ctx, chartBranches, huotu125, mu125, jinshui125, zhiMu125, huiJu125).takeIf { it.isNotEmpty() }
             // 案一百二十六·流年印露——当一年兵
             yinLu126 -> yunNote126(gan, lnAge, ctx)
+            ziFanFa127 -> yunNote127(zhi, ctx)
                     heChong -> "运支${zhi.chinese}合去冲神${ctx.chongShen!!.chinese}——用神绝处逢生，彻底有情（把印绶救起来了）"
                     // 案一百一十四·暗冲暗会尤为喜：本来不去病也发，再加上去病就更发
                     anChong114 -> "运支${zhi.chinese}暗冲病支${ctx.bingZhi114!!.chinese}（${zhi.chinese}${ctx.bingZhi114.chinese}冲——去${ctx.yinEl.chinese}克${ctx.shiEl.chinese}之病）" +
@@ -2897,9 +2922,9 @@ object JinBiaoCalculator {
                         biYun120 || xianShen121 || shuiYun122 || caiYun123)),
                     // 案一百二十一·平衡之局（闲神立功）——不作凶论；反事实·无印护卫——伤官克官犯官灾；案一百二十二·金运彻底完了；案一百二十三·走水就完了
                     // 案一百二十五·印旺护官之运（未填亥卯未之属）——没法去寡而已，不作「填局出事」凶论
-                    xiongOverride = !(ctx.jiaQuGua125 && mu125) && (fanGuanZai121 || jinYun122 || shuiYun123 || xuZai124 || (!xianShen121 && !shuiYun122 &&
+                    xiongOverride = ziFanFa127 || (!(ctx.jiaQuGua125 && mu125) && (fanGuanZai121 || jinYun122 || shuiYun123 || xuZai124 || (!xianShen121 && !shuiYun122 &&
                         (fanWang || zhiDuo || yiTiDuo118 || guanYun120 || sanHeCheng || biJianGen || haiSiQuHuo || chongYongGen110 || gongBi114 ||
-                        baGen116 || huiCaiHuiHuo116))),
+                        baGen116 || huiCaiHuiHuo116)))),
                 )
             }
         }
@@ -3112,6 +3137,7 @@ object JinBiaoCalculator {
         liangShang112: LiangShang112? = null,
         ganDuoBuZai117: Boolean = false,
         anYin126: Boolean = false,
+        yingKang127: Boolean = false,
     ): cn.xulun.bazi.model.JinBiaoZiNv? {
         return if (ruoJi) {
             // 案七十一（案四盘复看）·从势局子女另裁：特殊格局不按身衰印做儿/身旺财为子正常树断——
@@ -3199,6 +3225,9 @@ object JinBiaoCalculator {
             } else if (anYin126) {
                 // 案一百二十六·坐下暗印不伤——身衰印做儿有子（「同样都跟这个丁火有关系——事儿跟事儿不一样」）
                 ZN(yinEl, true, false, ziNv126Text(bazi, yinEl))
+            } else if (yingKang127) {
+                // 案一百二十七·身衰印做儿——没有印，没儿子（财官旺、全指望比劫硬扛）
+                ZN(biEl, false, false, ziNv127Text(bazi, yinEl, guanEl))
             } else if (strength == DayStrength.STRONG) {
                 // 身旺：基准财为子——查比劫夺财（重夺/地支得局不载）→官旺救或食伤得局化劫；无财无官食伤泄秀；食被枭夺找财
                 // 「鲁莽地说就错了」——有财不可遽断有子，必来回检查螳螂捕蝉黄雀在后
@@ -4525,6 +4554,7 @@ object JinBiaoCalculator {
         bingDa122: Boolean,
         yongGuan123: Boolean,
         anYin126: Boolean,
+        yingKang127: Boolean,
     ): String = buildString {
         val bazi = cb.bazi
         val biEl = cb.biEl
@@ -4589,6 +4619,8 @@ object JinBiaoCalculator {
         if (jiaQuGua125) append(zhuo125Note(cb))
         // 案一百二十六·吉神深藏终身之福——印能护官、有人照
         if (anYin126) append(qing126Note(cb))
+        // 案一百二十七·层次不高——兵卒的命（财官旺、全指望比劫硬扛、没有印）
+        if (yingKang127) append(cengCi127Note(cb))
     }
 
     /** 月建自寅起之序（寅 0…丑 11）及四季、孟仲季之名——案一百二十六文案用。 */
@@ -4680,6 +4712,156 @@ object JinBiaoCalculator {
     /** 案一百二十六·流年印露＝当一年兵（[age]＝流年虚岁；仅参军之龄的流年干为印者）。 */
     private fun yunNote126(gan: HeavenlyStem, age: Int, ctx: YunCtx): String =
         "流年干${gan.chinese}${ctx.yinEl.chinese}——印露：**当一年兵**（「有印就代表他能去参军，流年印露出来，都有当一年兵的」；${age}岁——当兵一般都是十八去当兵；当没当过兵看原局——跟应期没有关系；二十多岁想当兵，人家也不要你——得切合实际；案一百二十六）"
+
+    /** 案一百二十七·财官旺·比劫硬扛之结构：[ok]＝入档；[gen]＝硬扛之根（日主之禄支）；[sui]＝随财走之比劫本气支（巳）。 */
+    private class YK127(val ok: Boolean, val gen: EarthlyBranch?, val sui: EarthlyBranch?)
+
+    /**
+     * 案一百二十七·财官旺·比劫硬扛（当兵专项④类「气势」）——判据。
+     * 师断：「财星当令，财生官旺，这都挡不住了，完全是拿比劫硬扛」「拿比劫在这硬扛，你不服，不成从杀格」
+     * 「这局没有印，用劫……肯定用神是午火比劫」「午火要占月令，还不是这回事」「亥水还是水」。
+     */
+    private fun yingKang127Of(
+        bazi: BaziResult,
+        dayMaster: HeavenlyStem,
+        luZhi: EarthlyBranch,
+        strength: DayStrength,
+        ruoJi: Boolean,
+        wangJi: Boolean,
+        yinEl: Element,
+        biEl: Element,
+        caiEl: Element,
+        guanEl: Element,
+    ): YK127 {
+        fun chongByGuan(s: EarthlyBranch) = bazi.branches.any { g -> g.element == guanEl && LIU_CHONG[g] == s }
+        val guanBen = bazi.branches.firstOrNull { it.element == guanEl }
+        // 硬扛之根：日主之禄支在局且不被冲者（午），否则取不被官杀本气支冲之比劫本气支
+        val gen = luZhi.takeIf { it in bazi.branches && !chongByGuan(it) }
+            ?: bazi.branches.firstOrNull { it.element == biEl && !chongByGuan(it) }
+        // 随财走之比劫本气支（巳）：被官杀本气支冲（亥巳去火存金）、或与财本气支同三合局（巳酉拱金）
+        val sui = bazi.branches.firstOrNull { s ->
+            s.element == biEl && s != gen &&
+                (chongByGuan(s) ||
+                    SAN_HE_XU.any { (trio, el) -> el == caiEl && s in trio && bazi.branches.any { it.element == caiEl } })
+        }
+        val ok = strength == DayStrength.WEAK && !ruoJi && !wangJi && gen != null && guanBen != null &&
+            // 财当令（月令本气）——「午火要占月令，还不是这回事」
+            bazi.monthPillar.branch.element == caiEl &&
+            // 财生官：财本气支贴生官杀本气支（酉生亥——「酉金配亥水是俩王了」）
+            bazi.branches.indices.any { k ->
+                bazi.branches[k] == guanBen && listOf(k - 1, k + 1).any { j -> j in bazi.branches.indices && bazi.branches[j].element == caiEl }
+            } &&
+            // 没有印：印不透干、无本气根；藏支者只许藏于官杀本气支（「亥水还是水」——印藏官杀水里不算有印；
+            // 印藏坐下比劫支者归案一百二十六）
+            bazi.stems.none { it != dayMaster && it.element == yinEl } && !hasBenQiRoot(bazi, yinEl) &&
+            bazi.branches.all { br -> br.element == guanEl || branchHiddenStems.getValue(br).none { it.element == yinEl } }
+        return YK127(ok, gen, sui)
+    }
+
+    /** 案一百二十七·文案共用：硬扛之根、随财走之支及其冲神／拱局之财支。 */
+    private class Ctx127(
+        val gen: EarthlyBranch,
+        val sui: EarthlyBranch?,
+        val guanZhi: EarthlyBranch,
+        val chongShen: EarthlyBranch?,
+        val caiMate: EarthlyBranch?,
+    )
+
+    private fun ctx127Of(c: CtxB, yk: YK127): Ctx127 {
+        val bazi = c.bazi
+        val sui = yk.sui
+        val chongShen = sui?.let { s -> bazi.branches.firstOrNull { g -> g.element == c.guanEl && LIU_CHONG[g] == s } }
+        val caiMate = sui?.let { s ->
+            bazi.branches.firstOrNull { br ->
+                br.element == c.caiEl && SAN_HE_XU.any { (trio, el) -> el == c.caiEl && s in trio && br in trio }
+            }
+        }
+        return Ctx127(yk.gen!!, sui, bazi.branches.first { it.element == c.guanEl }, chongShen, caiMate)
+    }
+
+    /** 案一百二十七·取用依据（身弱用劫——财官旺·比劫硬扛之气势；男命断当兵、女命不断）。 */
+    private fun yingKang127Basis(c: CtxB, yk: YK127, gender: cn.xulun.bazi.model.Gender?): String {
+        val x = ctx127Of(c, yk)
+        val sui = x.sui
+        val yinGan = branchHiddenStems.getValue(x.guanZhi).firstOrNull { it.element == c.yinEl }
+        val nan = gender != cn.xulun.bazi.model.Gender.FEMALE
+        // 巳亥冲，去火存金是一方面，即便没有金生水也足够了，水克火贴着克也厉害
+        val chong = x.chongShen?.let { g ->
+            "${sui!!.chinese}${g.chinese}冲——**去${c.biEl.chinese}存${c.caiEl.chinese}是一方面**，即便没有${c.caiEl.chinese}生${c.guanEl.chinese}也足够了：**${c.guanEl.chinese}克${c.biEl.chinese}贴着克也厉害**。"
+        } ?: ""
+        // 亥中甲算吉神深藏——但亥是水：印藏官杀水里不算有印
+        val yinNote = if (yinGan != null)
+            "${x.guanZhi.chinese}中虽藏${yinGan.chinese}${c.yinEl.chinese}（算吉神深藏），然**${x.guanZhi.chinese}${c.guanEl.chinese}还是${c.guanEl.chinese}**——终究是克身的：不能说${x.guanZhi.chinese}里头有块糖，就按${c.yinEl.chinese}去走（印藏官杀水里；异于案一百二十六「比劫里头有印是比劫」）。**这局没有印，用劫**。"
+        else "**这局没有印，用劫**。"
+        // 金生水旺、巳酉拱金、亥巳去火存金——全是财官了，巳火当然帮金了
+        val ju = listOfNotNull(
+            if (x.caiMate != null) "${sui!!.chinese}${x.caiMate.chinese}拱${c.caiEl.chinese}" else null,
+            x.chongShen?.let { g -> "${g.chinese}${sui!!.chinese}去${c.biEl.chinese}存${c.caiEl.chinese}" },
+        )
+        val juNote = if (ju.isEmpty()) "" else
+            "**${c.caiEl.chinese}生${c.guanEl.chinese}旺、${ju.joinToString("、")}——全是财官了**，${sui!!.chinese}${c.biEl.chinese}当然帮${c.caiEl.chinese}了。"
+        val dangBing = if (nan)
+            "③**这样的人不服——他就当兵**：当兵的人不怕困难，命局财官旺克${x.gen.chinese}${c.biEl.chinese}就是困难，${x.gen.chinese}${c.biEl.chinese}就在这硬扛顶着就不服——**他就当兵**（「劫财七杀两相连，早早离家去戍边」说的就是这种情况——然那种不一定当兵，**非得有这种气势才当兵**）。" +
+                "**气势**：财杀这么旺，我就全指望比劫硬扛——我这人就不怕事儿；知道任务完不成、无法承载，还要去跟你干——宁可牺牲了也去（坚韧不拔、不怕死）。当兵的除了护卫国家的（护官型——案一百二十五／一百二十六），另外就是找这种气势（男命拿官当国家；女命拿官当你的丈夫——古代女人没有当兵的，当兵只断男命）。"
+        else
+            "③**女命——不断当兵**：男命拿官当国家、女命拿官当你的丈夫；古代女人没有当兵的。"
+        val fanFa = if (c.guanEl == Element.WATER) "走${EarthlyBranch.ZI.chinese}${c.guanEl.chinese}大运肯定要犯法" else
+            "走${c.guanEl.chinese}官杀大运肯定要犯法（师举子水大运为例）"
+        return "**财官旺·比劫硬扛——" + (if (nan) "当兵" else "气势（女命不断当兵）") + "（案一百二十七·当兵专项④类「气势」）**：①**取用——身弱用印比**：${c.dayMaster.chinese}${c.dayMaster.element.chinese}生${c.monthBranch.chinese}月**财当令**；${c.biEl.chinese}有力是没错，然**${c.monthBranch.chinese}${c.caiEl.chinese}配${x.guanZhi.chinese}${c.guanEl.chinese}是俩王了**——不能说日主有力、${c.biEl.chinese}有力你就行了，**得找平衡**（不要认为找平衡是在开玩笑）。${x.gen.chinese}${c.biEl.chinese}隔着一个${x.guanZhi.chinese}${c.guanEl.chinese}能克这个财吗？不行（隔位不克）。" +
+            chong + "**没有印就要用劫**——" + yinNote + juNote + "**肯定用神是${x.gen.chinese}${c.biEl.chinese}比劫**。" +
+            "②**用神比劫不一定就当兵——要找一股气势**：财星当令、财生官旺，这都挡不住了——**完全是拿比劫硬扛**（${x.gen.chinese}${c.biEl.chinese}不占月令——若占月令则不是这回事；这完全指望着${x.gen.chinese}${c.biEl.chinese}硬扛）；${c.monthBranch.chinese}${c.caiEl.chinese}生${x.guanZhi.chinese}${c.guanEl.chinese}都占有绝对力量，拿比劫在这硬扛——**不服，不成从杀格**。" +
+            dangBing +
+            "④**层次不高——兵卒的命**：没有印，学习不好、书香不就，脑瓜里那些想法没有。**中间卡个印就不当兵了**（有印就有层次、学习好了，不去当小兵卒）。反事实：**$fanFa**（官杀要克他——犯法与当兵很多相似：都是不服的人，有的人犯法、有的人当兵）。"
+    }
+
+    /** 案一百二十七·旺衰注（身弱——俩王；硬扛不服，不成从杀格）。 */
+    private fun qiangNote127(c: CtxB, yk: YK127): String {
+        val x = ctx127Of(c, yk)
+        val qu = x.chongShen?.let { g -> "；${g.chinese}${x.sui!!.chinese}冲去${c.biEl.chinese}存${c.caiEl.chinese}" } ?: ""
+        return "；**身弱——${c.monthBranch.chinese}${c.caiEl.chinese}配${x.guanZhi.chinese}${c.guanEl.chinese}俩王（财官旺），${c.biEl.chinese}有力也得找平衡$qu；${x.gen.chinese}${c.biEl.chinese}硬扛不服——不成从杀格（案一百二十七）**"
+    }
+
+    /** 案一百二十七·清浊附注（层次不高——兵卒的命）。 */
+    private fun cengCi127Note(c: CtxB): String =
+        "——**层次不高：兵卒的命（案一百二十七）**：财官旺而全指望比劫硬扛、没有印——师未点名清浊，档位沿用通则"
+
+    /** 案一百二十七·断语清命句（清浊档位为通则映射——师未点名；替「贵命、走什么运都不怕」通句）。 */
+    private fun duanYuQing127(c: CtxB): String =
+        "清浊档位为通则映射（师未点名清浊）；师断**层次不高——兵卒的命**（没有印、学习不好，全指望比劫硬扛）（案一百二十七）。"
+
+    /** 案一百二十七·直断（男命断当兵；女命不断）。 */
+    private fun zhiDuan127(c: CtxB, yk: YK127, gender: cn.xulun.bazi.model.Gender?): String {
+        val x = ctx127Of(c, yk)
+        val fanFa = if (c.guanEl == Element.WATER) "走${EarthlyBranch.ZI.chinese}${c.guanEl.chinese}大运肯定要犯法" else
+            "走${c.guanEl.chinese}官杀大运肯定要犯法（师举子水大运为例）"
+        return "直断：" +
+            (if (gender != cn.xulun.bazi.model.Gender.FEMALE)
+                "**当兵（兵卒）——财官旺、比劫硬扛的气势（不服、不怕困难、坚韧不拔）**（用神${x.gen.chinese}${c.biEl.chinese}比劫硬扛——不成从杀格）；"
+            else "**财官旺、${x.gen.chinese}${c.biEl.chinese}比劫硬扛的不服之气**（女命拿官当丈夫——不断当兵）；") +
+            "**学习不好**（没有印——层次不高）；**没有儿子**（身衰印做儿，没有印）；$fanFa（案一百二十七）。"
+    }
+
+    /** 案一百二十七·学历（没有印——学习不好；兵卒之命）。 */
+    private fun xueLi127Of(): cn.xulun.bazi.model.JinBiaoXueLi =
+        cn.xulun.bazi.model.JinBiaoXueLi(
+            yinWanHao = false,
+            level = cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO,
+            basis = "**没有印——学习不好（兵卒的命·层次不高）（案一百二十七）**：脑瓜里那些想法没有、书香不就——全指望比劫硬扛；中间卡个印就有层次、学习好了（不去当小兵卒）。",
+        )
+
+    /** 案一百二十七·子女（身衰印做儿——没有印，没儿子）。 */
+    private fun ziNv127Text(bazi: BaziResult, yinEl: Element, guanEl: Element): String {
+        val guanZhi = bazi.branches.first { it.element == guanEl }
+        val yinGan = branchHiddenStems.getValue(guanZhi).firstOrNull { it.element == yinEl }
+        val note = if (yinGan != null)
+            "${guanZhi.chinese}中虽藏${yinGan.chinese}${yinEl.chinese}，然${guanZhi.chinese}${guanEl.chinese}还是${guanEl.chinese}——不算有印；"
+        else ""
+        return "**身衰印做儿，没有印——没儿子（案一百二十七）**：${note}身弱财官旺、全指望比劫硬扛"
+    }
+
+    /** 案一百二十七·子水大运——官杀克比劫：肯定要犯法（犯法章待授）。 */
+    private fun yunNote127(zhi: EarthlyBranch, ctx: YunCtx): String =
+        "运支${zhi.chinese}——${ctx.guanEl.chinese}官杀克比劫：**肯定要犯法**（「命主要是走子水大运，肯定要犯法的，因为官杀要克他」——犯法章待授；案一百二十七）"
 
     private fun format(v: Double): String = if (v % 1.0 == 0.0) v.toInt().toString() else String.format("%.1f", v)
     private fun pct(v: Double): String = String.format("%.0f%%", v * 100)

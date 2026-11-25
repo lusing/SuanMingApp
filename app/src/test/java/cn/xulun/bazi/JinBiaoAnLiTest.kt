@@ -4017,4 +4017,88 @@ class JinBiaoAnLiTest {
             old.geJuName.contains("正官格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG_ZHONG_BAI &&
                 old.yongShen?.tenGod == cn.xulun.bazi.model.TenGod.ZHENG_GUAN)
     }
+
+    // ── 案一百二十七 · 丁巳 己酉 丁亥 丙午（乾，午时）——财官旺·比劫硬扛·当兵之气势——当兵专项第三例（④类） ──
+    // 排盘口径：用户附起运年表（戊申 1984 起）→ 1977-09-27 午时（8 岁起运）；另 2037-09-12 同柱、起运年异。
+    // **事实：当兵（兵卒）；学习不好（没有印）；没有儿子。**（「命主要是走子水大运，肯定要犯法的」为师举之反事实——本盘无子水大运）
+    // 各步大运之吉凶师未断——运层 verdict 为通则映射，不作断言。
+    @Test
+    fun `案一百二十七 乾 丁巳己酉丁亥丙午 身弱用印比 酉金配亥水俩王得找平衡 午火隔亥不克财 巳亥冲去火存金 没有印就要用劫 亥水还是水 这局没有印用劫 巳火帮金 肯定用神是午火比劫 用神比劫不一定当兵要找气势 财当令财生官旺拿比劫硬扛不成从杀格 不服当兵 兵卒的命学习不好 中间卡个印就不当兵 子水大运犯法 男命官为国家女命官为夫 身衰印做儿没有印没儿子`() {
+        val bazi = chart(1977, 9, 27, 12)
+        assertTrue(bazi.fullBazi.startsWith("丁巳 己酉 丁亥 丙午"))
+        assertTrue("午时 11:00–13:00 皆丙午时", chart(1977, 9, 27, 11).fullBazi.startsWith("丁巳 己酉 丁亥 丙午"))
+        val daYun = DaYunCalculator.compute(bazi, Gender.MALE)
+        assertTrue("阴年乾造逆行：戊申1984 丁未1994 丙午2004 乙巳2014 甲辰2024 癸卯2034 壬寅2044 辛丑2054",
+            daYun.yuns.map { "${it.pillar.fullName}(${it.startYear})" } ==
+                listOf("戊申(1984)", "丁未(1994)", "丙午(2004)", "乙巳(2014)", "甲辰(2024)", "癸卯(2034)", "壬寅(2044)", "辛丑(2054)"))
+        val jb = JinBiaoCalculator.analyze(bazi, daYun, Gender.MALE)
+        assertTrue("身弱——身弱用劫（取用走伤官用劫之路；文案整体换为「财官旺·比劫硬扛」）：用神比劫（火）",
+            jb.strength == DayStrength.WEAK && !jb.ruoJi && jb.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE &&
+                jb.yongShenElement == Element.FIRE)
+        assertTrue("肯定用神是午火比劫——巳随金走（巳火当然帮金了），不入用神之位",
+            jb.yongShenStars.contains("时支午本气（比肩）") && jb.yongShenStars.none { it.contains("巳") })
+        assertTrue("旺衰注：身弱——酉金配亥水俩王（财官旺）；亥巳冲去火存金；午火硬扛不服——不成从杀格",
+            jb.strengthBasis.contains("身弱——酉金配亥水俩王") && jb.strengthBasis.contains("亥巳冲去火存金") &&
+                jb.strengthBasis.contains("不成从杀格"))
+        assertTrue("取用依据：财官旺比劫硬扛当兵／身弱用印比财当令／俩王得找平衡／午火隔亥不克财／巳亥冲去火存金水克火贴着克／没有印就要用劫／亥水还是水／有块糖不按印走／巳酉拱金亥巳去火存金全是财官／肯定用神是午火比劫／要找一股气势／拿比劫硬扛不成从杀格／不服当兵／劫财七杀两相连／兵卒的命／中间卡个印就不当兵／子水大运犯法／男命官为国家女命官为夫",
+            jb.quYongBasis.contains("财官旺·比劫硬扛——当兵（案一百二十七") && jb.quYongBasis.contains("身弱用印比") &&
+                jb.quYongBasis.contains("丁火生酉月**财当令**") && jb.quYongBasis.contains("酉金配亥水是俩王了") &&
+                jb.quYongBasis.contains("得找平衡") && jb.quYongBasis.contains("午火隔着一个亥水能克这个财吗？不行") &&
+                jb.quYongBasis.contains("巳亥冲——**去火存金是一方面**") && jb.quYongBasis.contains("水克火贴着克也厉害") &&
+                jb.quYongBasis.contains("没有印就要用劫") && jb.quYongBasis.contains("亥中虽藏甲木（算吉神深藏），然**亥水还是水**") &&
+                jb.quYongBasis.contains("亥里头有块糖") && jb.quYongBasis.contains("这局没有印，用劫") &&
+                jb.quYongBasis.contains("巳酉拱金、亥巳去火存金——全是财官了") && jb.quYongBasis.contains("巳火当然帮金了") &&
+                jb.quYongBasis.contains("肯定用神是午火比劫") && jb.quYongBasis.contains("用神比劫不一定就当兵——要找一股气势") &&
+                jb.quYongBasis.contains("完全是拿比劫硬扛") && jb.quYongBasis.contains("午火不占月令——若占月令则不是这回事") &&
+                jb.quYongBasis.contains("不服，不成从杀格") && jb.quYongBasis.contains("他就当兵") &&
+                jb.quYongBasis.contains("劫财七杀两相连，早早离家去戍边") && jb.quYongBasis.contains("非得有这种气势才当兵") &&
+                jb.quYongBasis.contains("兵卒的命") && jb.quYongBasis.contains("中间卡个印就不当兵了") &&
+                jb.quYongBasis.contains("走子水大运肯定要犯法") && jb.quYongBasis.contains("男命拿官当国家") &&
+                jb.quYongBasis.contains("女命拿官当你的丈夫"))
+        assertTrue("清浊：档位沿用通则（师未点名清浊）而注「层次不高：兵卒的命」",
+            jb.qingZhuo == JinBiaoQingZhuo.QING && jb.qingZhuoBasis.contains("层次不高：兵卒的命（案一百二十七）") &&
+                jb.qingZhuoBasis.contains("师未点名清浊"))
+        assertTrue("子女：必无儿——身衰印做儿，没有印，没儿子（亥中甲不算有印）",
+            jb.ziNv!!.qingKuang == cn.xulun.bazi.model.JinBiaoZiNvQingKuang.BI_WU_ER &&
+                jb.ziNv!!.basis.contains("身衰印做儿，没有印——没儿子") && jb.ziNv!!.basis.contains("亥水还是水——不算有印"))
+        assertTrue("学历：学历不高——没有印，学习不好（兵卒之命）",
+            jb.xueLi!!.level == cn.xulun.bazi.model.JinBiaoXueLiLevel.BU_GAO &&
+                jb.xueLi!!.basis.contains("没有印——学习不好"))
+        assertTrue("断语：财官旺·比劫硬扛；当兵（兵卒）；学习不好；没有儿子；子水大运犯法；层次不高——兵卒的命（替「贵命」通句）",
+            jb.duanYu.contains("财官旺·比劫硬扛（身弱用劫——当兵之气势）") &&
+                jb.duanYu.contains("当兵（兵卒）——财官旺、比劫硬扛的气势") &&
+                jb.duanYu.contains("学习不好**（没有印——层次不高）") && jb.duanYu.contains("没有儿子**（身衰印做儿，没有印）") &&
+                jb.duanYu.contains("走子水大运肯定要犯法") && jb.duanYu.contains("层次不高——兵卒的命") &&
+                !jb.duanYu.contains("贵命，走什么运都不怕") && !jb.duanYu.contains("脑子没问题好学"))
+        // 女命：不断当兵（女命拿官当丈夫）
+        val jf = JinBiaoCalculator.analyze(bazi, DaYunCalculator.compute(bazi, Gender.FEMALE), Gender.FEMALE)
+        assertTrue("女命——不断当兵：男命拿官当国家、女命拿官当你的丈夫（取用同）",
+            jf.quYongWay == JinBiaoQuYongWay.SHANG_YONG_JIE && jf.quYongBasis.contains("女命——不断当兵") &&
+                jf.quYongBasis.contains("女命拿官当你的丈夫") && !jf.quYongBasis.contains("他就当兵"))
+        // 师：「命主要是走子水大运，肯定要犯法的，因为官杀要克他」——合成子水大运验证运注（本盘原无子水大运）；流年不论
+        val synDy = DaYunInfo(
+            forward = false, qiYunText = "syn", startDate = bazi.birthDateTime,
+            yuns = listOf(DaYun(Pillar(HeavenlyStem.GENG, EarthlyBranch.ZI), 8, 1984, emptyList())),
+        )
+        val jz = JinBiaoCalculator.analyze(bazi, synDy, Gender.MALE)
+        assertTrue("子水大运——凶：官杀克比劫，肯定要犯法",
+            jz.yuns[0].verdict == JinBiaoVerdict.XIONG && jz.yuns[0].items[1].action.contains("肯定要犯法") &&
+                jz.yuns[0].items[1].xiongOverride)
+        assertTrue("流年子水（1996 丙子）不套「子水大运」之注",
+            jb.yuns[1].years.first { it.year == 1996 }.items.none { it.action.contains("肯定要犯法") })
+        // 反事实（师）：「要是亥午中间有个印，我就不是当兵的了」「午火要占月令，还不是这回事」——皆不入此档
+        fun syn(mStem: HeavenlyStem, mBranch: EarthlyBranch, hStem: HeavenlyStem) = BaziResult(
+            yearPillar = bazi.yearPillar,
+            monthPillar = Pillar(mStem, mBranch),
+            dayPillar = bazi.dayPillar,
+            hourPillar = Pillar(hStem, bazi.hourPillar.branch),
+            birthDateTime = LocalDateTime.of(1977, 9, 27, 12, 0),
+        )
+        assertTrue("反事实：中间卡印（时干换乙）／午占月令（月支换午）——不入「财官旺·比劫硬扛」之档",
+            listOf(syn(HeavenlyStem.JI, bazi.monthPillar.branch, HeavenlyStem.YI), syn(HeavenlyStem.BING, EarthlyBranch.WU, HeavenlyStem.BING))
+                .all { JinBiaoCalculator.analyze(it, daYun, Gender.MALE).quYongBasis.let { q -> !q.contains("比劫硬扛") } })
+        val old = cn.xulun.bazi.core.YongShenCalculator.analyze(bazi)
+        assertTrue("老引擎偏财格成格（相神己「食伤生财」；救应比劫夺财——透食伤化劫或官杀制劫）——与金镖门「身弱用劫、财官旺」相反",
+            old.geJuName.contains("偏财格") && old.chengBai == cn.xulun.bazi.model.GeJuChengBai.CHENG)
+    }
 }
